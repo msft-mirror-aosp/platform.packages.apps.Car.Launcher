@@ -29,10 +29,12 @@ import android.app.PendingIntent;
 import android.app.TaskInfo;
 import android.app.TaskStackListener;
 import android.car.Car;
+import android.car.app.CarActivityManager;
 import android.car.user.CarUserManager;
 import android.car.user.CarUserManager.UserLifecycleListener;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
@@ -62,6 +64,7 @@ import com.android.wm.shell.startingsurface.phone.PhoneStartingWindowTypeAlgorit
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Basic Launcher for Android Automotive which demonstrates the use of {@link TaskView} to host
@@ -80,6 +83,9 @@ public class CarLauncher extends FragmentActivity {
     public static final String TAG = "CarLauncher";
     private static final boolean DEBUG = false;
 
+    private final AtomicReference<CarActivityManager> mCarActivityManagerRef =
+            new AtomicReference<>();
+
     private ActivityManager mActivityManager;
     private CarUserManager mCarUserManager;
     private ShellTaskOrganizer mShellTaskOrganizer;
@@ -94,6 +100,8 @@ public class CarLauncher extends FragmentActivity {
 
     /** Set to {@code true} once we've logged that the Activity is fully drawn. */
     private boolean mIsReadyLogged;
+
+    private boolean mUseSmallCanvasOptimizedMap;
 
     // The callback methods in {@code mTaskViewListener} are running under MainThread.
     private final TaskView.Listener mTaskViewListener = new TaskView.Listener() {
@@ -156,7 +164,9 @@ public class CarLauncher extends FragmentActivity {
                 Log.d(TAG, "onActivityRestartAttempt: taskId=" + task.taskId
                         + ", homeTaskVisible=" + homeTaskVisible + ", wasVisible=" + wasVisible);
             }
-            if (!homeTaskVisible && mTaskViewTaskId == task.taskId) {
+            if (!mUseSmallCanvasOptimizedMap
+                    && !homeTaskVisible
+                    && mTaskViewTaskId == task.taskId) {
                 // The embedded map component received an intent, therefore forcibly bringing the
                 // launcher to the foreground.
                 bringToForeground();
@@ -194,7 +204,7 @@ public class CarLauncher extends FragmentActivity {
             mShellTaskOrganizer = new ShellTaskOrganizer(
                     application.getShellExecutor(), this);
             CarFullscreenTaskListener fullscreenTaskListener = new CarFullscreenTaskListener(
-                    this, application.getSyncTransactionQueue(),
+                    this, mCarActivityManagerRef, application.getSyncTransactionQueue(),
                     CarDisplayAreaController.getInstance());
             mShellTaskOrganizer.addListenerForType(
                     fullscreenTaskListener, TASK_LISTENER_TYPE_FULLSCREEN);
@@ -217,12 +227,23 @@ public class CarLauncher extends FragmentActivity {
             return;
         }
 
-        Car.createCar(getApplicationContext(), /* handler= */ null,
+        mUseSmallCanvasOptimizedMap =
+                CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(this);
+
+        Car.createCar(/* context= */ this, /* handler= */ null,
                 Car.CAR_WAIT_TIMEOUT_WAIT_FOREVER,
                 (car, ready) -> {
-                    if (!ready) return;
+                    if (!ready) {
+                        Log.w(TAG, "CarService looks crashed");
+                        mCarActivityManagerRef.set(null);
+                        return;
+                    }
                     mCarUserManager = (CarUserManager) car.getCarManager(Car.CAR_USER_SERVICE);
                     mCarUserManager.addListener(getMainExecutor(), mUserLifecyleListener);
+                    CarActivityManager carAM = (CarActivityManager) car.getCarManager(
+                            Car.CAR_ACTIVITY_SERVICE);
+                    mCarActivityManagerRef.set(carAM);
+                    carAM.registerTaskMonitor();
                 });
 
         mActivityManager = getSystemService(ActivityManager.class);
@@ -268,7 +289,7 @@ public class CarLauncher extends FragmentActivity {
 
     private void setUpTaskView(ViewGroup parent) {
         mTaskViewManager = new TaskViewManager(this,
-                new HandlerExecutor(getMainThreadHandler()));
+                new HandlerExecutor(getMainThreadHandler()), mCarActivityManagerRef);
         mTaskViewManager.createTaskView(taskView -> {
             taskView.setListener(getMainExecutor(), mTaskViewListener);
             parent.addView(taskView);
@@ -305,15 +326,17 @@ public class CarLauncher extends FragmentActivity {
     }
 
     private void release() {
-        if (mShellTaskOrganizer != null) {
-            mShellTaskOrganizer.unregisterOrganizer();
-        }
         if (mTaskView != null && mTaskViewReady) {
             mTaskView.release();
             mTaskView = null;
         }
         if (mTaskViewManager != null) {
             mTaskViewManager.release();
+        }
+        CarActivityManager carAM = mCarActivityManagerRef.get();
+        if (carAM != null) {
+            carAM.unregisterTaskMonitor();
+            mCarActivityManagerRef.set(null);
         }
     }
 
@@ -333,9 +356,12 @@ public class CarLauncher extends FragmentActivity {
         try {
             ActivityOptions options = ActivityOptions.makeCustomAnimation(this,
                     /* enterResId= */ 0, /* exitResId= */ 0);
+            Intent mapIntent = mUseSmallCanvasOptimizedMap
+                    ? CarLauncherUtils.getSmallCanvasOptimizedMapIntent(this)
+                    : CarLauncherUtils.getMapsIntent(this);
             mTaskView.startActivity(
                     PendingIntent.getActivity(this, /* requestCode= */ 0,
-                            CarLauncherUtils.getMapsIntent(this),
+                            mapIntent,
                             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT),
                     /* fillInIntent= */ null, options, null /* launchBounds */);
         } catch (ActivityNotFoundException e) {

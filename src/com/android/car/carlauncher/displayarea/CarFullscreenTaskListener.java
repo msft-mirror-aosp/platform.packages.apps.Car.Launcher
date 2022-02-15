@@ -22,28 +22,32 @@ import static com.android.car.carlauncher.displayarea.CarDisplayAreaOrganizer.FE
 
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
+import android.car.app.CarActivityManager;
 import android.content.Context;
 import android.view.SurfaceControl;
 
 import com.android.car.carlauncher.AppGridActivity;
+import com.android.car.carlauncher.CarFullscreenTaskMonitorListener;
 import com.android.wm.shell.common.SyncTransactionQueue;
-import com.android.wm.shell.fullscreen.FullscreenTaskListener;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Organizes tasks presented in display area using {@link CarDisplayAreaOrganizer}.
  */
-public class CarFullscreenTaskListener extends FullscreenTaskListener {
+public final class CarFullscreenTaskListener extends CarFullscreenTaskMonitorListener {
     // TODO(b/202182129): Introduce more robust way to resolve the intents.
     static final String MAPS = "maps";
 
     private final CarDisplayAreaController mCarDisplayAreaController;
     private final Context mContext;
 
-    public CarFullscreenTaskListener(Context context, SyncTransactionQueue syncQueue,
+    public CarFullscreenTaskListener(Context context,
+            AtomicReference<CarActivityManager> activityManagerRef,
+            SyncTransactionQueue syncQueue,
             CarDisplayAreaController carDisplayAreaController) {
-        super(syncQueue, Optional.empty());
+        super(activityManagerRef, syncQueue, Optional.empty());
         mContext = context;
         mCarDisplayAreaController = carDisplayAreaController;
     }
@@ -52,13 +56,13 @@ public class CarFullscreenTaskListener extends FullscreenTaskListener {
     public void onTaskAppeared(ActivityManager.RunningTaskInfo taskInfo, SurfaceControl leash) {
         super.onTaskAppeared(taskInfo, leash);
 
-
         if (taskInfo.displayAreaFeatureId == FEATURE_VOICE_PLATE) {
             mCarDisplayAreaController.showVoicePlateDisplayArea();
             return;
         }
 
         if (taskInfo.displayAreaFeatureId == FEATURE_DEFAULT_TASK_CONTAINER
+                && taskInfo.isVisible()
                 && !mCarDisplayAreaController.shouldIgnoreOpeningForegroundDA(taskInfo)) {
             if (!mCarDisplayAreaController.isHostingDefaultApplicationDisplayAreaVisible()) {
                 mCarDisplayAreaController.startAnimation(
@@ -74,12 +78,13 @@ public class CarFullscreenTaskListener extends FullscreenTaskListener {
                 mContext.startActivity(taskInfo.baseIntent, options.toBundle());
             }
         }
-
     }
 
     @Override
     public void onTaskVanished(ActivityManager.RunningTaskInfo taskInfo) {
         super.onTaskVanished(taskInfo);
-        mCarDisplayAreaController.resetVoicePlateDisplayArea();
+        if (taskInfo.displayAreaFeatureId == FEATURE_VOICE_PLATE) {
+            mCarDisplayAreaController.resetVoicePlateDisplayArea();
+        }
     }
 }
