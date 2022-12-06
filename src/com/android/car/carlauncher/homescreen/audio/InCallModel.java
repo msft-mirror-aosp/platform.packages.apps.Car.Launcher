@@ -145,7 +145,6 @@ public class InCallModel implements HomeCardInterface.Model, InCallServiceImpl.I
     @Override
     public void onDestroy(Context context) {
         if (mInCallService != null) {
-            mInCallService.removeListener(InCallModel.this);
             context.getApplicationContext().unbindService(mInCallServiceConnection);
             mInCallService = null;
         }
