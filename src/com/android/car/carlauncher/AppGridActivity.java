@@ -19,12 +19,13 @@ package com.android.car.carlauncher;
 import static com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_LAUNCHABLES;
 import static com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_MEDIA_SERVICES;
 
-import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.car.Car;
 import android.car.CarNotConnectedException;
 import android.car.content.pm.CarPackageManager;
+import android.car.drivingstate.CarUxRestrictions;
 import android.car.drivingstate.CarUxRestrictionsManager;
 import android.car.media.CarMediaManager;
 import android.content.BroadcastReceiver;
@@ -41,19 +42,25 @@ import android.os.IBinder;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup;
 
 import com.android.car.carlauncher.AppLauncherUtils.LauncherAppsInfo;
+import com.android.car.ui.AlertDialogBuilder;
 import com.android.car.ui.FocusArea;
 import com.android.car.ui.baselayout.Insets;
 import com.android.car.ui.baselayout.InsetsChangedListener;
 import com.android.car.ui.core.CarUi;
 import com.android.car.ui.recyclerview.CarUiRecyclerView;
+import com.android.car.ui.shortcutspopup.CarUiShortcutsPopup;
 import com.android.car.ui.toolbar.MenuItem;
 import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.ToolbarController;
@@ -65,16 +72,21 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Launcher activity that shows a grid of apps.
  */
-public class AppGridActivity extends Activity implements InsetsChangedListener {
+public class AppGridActivity extends AppCompatActivity implements InsetsChangedListener,
+        AppLauncherUtils.ShortcutsListener {
     private static final String TAG = "AppGridActivity";
     private static final String MODE_INTENT_EXTRA = "com.android.car.carlauncher.mode";
 
     private int mColumnNumber;
     private boolean mShowAllApps = true;
+    private boolean mShowRecentApps = true;
+    private boolean mShowToolbar = true;
     private final Set<String> mHiddenApps = new HashSet<>();
     private final Set<String> mCustomMediaComponents = new HashSet<>();
     private AppGridAdapter mGridAdapter;
@@ -85,7 +97,11 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
     private CarUxRestrictionsManager mCarUxRestrictionsManager;
     private CarPackageManager mCarPackageManager;
     private CarMediaManager mCarMediaManager;
+    private CarUiShortcutsPopup mCarUiShortcutsPopup;
     private Mode mMode;
+    private AlertDialog mStopAppAlertDialog;
+    private LauncherAppsInfo mAppsInfo;
+    private LauncherViewModel mLauncherModel;
 
     /**
      * enum to define the state of display area possible.
@@ -126,10 +142,18 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
             try {
                 mCarUxRestrictionsManager = (CarUxRestrictionsManager) mCar.getCarManager(
                         Car.CAR_UX_RESTRICTION_SERVICE);
-                mGridAdapter.setIsDistractionOptimizationRequired(
-                        mCarUxRestrictionsManager
-                                .getCurrentCarUxRestrictions()
-                                .isRequiresDistractionOptimization());
+                CarUxRestrictions carUxRestrictions = mCarUxRestrictionsManager
+                        .getCurrentCarUxRestrictions();
+                boolean isDistractionOptimizationRequired;
+                if (carUxRestrictions == null) {
+                    Log.v(TAG, "No CarUxRestrictions on display");
+                    isDistractionOptimizationRequired = false;
+                } else {
+                    isDistractionOptimizationRequired = carUxRestrictions
+                            .isRequiresDistractionOptimization();
+                }
+                mGridAdapter
+                        .setIsDistractionOptimizationRequired(isDistractionOptimizationRequired);
                 mCarUxRestrictionsManager.registerListener(
                         restrictionInfo ->
                                 mGridAdapter.setIsDistractionOptimizationRequired(
@@ -137,7 +161,7 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
 
                 mCarPackageManager = (CarPackageManager) mCar.getCarManager(Car.PACKAGE_SERVICE);
                 mCarMediaManager = (CarMediaManager) mCar.getCarManager(Car.CAR_MEDIA_SERVICE);
-                updateAppsLists();
+                initializeLauncherModel();
             } catch (CarNotConnectedException e) {
                 Log.e(TAG, "Car not connected in CarConnectionListener", e);
             }
@@ -150,13 +174,58 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
         }
     };
 
+    private void initializeLauncherModel() {
+        ExecutorService fetchOrderExecutorService = Executors.newSingleThreadExecutor();
+        fetchOrderExecutorService.execute(() -> {
+            mLauncherModel.updateAppsOrder();
+            fetchOrderExecutorService.shutdown();
+        });
+        ExecutorService alphabetizeExecutorService = Executors.newSingleThreadExecutor();
+        alphabetizeExecutorService.execute(() -> {
+            Set<String> appsToHide = mShowAllApps ? Collections.emptySet() : mHiddenApps;
+            mAppsInfo = AppLauncherUtils.getLauncherApps(getApplicationContext(),
+                    appsToHide,
+                    mCustomMediaComponents,
+                    mMode.mAppTypes,
+                    mMode.mOpenMediaCenter,
+                    getSystemService(LauncherApps.class),
+                    mCarPackageManager,
+                    mPackageManager,
+                    new AppLauncherUtils.VideoAppPredicate(mPackageManager),
+                    mCarMediaManager,
+                    AppGridActivity.this);
+            mLauncherModel.generateAlphabetizedAppOrder(mAppsInfo);
+            alphabetizeExecutorService.shutdown();
+        });
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        mShowToolbar = getResources().getBoolean(R.bool.car_app_show_toolbar);
+        if (mShowToolbar) {
+            setTheme(R.style.Theme_Launcher_AppGridActivity);
+        } else {
+            setTheme(R.style.Theme_Launcher_AppGridActivity_NoToolbar);
+        }
         super.onCreate(savedInstanceState);
 
         mColumnNumber = getResources().getInteger(R.integer.car_app_selector_column_number);
+        mShowRecentApps = getResources().getBoolean(R.bool.car_app_show_recent_apps);
         mPackageManager = getPackageManager();
         mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+        mGridAdapter = new AppGridAdapter(this);
+        mLauncherModel = new ViewModelProvider(AppGridActivity.this,
+                new LauncherViewModelFactory(getFilesDir())).get(
+                LauncherViewModel.class);
+        mLauncherModel.getCurrentLauncher().observe(
+                AppGridActivity.this, new Observer<List<LauncherItem>>() {
+                    @Override
+                    public void onChanged(List<LauncherItem> launcherItems) {
+                        mGridAdapter.setLauncherItems(launcherItems);
+                        mLauncherModel.maybeSaveAppsOrder();
+                    }
+                }
+        );
         mCar = Car.createCar(this, mCarConnectionListener);
         mHiddenApps.addAll(Arrays.asList(getResources().getStringArray(R.array.hidden_apps)));
         mCustomMediaComponents.addAll(
@@ -166,27 +235,26 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
 
         updateMode();
 
-        ToolbarController toolbar = CarUi.requireToolbar(this);
+        if (mShowToolbar) {
+            ToolbarController toolbar = CarUi.requireToolbar(this);
 
-        toolbar.setNavButtonMode(NavButtonMode.CLOSE);
+            toolbar.setNavButtonMode(NavButtonMode.CLOSE);
 
-        if (Build.IS_DEBUGGABLE) {
-            toolbar.setMenuItems(Collections.singletonList(MenuItem.builder(this)
-                    .setDisplayBehavior(MenuItem.DisplayBehavior.NEVER)
-                    .setTitle(R.string.hide_debug_apps)
-                    .setOnClickListener(i -> {
-                        mShowAllApps = !mShowAllApps;
-                        i.setTitle(mShowAllApps
-                                ? R.string.hide_debug_apps
-                                : R.string.show_debug_apps);
-                        updateAppsLists();
-                    })
-                    .build()));
+            if (Build.IS_DEBUGGABLE) {
+                toolbar.setMenuItems(Collections.singletonList(MenuItem.builder(this)
+                        .setDisplayBehavior(MenuItem.DisplayBehavior.NEVER)
+                        .setTitle(R.string.hide_debug_apps)
+                        .setOnClickListener(i -> {
+                            mShowAllApps = !mShowAllApps;
+                            i.setTitle(mShowAllApps
+                                    ? R.string.hide_debug_apps
+                                    : R.string.show_debug_apps);
+                            initializeLauncherModel();
+                        })
+                        .build()));
+            }
         }
-
-        mGridAdapter = new AppGridAdapter(this);
         CarUiRecyclerView gridView = requireViewById(R.id.apps_grid);
-
         GridLayoutManager gridLayoutManager = new GridLayoutManager(this, mColumnNumber);
         gridLayoutManager.setSpanSizeLookup(new SpanSizeLookup() {
             @Override
@@ -196,6 +264,20 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
         });
         gridView.setLayoutManager(gridLayoutManager);
         gridView.setAdapter(mGridAdapter);
+        gridView.addOnScrollListener(new CarUiRecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(CarUiRecyclerView carUiRecyclerView, int i, int i1) {
+                if (mCarUiShortcutsPopup != null) {
+                    mCarUiShortcutsPopup.dismiss();
+                    mCarUiShortcutsPopup = null;
+                }
+            }
+
+            @Override
+            public void onScrollStateChanged(CarUiRecyclerView carUiRecyclerView, int i) {
+                //do nothing
+            }
+        });
     }
 
     @Override
@@ -217,7 +299,9 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
     private void updateMode() {
         mMode = parseMode(getIntent());
         setTitle(mMode.mTitleStringId);
-        CarUi.requireToolbar(this).setTitle(mMode.mTitleStringId);
+        if (mShowToolbar) {
+            CarUi.requireToolbar(this).setTitle(mMode.mTitleStringId);
+        }
     }
 
     /**
@@ -237,27 +321,6 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Using onResume() to refresh most recently used apps because we want to refresh even if
-        // the app being launched crashes/doesn't cover the entire screen.
-        updateAppsLists();
-    }
-
-    /** Updates the list of all apps, and the list of the most recently used ones. */
-    private void updateAppsLists() {
-        Set<String> appsToHide = mShowAllApps ? Collections.emptySet() : mHiddenApps;
-        LauncherAppsInfo appsInfo = AppLauncherUtils.getLauncherApps(getApplicationContext(),
-                appsToHide,
-                mCustomMediaComponents,
-                mMode.mAppTypes,
-                mMode.mOpenMediaCenter,
-                getSystemService(LauncherApps.class),
-                mCarPackageManager,
-                mPackageManager,
-                new AppLauncherUtils.VideoAppPredicate(mPackageManager),
-                mCarMediaManager);
-        mGridAdapter.setAllApps(appsInfo.getLaunchableComponentsList());
-        mGridAdapter.setMostRecentApps(getMostRecentApps(appsInfo));
     }
 
     @Override
@@ -296,6 +359,18 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
         if (mCar != null) {
             mCar.disconnect();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        if (mCarUiShortcutsPopup != null) {
+            mCarUiShortcutsPopup.dismissImmediate();
+            mCarUiShortcutsPopup = null;
+        }
+        if (mStopAppAlertDialog != null) {
+            mStopAppAlertDialog.dismiss();
+        }
+        super.onPause();
     }
 
     /**
@@ -380,6 +455,36 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
                 .setPadding(insets.getLeft(), 0, insets.getRight(), 0);
     }
 
+    @Override
+    public void onShortcutsShow(CarUiShortcutsPopup carUiShortcutsPopup) {
+        mCarUiShortcutsPopup = carUiShortcutsPopup;
+    }
+
+    @Override
+    public void onShortcutsItemClick(String packageName, CharSequence displayName,
+            boolean allowStopApp) {
+        AlertDialogBuilder builder = new AlertDialogBuilder(this)
+                .setTitle(R.string.app_launcher_stop_app_dialog_title);
+
+        if (allowStopApp) {
+            builder.setMessage(R.string.app_launcher_stop_app_dialog_text)
+                    .setPositiveButton(android.R.string.ok,
+                            (d, w) -> AppLauncherUtils.forceStop(packageName, AppGridActivity.this,
+                                    displayName, mCarMediaManager, mAppsInfo.getMediaServices(),
+                                    this))
+                    .setNegativeButton(android.R.string.cancel, /* onClickListener= */ null);
+        } else {
+            builder.setMessage(R.string.app_launcher_stop_app_cant_stop_text)
+                    .setNeutralButton(android.R.string.ok, /* onClickListener= */ null);
+        }
+        mStopAppAlertDialog = builder.show();
+    }
+
+    @Override
+    public void onStopAppSuccess(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
     /**
      * Comparator for {@link UsageStats} that sorts the list by the "last time used" property
      * in descending order.
@@ -397,13 +502,37 @@ public class AppGridActivity extends Activity implements InsetsChangedListener {
         @Override
         public void onReceive(Context context, Intent intent) {
             String packageName = intent.getData().getSchemeSpecificPart();
-
             if (TextUtils.isEmpty(packageName)) {
                 Log.e(TAG, "System sent an empty app install/uninstall broadcast");
                 return;
             }
 
-            updateAppsLists();
+            if (intent.getAction().equals(Intent.ACTION_PACKAGE_ADDED)) {
+                // TODO b/256684061: find better way to get AppInfo from package name.
+                Set<String> appsToHide = mShowAllApps ? Collections.emptySet() : mHiddenApps;
+                mAppsInfo = AppLauncherUtils.getLauncherApps(getApplicationContext(),
+                        appsToHide,
+                        mCustomMediaComponents,
+                        mMode.mAppTypes,
+                        mMode.mOpenMediaCenter,
+                        getSystemService(LauncherApps.class),
+                        mCarPackageManager,
+                        mPackageManager,
+                        new AppLauncherUtils.VideoAppPredicate(mPackageManager),
+                        mCarMediaManager,
+                        AppGridActivity.this);
+                List<AppMetaData> apps = mAppsInfo.getLaunchableComponentsList();
+                AppMetaData appToInstall = apps.stream().filter(
+                        app -> packageName.equals(app.getPackageName())).findAny().orElse(null);
+                if (appToInstall != null) {
+                    mLauncherModel.addPackage(appToInstall);
+                }
+            } else if (intent.getAction().equals(Intent.ACTION_PACKAGE_REMOVED)) {
+                AppItem item = (AppItem) mLauncherModel.getLauncherItemMap().get(packageName);
+                if (item != null) {
+                    mLauncherModel.removePackage(item.getAppMetaData());
+                }
+            }
         }
     }
 }

@@ -19,30 +19,52 @@ package com.android.car.carlauncher.homescreen.ui;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import com.android.car.carlauncher.homescreen.audio.MediaViewModel.PlaybackCallback;
+
 /**
  * A layout that displays a title line of text with a subtitle line below and three buttons to
  * control the audio. Displayed using card_content_descriptive_text_with_controls.xml
  */
 public class DescriptiveTextWithControlsView extends CardContent {
 
-    private Drawable mImage;
+    private PlaybackCallback mPlaybackCallback;
+    private CardBackgroundImage mImage;
     private CharSequence mTitle;
     private CharSequence mSubtitle;
+    private CharSequence mTimes;
+    private boolean mIsTimesAvailable;
+    private int mSeekBarColor;
+    private int mProgress;
 
     private Control mLeftControl;
     private Control mCenterControl;
     private Control mRightControl;
     private long mStartTime;
 
-    public DescriptiveTextWithControlsView(Drawable image, CharSequence title,
+    //TODO(b/260002616): considering using builder
+    public DescriptiveTextWithControlsView(CardBackgroundImage image, CharSequence title,
             CharSequence subtitle) {
         mImage = image;
         mTitle = title;
         mSubtitle = subtitle;
     }
 
-    public DescriptiveTextWithControlsView(Drawable image, CharSequence title,
-            CharSequence subtitle,Control leftControl, Control centerControl, Control rightControl) {
+    public DescriptiveTextWithControlsView(CardBackgroundImage image, CharSequence title,
+            CharSequence subtitle, CharSequence times, boolean isTimesAvailable,
+            int seekBarColor, int progress, PlaybackCallback callback) {
+        mImage = image;
+        mTitle = title;
+        mSubtitle = subtitle;
+        mTimes = times;
+        mIsTimesAvailable = isTimesAvailable;
+        mSeekBarColor = seekBarColor;
+        mProgress = progress;
+        mPlaybackCallback = callback;
+    }
+
+    public DescriptiveTextWithControlsView(CardBackgroundImage image, CharSequence title,
+            CharSequence subtitle, Control leftControl, Control centerControl,
+            Control rightControl) {
         mImage = image;
         mTitle = title;
         mSubtitle = subtitle;
@@ -51,7 +73,7 @@ public class DescriptiveTextWithControlsView extends CardContent {
         mRightControl = rightControl;
     }
 
-    public DescriptiveTextWithControlsView(Drawable image, CharSequence title,
+    public DescriptiveTextWithControlsView(CardBackgroundImage image, CharSequence title,
             CharSequence subtitle, long startTime, Control leftControl,
             Control centerControl, Control rightControl) {
         mImage = image;
@@ -68,7 +90,7 @@ public class DescriptiveTextWithControlsView extends CardContent {
         return HomeCardContentType.DESCRIPTIVE_TEXT_WITH_CONTROLS;
     }
 
-    public Drawable getImage() {
+    public CardBackgroundImage getImage() {
         return mImage;
     }
 
@@ -78,6 +100,14 @@ public class DescriptiveTextWithControlsView extends CardContent {
 
     public CharSequence getSubtitle() {
         return mSubtitle;
+    }
+
+    public CharSequence getTimes() {
+        return mTimes;
+    }
+
+    public boolean isTimesAvailable() {
+        return mIsTimesAvailable;
     }
 
     public long getStartTime() {
@@ -94,6 +124,18 @@ public class DescriptiveTextWithControlsView extends CardContent {
 
     public Control getRightControl() {
         return mRightControl;
+    }
+
+    public int getSeekBarColor() {
+        return mSeekBarColor;
+    }
+
+    public int getProgress() {
+        return mProgress;
+    }
+
+    public PlaybackCallback getPlaybackCallback() {
+        return mPlaybackCallback;
     }
 
     /**
