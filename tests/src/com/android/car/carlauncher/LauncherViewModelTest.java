@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
@@ -93,14 +95,17 @@ public final class LauncherViewModelTest extends AbstractExtendedMockitoTestCase
         mApps.add(app3);
         LauncherItem launcherItem1 = new AppItem(
                 app1.getPackageName(),
+                app1.getClassName(),
                 app1.getDisplayName(),
                 app1);
         LauncherItem launcherItem2 = new AppItem(
                 app2.getPackageName(),
+                app2.getClassName(),
                 app2.getDisplayName(),
                 app2);
         LauncherItem launcherItem3 = new AppItem(
                 app3.getPackageName(),
+                app3.getClassName(),
                 app3.getDisplayName(),
                 app3);
         mAlphabetizedApps.add(launcherItem1);
@@ -110,6 +115,34 @@ public final class LauncherViewModelTest extends AbstractExtendedMockitoTestCase
         mCustomizedApps.add(launcherItem3);
         mCustomizedApps.add(launcherItem1);
         when(mLauncherAppsInfo.getLaunchableComponentsList()).thenReturn(mApps);
+    }
+
+    @Test
+    public void testConcurrentGenerateWithAlphabetizedApps() throws IOException {
+        LauncherItemHelper helper = mock(LauncherItemHelper.class);
+        mLauncherModel.setLauncherItemHelper(helper);
+
+        for (int i = 0; i < 100; i++) {
+            ExecutorService fetchOrderExecutorService = Executors.newSingleThreadExecutor();
+            fetchOrderExecutorService.execute(() -> {
+                mLauncherModel.updateAppsOrder();
+                fetchOrderExecutorService.shutdown();
+            });
+
+            ExecutorService alphabetizeExecutorService = Executors.newSingleThreadExecutor();
+            alphabetizeExecutorService.execute(() -> {
+                mLauncherModel.generateAlphabetizedAppOrder(mLauncherAppsInfo);
+                alphabetizeExecutorService.shutdown();
+            });
+
+        }
+
+        mLauncherModel.getCurrentLauncher().observeForever(launcherItems -> {
+            assertEquals(3, launcherItems.size());
+            assertEquals("A", launcherItems.get(0).getPackageName());
+            assertEquals("B", launcherItems.get(1).getPackageName());
+            assertEquals("C", launcherItems.get(2).getPackageName());
+        });
     }
 
     @Test
