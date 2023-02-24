@@ -26,6 +26,8 @@
     <uses-permission android:name="android.permission.ACTIVITY_EMBEDDING"/>
     <!-- Needed to change component enabled state when user opens disabled apps. -->
     <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE"/>
+    <!-- Needed to allow drag surface control to be transferred from DragEvent. -->
+    <uses-permission android:name="android.permission.START_TASKS_FROM_RECENTS" />
     <!-- Permission for the InCallController to bind the InCallService -->
     <uses-permission android:name="android.permission.CONTROL_INCALL_EXPERIENCE"/>
     <!-- System permission to send events to hosted maps activity -->
@@ -95,6 +97,22 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.LAUNCHER_APP"/>
             </intent-filter>
+        </activity>
+        <activity android:name="com.android.car.carlauncher.ResetLauncherActivity"
+                  android:theme="@style/ActionDialogTheme"
+                  android:excludeFromRecents="true"
+                  android:exported="true"
+                  android:launchMode="singleInstance">
+            <intent-filter>
+                <action android:name="com.android.settings.action.EXTRA_SETTINGS"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data
+                android:name="com.android.settings.title"
+                android:resource="@string/reset_appgrid_title"/>
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.apps"/>
         </activity>
         <activity
             android:name=".ControlBarActivity"
