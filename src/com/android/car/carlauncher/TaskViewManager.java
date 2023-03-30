@@ -253,21 +253,17 @@ public final class TaskViewManager {
                 Log.d(TAG, "onActivityRestartAttempt: taskId=" + task.taskId
                         + ", homeTaskVisible=" + homeTaskVisible + ", wasVisible=" + wasVisible);
             }
-            if (mHostTaskId != task.taskId) {
-                return;
+            if (homeTaskVisible && mHostTaskId == task.taskId) {
+                for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
+                    ControlledCarTaskView taskView = mControlledTaskViews.get(i);
+                    // In the case of CarLauncher, this code handles the case where Home Intent is
+                    // sent when CarLauncher is foreground and the task in a ControlledTaskView is
+                    // crashed.
+                    if (taskView.getTaskId() == INVALID_TASK_ID) {
+                        taskView.startActivity();
+                    }
+                }
             }
-            WindowContainerTransaction wct = new WindowContainerTransaction();
-            for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
-                // showEmbeddedTasks() will restart the crashed tasks too.
-                mControlledTaskViews.get(i).showEmbeddedTask(wct);
-            }
-            if (mLaunchRootCarTaskView != null) {
-                mLaunchRootCarTaskView.showEmbeddedTask(wct);
-            }
-            for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
-                mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
-            }
-            mSyncQueue.queue(wct);
         }
     };
 
@@ -564,13 +560,39 @@ public final class TaskViewManager {
             new ActivityLifecycleCallbacks() {
                 @Override
                 public void onActivityCreated(@NonNull Activity activity,
-                        @Nullable Bundle savedInstanceState) {}
+                        @Nullable Bundle savedInstanceState) {
+                    if (DBG) {
+                        Log.d(TAG, "Host activity created");
+                    }
+                }
 
                 @Override
-                public void onActivityStarted(@NonNull Activity activity) {}
+                public void onActivityStarted(@NonNull Activity activity) {
+                    if (DBG) {
+                        Log.d(TAG, "Host activity started");
+                    }
+                }
 
                 @Override
-                public void onActivityResumed(@NonNull Activity activity) {}
+                public void onActivityResumed(@NonNull Activity activity) {
+                    Log.d(TAG, "Host activity resumed");
+                    if (activity != mContext) {
+                        return;
+                    }
+                    mShellExecutor.execute(() -> {
+                        WindowContainerTransaction wct = new WindowContainerTransaction();
+                        for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
+                            mControlledTaskViews.get(i).showEmbeddedTask(wct);
+                        }
+                        if (mLaunchRootCarTaskView != null) {
+                            mLaunchRootCarTaskView.showEmbeddedTask(wct);
+                        }
+                        for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
+                            mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
+                        }
+                        mSyncQueue.queue(wct);
+                    });
+                }
 
                 @Override
                 public void onActivityPaused(@NonNull Activity activity) {}
