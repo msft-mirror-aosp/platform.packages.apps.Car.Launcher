@@ -25,6 +25,8 @@ import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.car.carlauncher.recyclerview.AppItemViewHolder;
+
 import java.util.List;
 
 /**
@@ -61,7 +63,8 @@ public class RecentAppsRowViewHolder extends RecyclerView.ViewHolder {
             View view =
                     LayoutInflater.from(mContext).inflate(R.layout.app_item, mRecentAppsRow, false);
 
-            AppItemViewHolder holder = new AppItemViewHolder(view, mContext);
+            AppItemViewHolder holder = new AppItemViewHolder(view, mContext,
+                    /* dragCallback */ null, /* snapCallback */ null, /* pageBound */ null);
             holder.bind(apps.get(i), isDistractionOptimizationRequired);
 
             LinearLayout.LayoutParams params =

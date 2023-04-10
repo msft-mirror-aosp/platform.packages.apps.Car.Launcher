@@ -20,20 +20,26 @@ import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 
 import static com.android.car.carlauncher.TaskViewManager.DBG;
 
+import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Rect;
+import android.os.Binder;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.InsetsFrameProvider;
+import android.view.InsetsSource;
 import android.view.SurfaceControl;
+import android.view.SurfaceHolder;
 import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
 
 import com.android.wm.shell.ShellTaskOrganizer;
-import com.android.wm.shell.TaskView;
-import com.android.wm.shell.TaskViewTransitions;
 import com.android.wm.shell.common.SyncTransactionQueue;
+import com.android.wm.shell.taskview.TaskView;
+import com.android.wm.shell.taskview.TaskViewTaskController;
+import com.android.wm.shell.taskview.TaskViewTransitions;
 
 /**
  * CarLauncher version of {@link TaskView} which solves some CarLauncher specific issues:
@@ -47,13 +53,45 @@ public class CarTaskView extends TaskView {
     @Nullable
     private WindowContainerToken mTaskToken;
     private final SyncTransactionQueue mSyncQueue;
-    private final SparseArray<Rect> mInsets = new SparseArray<>();
+    private final Binder mInsetsOwner = new Binder();
+    private final SparseArray<InsetsFrameProvider> mInsets = new SparseArray<>();
     private boolean mTaskViewReadySent;
+    private TaskViewTaskController mTaskViewTaskController;
 
     public CarTaskView(Context context, ShellTaskOrganizer organizer,
             TaskViewTransitions taskViewTransitions, SyncTransactionQueue syncQueue) {
-        super(context, organizer, taskViewTransitions, syncQueue);
+        this(context, syncQueue,
+                new TaskViewTaskController(context, organizer, taskViewTransitions, syncQueue));
+    }
+
+    public CarTaskView(Context context, SyncTransactionQueue syncQueue,
+            TaskViewTaskController taskViewTaskController) {
+        super(context, taskViewTaskController);
+        mTaskViewTaskController = taskViewTaskController;
         mSyncQueue = syncQueue;
+    }
+
+    /**
+     * Calls {@link TaskViewTaskController#onTaskAppeared(ActivityManager.RunningTaskInfo,
+     * SurfaceControl)}.
+     */
+    public void dispatchTaskAppeared(ActivityManager.RunningTaskInfo taskInfo,
+            SurfaceControl leash) {
+        mTaskViewTaskController.onTaskAppeared(taskInfo, leash);
+    }
+
+    /**
+     * Calls {@link TaskViewTaskController#onTaskVanished(ActivityManager.RunningTaskInfo)}.
+     */
+    public void dispatchTaskVanished(ActivityManager.RunningTaskInfo taskInfo) {
+        mTaskViewTaskController.onTaskVanished(taskInfo);
+    }
+
+    /**
+     * Calls {@link TaskViewTaskController#onTaskInfoChanged(ActivityManager.RunningTaskInfo)}.
+     */
+    public void dispatchTaskInfoChanged(ActivityManager.RunningTaskInfo taskInfo) {
+        mTaskViewTaskController.onTaskInfoChanged(taskInfo);
     }
 
     @Override
@@ -64,9 +102,19 @@ public class CarTaskView extends TaskView {
         applyInsets();
     }
 
+    /**
+     * Triggers the change in the WM bounds as per the {@code newBounds} received.
+     *
+     * Should be called when the surface has changed. Can also be called before an animation if
+     * the final bounds are already known.
+     */
+    public void setWindowBounds(Rect newBounds) {
+        mTaskViewTaskController.setWindowBounds(newBounds);
+    }
+
     @Override
-    protected void notifyInitialized() {
-        super.notifyInitialized();
+    public void surfaceCreated(SurfaceHolder holder) {
+        super.surfaceCreated(holder);
         if (mTaskViewReadySent) {
             if (DBG) Log.i(TAG, "car task view ready already sent");
             return;
@@ -95,18 +143,56 @@ public class CarTaskView extends TaskView {
 
     // TODO(b/238473897): Consider taking insets one by one instead of taking all insets.
     /**
-     * Set & apply the given {@code insets} on the Task.
+     * Adds & applies the given insets on the Task.
+     *
+     * <p>
+     * The insets that were specified in an earlier call but not specified later, will remain
+     * applied to the task. Clients should explicitly call
+     * {@link #removeInsets(int, int)} to remove the insets from the underlying task.
+     * </p>
+     *
+     * @param index The caller might add multiple insets sources with the same type.
+     *              This identifies them.
+     * @param type  The insets type of the insets source.
+     * @param frame The rectangle area of the insets source.
      */
-    public void setInsets(SparseArray<Rect> insets) {
+    public void addInsets(int index, int type, @NonNull Rect frame) {
         mInsets.clear();
-        for (int i = insets.size() - 1; i >= 0; i--) {
-            mInsets.append(insets.keyAt(i), insets.valueAt(i));
-        }
+        mInsets.append(InsetsSource.createId(mInsetsOwner, index, type),
+                new InsetsFrameProvider(mInsetsOwner, index, type).setArbitraryRectangle(frame));
         applyInsets();
     }
 
+    /**
+     * Removes the given insets from the Task.
+     *
+     * @param index The caller might add multiple insets sources with the same type.
+     *              This identifies them.
+     * @param type  The insets type of the insets source.
+     */
+    public void removeInsets(int index, int type) {
+        if (mInsets.size() == 0) {
+            Log.w(TAG, "No insets set.");
+            return;
+        }
+        if (mTaskToken == null) {
+            Log.w(TAG, "Cannot remove insets as the task token is not present.");
+            return;
+        }
+        final int id = InsetsSource.createId(mInsetsOwner, index, type);
+        final WindowContainerTransaction wct = new WindowContainerTransaction();
+        if (mInsets.contains(id)) {
+            wct.removeInsetsSource(mTaskToken, mInsetsOwner, index, type);
+            mInsets.remove(id);
+        } else {
+            Log.w(TAG, "Insets type: " + type + " can't be removed as it was not "
+                    + "applied as part of the last addInsets()");
+        }
+        mSyncQueue.queue(wct);
+    }
+
     private void applyInsets() {
-        if (mInsets == null || mInsets.size() == 0) {
+        if (mInsets.size() == 0) {
             Log.w(TAG, "Cannot apply null or empty insets");
             return;
         }
@@ -116,7 +202,9 @@ public class CarTaskView extends TaskView {
         }
         WindowContainerTransaction wct = new WindowContainerTransaction();
         for (int i = 0; i < mInsets.size(); i++) {
-            wct.addRectInsetsProvider(mTaskToken, mInsets.valueAt(i), new int[]{mInsets.keyAt(i)});
+            final InsetsFrameProvider p = mInsets.valueAt(i);
+            wct.addInsetsSource(mTaskToken,
+                    p.getOwner(), p.getIndex(), p.getType(), p.getArbitraryRectangle());
         }
         mSyncQueue.queue(wct);
     }
@@ -125,9 +213,9 @@ public class CarTaskView extends TaskView {
      * @return the taskId of the currently running task.
      */
     public int getTaskId() {
-        if (mTaskInfo == null) {
+        if (mTaskViewTaskController.getTaskInfo() == null) {
             return INVALID_TASK_ID;
         }
-        return mTaskInfo.taskId;
+        return mTaskViewTaskController.getTaskInfo().taskId;
     }
 }

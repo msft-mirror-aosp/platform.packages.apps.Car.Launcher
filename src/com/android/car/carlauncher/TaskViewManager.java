@@ -54,7 +54,6 @@ import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.launcher3.icons.IconProvider;
 import com.android.wm.shell.ShellTaskOrganizer;
-import com.android.wm.shell.TaskViewTransitions;
 import com.android.wm.shell.common.DisplayController;
 import com.android.wm.shell.common.HandlerExecutor;
 import com.android.wm.shell.common.SyncTransactionQueue;
@@ -66,9 +65,11 @@ import com.android.wm.shell.startingsurface.phone.PhoneStartingWindowTypeAlgorit
 import com.android.wm.shell.sysui.ShellCommandHandler;
 import com.android.wm.shell.sysui.ShellController;
 import com.android.wm.shell.sysui.ShellInit;
+import com.android.wm.shell.taskview.TaskViewTransitions;
 import com.android.wm.shell.transition.Transitions;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,6 +93,8 @@ public final class TaskViewManager {
     private final ShellTaskOrganizer mTaskOrganizer;
     private TaskViewInputInterceptor mTaskViewInputInterceptor;
     private final int mHostTaskId;
+    private final LinkedHashMap<Integer, ActivityManager.RunningTaskInfo> mLaunchRootStack =
+            new LinkedHashMap<>();
 
     // All TaskView are bound to the Host Activity if it exists.
     @ShellMainThread
@@ -114,7 +117,7 @@ public final class TaskViewManager {
                     for (SemiControlledCarTaskView taskView : mSemiControlledTaskViews) {
                         if (taskView.getCallbacks().shouldStartInTaskView(taskInfo)) {
                             if (taskView.isInitialized()) {
-                                taskView.onTaskAppeared(taskInfo, leash);
+                                taskView.dispatchTaskAppeared(taskInfo, leash);
                             }
                             return;
                         }
@@ -128,6 +131,7 @@ public final class TaskViewManager {
                     CarActivityManager carAm = mCarActivityManagerRef.get();
                     if (carAm != null) {
                         carAm.onTaskAppeared(taskInfo);
+                        mLaunchRootStack.put(taskInfo.taskId, taskInfo);
                     } else {
                         Log.w(TAG, "CarActivityManager is null, skip onTaskAppeared: TaskInfo"
                                 + " = " + taskInfo);
@@ -144,7 +148,7 @@ public final class TaskViewManager {
                                 // the correct size.
                                 // TODO(b/234879199): Explore more for a better solution.
                                 taskView.onLocationChanged();
-                                taskView.onTaskInfoChanged(taskInfo);
+                                taskView.dispatchTaskInfoChanged(taskInfo);
                             }
                             // Semi-controlled apps are assumed to be Distraction optimised and
                             // hence not reported to CarActivityManager.
@@ -157,8 +161,14 @@ public final class TaskViewManager {
                     CarActivityManager carAm = mCarActivityManagerRef.get();
                     if (carAm != null) {
                         carAm.onTaskInfoChanged(taskInfo);
+                        if (taskInfo.isVisible && mLaunchRootStack.containsKey(taskInfo.taskId)) {
+                            // Remove the task and insert again so that it jumps to the end of
+                            // the queue.
+                            mLaunchRootStack.remove(taskInfo.taskId);
+                            mLaunchRootStack.put(taskInfo.taskId, taskInfo);
+                        }
                     } else {
-                        Log.w(TAG, "CarActivityManager is null, skip onTaskAppeared: TaskInfo"
+                        Log.w(TAG, "CarActivityManager is null, skip onTaskInfoChanged: TaskInfo"
                                 + " = " + taskInfo);
                     }
                 }
@@ -168,7 +178,7 @@ public final class TaskViewManager {
                     for (SemiControlledCarTaskView taskView : mSemiControlledTaskViews) {
                         if (taskView.getCallbacks().shouldStartInTaskView(taskInfo)) {
                             if (taskView.isInitialized()) {
-                                taskView.onTaskVanished(taskInfo);
+                                taskView.dispatchTaskVanished(taskInfo);
                             }
                             return;
                         }
@@ -177,10 +187,40 @@ public final class TaskViewManager {
                     CarActivityManager carAm = mCarActivityManagerRef.get();
                     if (carAm != null) {
                         carAm.onTaskVanished(taskInfo);
+                        if (mLaunchRootStack.containsKey(taskInfo.taskId)) {
+                            mLaunchRootStack.remove(taskInfo.taskId);
+                        }
                     } else {
                         Log.w(TAG, "CarActivityManager is null, skip onTaskAppeared: TaskInfo"
                                 + " = " + taskInfo);
                     }
+                }
+
+                @Override
+                public void onBackPressedOnTaskRoot(ActivityManager.RunningTaskInfo taskInfo) {
+                    for (SemiControlledCarTaskView taskView : mSemiControlledTaskViews) {
+                        if (taskView.getCallbacks().shouldStartInTaskView(taskInfo)) {
+                            // Do nothing
+                            Log.d(TAG, "onBackPressedOnTaskRoot received for a "
+                                    + "SemiControlledCarTaskView, do nothing.");
+                            return;
+                        }
+                    }
+                    if (mLaunchRootStack.size() == 1) {
+                        Log.d(TAG, "Cannot remove last task from launch root.");
+                        return;
+                    }
+                    if (mLaunchRootStack.size() == 0) {
+                        Log.d(TAG, "Launch root is empty, do nothing.");
+                        return;
+                    }
+
+                    ActivityManager.RunningTaskInfo topTask = getTopTaskInLaunchRootTask();
+                    WindowContainerTransaction wct = new WindowContainerTransaction();
+                    // removeTask() will trigger onTaskVanished which will remove the task locally
+                    // from mLaunchRootStack
+                    wct.removeTask(topTask.token);
+                    mSyncQueue.queue(wct);
                 }
             };
 
@@ -213,17 +253,21 @@ public final class TaskViewManager {
                 Log.d(TAG, "onActivityRestartAttempt: taskId=" + task.taskId
                         + ", homeTaskVisible=" + homeTaskVisible + ", wasVisible=" + wasVisible);
             }
-            if (homeTaskVisible && mHostTaskId == task.taskId) {
-                for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
-                    ControlledCarTaskView taskView = mControlledTaskViews.get(i);
-                    // In the case of CarLauncher, this code handles the case where Home Intent is
-                    // sent when CarLauncher is foreground and the task in a ControlledTaskView is
-                    // crashed.
-                    if (taskView.getTaskId() == INVALID_TASK_ID) {
-                        taskView.startActivity();
-                    }
-                }
+            if (mHostTaskId != task.taskId) {
+                return;
             }
+            WindowContainerTransaction wct = new WindowContainerTransaction();
+            for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
+                // showEmbeddedTasks() will restart the crashed tasks too.
+                mControlledTaskViews.get(i).showEmbeddedTask(wct);
+            }
+            if (mLaunchRootCarTaskView != null) {
+                mLaunchRootCarTaskView.showEmbeddedTask(wct);
+            }
+            for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
+                mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
+            }
+            mSyncQueue.queue(wct);
         }
     };
 
@@ -520,39 +564,13 @@ public final class TaskViewManager {
             new ActivityLifecycleCallbacks() {
                 @Override
                 public void onActivityCreated(@NonNull Activity activity,
-                        @Nullable Bundle savedInstanceState) {
-                    if (DBG) {
-                        Log.d(TAG, "Host activity created");
-                    }
-                }
+                        @Nullable Bundle savedInstanceState) {}
 
                 @Override
-                public void onActivityStarted(@NonNull Activity activity) {
-                    if (DBG) {
-                        Log.d(TAG, "Host activity started");
-                    }
-                }
+                public void onActivityStarted(@NonNull Activity activity) {}
 
                 @Override
-                public void onActivityResumed(@NonNull Activity activity) {
-                    Log.d(TAG, "Host activity resumed");
-                    if (activity != mContext) {
-                        return;
-                    }
-                    mShellExecutor.execute(() -> {
-                        WindowContainerTransaction wct = new WindowContainerTransaction();
-                        for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
-                            mControlledTaskViews.get(i).showEmbeddedTask(wct);
-                        }
-                        if (mLaunchRootCarTaskView != null) {
-                            mLaunchRootCarTaskView.showEmbeddedTask(wct);
-                        }
-                        for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
-                            mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
-                        }
-                        mSyncQueue.queue(wct);
-                    });
-                }
+                public void onActivityResumed(@NonNull Activity activity) {}
 
                 @Override
                 public void onActivityPaused(@NonNull Activity activity) {}
@@ -606,5 +624,24 @@ public final class TaskViewManager {
     /** Only meant for testing, should not be used by real code. */
     void setTaskViewInputInterceptor(TaskViewInputInterceptor taskViewInputInterceptor) {
         mTaskViewInputInterceptor = taskViewInputInterceptor;
+    }
+
+    //TODO(b/266154272): Move this logic inside LaunchRootCarTaskView
+    public int getRootTaskCount() {
+        return mLaunchRootStack.size();
+    }
+
+    /**
+     * Returns the {@link android.app.ActivityManager.RunningTaskInfo} of the top task inside the
+     * launch root car task view.
+     */
+    @VisibleForTesting
+    public ActivityManager.RunningTaskInfo getTopTaskInLaunchRootTask() {
+        if (mLaunchRootStack.size() == 0) {
+            return null;
+        }
+        ActivityManager.RunningTaskInfo[] infos = mLaunchRootStack.values().toArray(
+                new ActivityManager.RunningTaskInfo[mLaunchRootStack.size()]);
+        return infos[infos.length - 1];
     }
 }

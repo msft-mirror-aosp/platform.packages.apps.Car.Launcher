@@ -16,9 +16,14 @@
 
 package com.android.car.carlauncher;
 
+import static android.content.Intent.URI_INTENT_SCHEME;
+
+import static com.android.car.carlauncher.AppGridConstants.AppItemBoundDirection;
+import static com.android.car.carlauncher.AppGridConstants.PageOrientation;
 import static com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_LAUNCHABLES;
 import static com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_MEDIA_SERVICES;
 
+import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
@@ -38,33 +43,49 @@ import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.DragEvent;
+import android.view.SurfaceControl;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.carlauncher.AppLauncherUtils.LauncherAppsInfo;
+import com.android.car.carlauncher.pagination.PageMeasurementHelper;
+import com.android.car.carlauncher.pagination.PaginationController;
+import com.android.car.carlauncher.recyclerview.AppGridAdapter;
+import com.android.car.carlauncher.recyclerview.AppGridItemAnimator;
+import com.android.car.carlauncher.recyclerview.AppGridLayoutManager;
+import com.android.car.carlauncher.recyclerview.AppItemViewHolder;
 import com.android.car.ui.AlertDialogBuilder;
 import com.android.car.ui.FocusArea;
 import com.android.car.ui.baselayout.Insets;
 import com.android.car.ui.baselayout.InsetsChangedListener;
 import com.android.car.ui.core.CarUi;
-import com.android.car.ui.recyclerview.CarUiRecyclerView;
 import com.android.car.ui.shortcutspopup.CarUiShortcutsPopup;
 import com.android.car.ui.toolbar.MenuItem;
 import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.ToolbarController;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,17 +100,16 @@ import java.util.concurrent.Executors;
  * Launcher activity that shows a grid of apps.
  */
 public class AppGridActivity extends AppCompatActivity implements InsetsChangedListener,
-        AppLauncherUtils.ShortcutsListener {
+        AppGridPageSnapper.PageSnapListener, AppItemViewHolder.AppItemDragListener,
+        AppLauncherUtils.ShortcutsListener, PaginationController.DimensionUpdateListener {
     private static final String TAG = "AppGridActivity";
     private static final String MODE_INTENT_EXTRA = "com.android.car.carlauncher.mode";
+    private static CarUiShortcutsPopup sCarUiShortcutsPopup;
 
-    private int mColumnNumber;
     private boolean mShowAllApps = true;
-    private boolean mShowRecentApps = true;
     private boolean mShowToolbar = true;
     private final Set<String> mHiddenApps = new HashSet<>();
     private final Set<String> mCustomMediaComponents = new HashSet<>();
-    private AppGridAdapter mGridAdapter;
     private PackageManager mPackageManager;
     private UsageStatsManager mUsageStatsManager;
     private AppInstallUninstallReceiver mInstallUninstallReceiver;
@@ -97,11 +117,40 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     private CarUxRestrictionsManager mCarUxRestrictionsManager;
     private CarPackageManager mCarPackageManager;
     private CarMediaManager mCarMediaManager;
-    private CarUiShortcutsPopup mCarUiShortcutsPopup;
     private Mode mMode;
     private AlertDialog mStopAppAlertDialog;
     private LauncherAppsInfo mAppsInfo;
     private LauncherViewModel mLauncherModel;
+    private AppGridAdapter mAdapter;
+    private AppGridRecyclerView mRecyclerView;
+    private PageIndicator mPageIndicator;
+    private AppGridLayoutManager mLayoutManager;
+    private boolean mIsCurrentlyDragging;
+    private long mOffPageHoverBeforeScrollMs;
+
+    private AppGridDragController mAppGridDragController;
+    private PaginationController mPaginationController;
+
+    private int mNumOfRows;
+    private int mNumOfCols;
+    private int mAppGridMarginHorizontal;
+    private int mAppGridMarginVertical;
+    private int mAppGridWidth;
+    private int mAppGridHeight;
+    @PageOrientation
+    private int mPageOrientation;
+
+    private int mCurrentScrollOffset;
+    private int mCurrentScrollState;
+    private int mNextScrollDestination;
+    private RecyclerView.ItemDecoration mPageMarginDecorator;
+    private AppGridPageSnapper.AppGridPageSnapCallback mSnapCallback;
+    private AppItemViewHolder.AppItemDragCallback mDragCallback;
+
+    private Messenger mMirroringService;
+    private Messenger mMessenger;
+    private String mMirroringPackageName;
+    private Intent mMirroringIntentRedirect;
 
     /**
      * enum to define the state of display area possible.
@@ -152,13 +201,13 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                     isDistractionOptimizationRequired = carUxRestrictions
                             .isRequiresDistractionOptimization();
                 }
-                mGridAdapter
-                        .setIsDistractionOptimizationRequired(isDistractionOptimizationRequired);
-                mCarUxRestrictionsManager.registerListener(
-                        restrictionInfo ->
-                                mGridAdapter.setIsDistractionOptimizationRequired(
-                                        restrictionInfo.isRequiresDistractionOptimization()));
-
+                mAdapter.setIsDistractionOptimizationRequired(isDistractionOptimizationRequired);
+                // set listener to update the app grid components and apply interaction restrictions
+                // when driving state changes
+                mCarUxRestrictionsManager.registerListener(restrictionInfo -> {
+                    handleDistractionOptimization(/* requiresDistractionOptimization */
+                            restrictionInfo.isRequiresDistractionOptimization());
+                });
                 mCarPackageManager = (CarPackageManager) mCar.getCarManager(Car.PACKAGE_SERVICE);
                 mCarMediaManager = (CarMediaManager) mCar.getCarManager(Car.CAR_MEDIA_SERVICE);
                 initializeLauncherModel();
@@ -174,9 +223,30 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         }
     };
 
+    /**
+     * Updates the state of the app grid components depending on the driving state.
+     */
+    private void handleDistractionOptimization(boolean requiresDistractionOptimization) {
+        mAdapter.setIsDistractionOptimizationRequired(requiresDistractionOptimization);
+        if (requiresDistractionOptimization) {
+            // if the user start driving while drag is in action, we cancel existing drag operations
+            if (mIsCurrentlyDragging) {
+                mIsCurrentlyDragging = false;
+                mLayoutManager.setShouldLayoutChildren(true);
+                mRecyclerView.cancelDragAndDrop();
+            }
+            dismissForceStopMenus();
+        }
+    }
+
     private void initializeLauncherModel() {
         ExecutorService fetchOrderExecutorService = Executors.newSingleThreadExecutor();
         fetchOrderExecutorService.execute(() -> {
+            //If the order file is deleted, we need to reset the flag
+            if (!mLauncherModel.doesFileExist() && mLauncherModel.isCustomized()) {
+                mLauncherModel.setCustomized(false);
+                mLauncherModel.setAppOrderRead(false);
+            }
             mLauncherModel.updateAppsOrder();
             fetchOrderExecutorService.shutdown();
         });
@@ -193,7 +263,9 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                     mPackageManager,
                     new AppLauncherUtils.VideoAppPredicate(mPackageManager),
                     mCarMediaManager,
-                    AppGridActivity.this);
+                    AppGridActivity.this,
+                    mMirroringPackageName,
+                    mMirroringIntentRedirect);
             mLauncherModel.generateAlphabetizedAppOrder(mAppsInfo);
             alphabetizeExecutorService.shutdown();
         });
@@ -201,7 +273,8 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        mShowToolbar = getResources().getBoolean(R.bool.car_app_show_toolbar);
+        // TODO (b/267548246) deprecate toolbar and find another way to hide debug apps
+        mShowToolbar = false;
         if (mShowToolbar) {
             setTheme(R.style.Theme_Launcher_AppGridActivity);
         } else {
@@ -209,11 +282,8 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         }
         super.onCreate(savedInstanceState);
 
-        mColumnNumber = getResources().getInteger(R.integer.car_app_selector_column_number);
-        mShowRecentApps = getResources().getBoolean(R.bool.car_app_show_recent_apps);
         mPackageManager = getPackageManager();
         mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        mGridAdapter = new AppGridAdapter(this);
         mLauncherModel = new ViewModelProvider(AppGridActivity.this,
                 new LauncherViewModelFactory(getFilesDir())).get(
                 LauncherViewModel.class);
@@ -221,8 +291,14 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                 AppGridActivity.this, new Observer<List<LauncherItem>>() {
                     @Override
                     public void onChanged(List<LauncherItem> launcherItems) {
-                        mGridAdapter.setLauncherItems(launcherItems);
-                        mLauncherModel.maybeSaveAppsOrder();
+                        mAdapter.setLauncherItems(launcherItems);
+                        mNextScrollDestination = mSnapCallback.getSnapPosition();
+                        updateScrollState();
+                        //TODO: b/275079533 Disable drag and drop ability in AppGrid with
+                        // only Media apps
+                        if (mMode == Mode.ALL_APPS) {
+                            mLauncherModel.maybeSaveAppsOrder();
+                        }
                     }
                 }
         );
@@ -230,10 +306,46 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         mHiddenApps.addAll(Arrays.asList(getResources().getStringArray(R.array.hidden_apps)));
         mCustomMediaComponents.addAll(
                 Arrays.asList(getResources().getStringArray(R.array.custom_media_packages)));
-
         setContentView(R.layout.app_grid_activity);
-
         updateMode();
+
+        ServiceConnection mirroringConnectionListener = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                Log.d(TAG, "Mirroring service connected");
+                mMirroringService = new Messenger(service);
+                mMessenger = new Messenger(new IncomingHandler(Looper.getMainLooper()));
+                Message msg = Message.obtain(null, getResources()
+                        .getInteger(R.integer.config_msg_register_mirroring_pkg_code));
+                msg.replyTo = mMessenger;
+                try {
+                    mMirroringService.send(msg);
+                } catch (RemoteException e) {
+                    Log.d(TAG, "Exception sending message to mirroring service: " + e);
+                }
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                Log.d(TAG, "Mirroring service disconnected");
+                mMirroringPackageName = null;
+                mMirroringIntentRedirect = null;
+            }
+        };
+
+        // Bind to service that will inform about apps that are being mirrored
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(new ComponentName(
+                    getString(R.string.config_msg_mirroring_service_pkg_name),
+                    getString(R.string.config_msg_mirroring_service_class_name)));
+            if (mPackageManager.resolveService(intent, /* flags = */ 0) != null) {
+                bindService(intent, mirroringConnectionListener,
+                        BIND_AUTO_CREATE | BIND_IMPORTANT);
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Error binding to mirroring service: " + e);
+        }
 
         if (mShowToolbar) {
             ToolbarController toolbar = CarUi.requireToolbar(this);
@@ -249,35 +361,81 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                             i.setTitle(mShowAllApps
                                     ? R.string.hide_debug_apps
                                     : R.string.show_debug_apps);
-                            initializeLauncherModel();
                         })
                         .build()));
             }
         }
-        CarUiRecyclerView gridView = requireViewById(R.id.apps_grid);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, mColumnNumber);
-        gridLayoutManager.setSpanSizeLookup(new SpanSizeLookup() {
-            @Override
-            public int getSpanSize(int position) {
-                return mGridAdapter.getSpanSizeLookup(position);
-            }
-        });
-        gridView.setLayoutManager(gridLayoutManager);
-        gridView.setAdapter(mGridAdapter);
-        gridView.addOnScrollListener(new CarUiRecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(CarUiRecyclerView carUiRecyclerView, int i, int i1) {
-                if (mCarUiShortcutsPopup != null) {
-                    mCarUiShortcutsPopup.dismiss();
-                    mCarUiShortcutsPopup = null;
-                }
-            }
 
+        mSnapCallback = new AppGridPageSnapper.AppGridPageSnapCallback(this);
+        mDragCallback = new AppItemViewHolder.AppItemDragCallback(this);
+
+        mNumOfCols = getResources().getInteger(R.integer.car_app_selector_column_number);
+        mNumOfRows = getResources().getInteger(R.integer.car_app_selector_row_number);
+        mAppGridDragController = new AppGridDragController();
+        mOffPageHoverBeforeScrollMs = getResources().getInteger(
+                R.integer.ms_off_page_hover_before_scroll);
+
+        mPageOrientation = getResources().getBoolean(R.bool.use_vertical_app_grid)
+                ? PageOrientation.VERTICAL : PageOrientation.HORIZONTAL;
+
+        mRecyclerView = requireViewById(R.id.apps_grid);
+        mRecyclerView.setFocusable(false);
+        mLayoutManager = new AppGridLayoutManager(this, mNumOfCols, mNumOfRows, mPageOrientation);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
+        AppGridPageSnapper pageSnapper = new AppGridPageSnapper(this, mSnapCallback);
+        pageSnapper.attachToRecyclerView(mRecyclerView);
+
+        mRecyclerView.setItemAnimator(new AppGridItemAnimator());
+
+        // hide the default scrollbar and replace it with a visual page indicator
+        mRecyclerView.setVerticalScrollBarEnabled(false);
+        mRecyclerView.setHorizontalScrollBarEnabled(false);
+        mRecyclerView.addOnScrollListener(new AppGridOnScrollListener());
+
+        // TODO: (b/271637411) move this to be contained in a scroll controller
+        mPageIndicator = requireViewById(R.id.page_indicator);
+        FrameLayout pageIndicatorContainer = requireViewById(R.id.page_indicator_container);
+        mPageIndicator.setContainer(pageIndicatorContainer);
+
+        // recycler view is set to LTR to prevent layout manager from reassigning layout direction.
+        // instead, PageIndexinghelper will determine the grid index based on the system layout
+        // direction and provide LTR mapping at adapter level.
+        mRecyclerView.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        pageIndicatorContainer.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+        // we create but do not attach the adapter to recyclerview until view tree layout is
+        // complete and the total size of the app grid is measureable.
+        mAdapter = new AppGridAdapter(this, mNumOfCols, mNumOfRows,
+                /* dataModel */ mLauncherModel, /* dragCallback */ mDragCallback,
+                /* snapCallback */ mSnapCallback);
+        mAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
-            public void onScrollStateChanged(CarUiRecyclerView carUiRecyclerView, int i) {
-                //do nothing
+            public void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
+                // scroll state will need to be updated after item has been dropped
+                mNextScrollDestination = mSnapCallback.getSnapPosition();
+                updateScrollState();
             }
         });
+        mRecyclerView.setAdapter(mAdapter);
+
+        // set drag listener and global layout listener, which will dynamically adjust app grid
+        // height and width depending on device screen size.
+        if (getResources().getBoolean(R.bool.config_allow_reordering)) {
+            mRecyclerView.setOnDragListener(new AppGridDragListener());
+        }
+
+        // since some measurements for window size may not be available yet during onCreate or may
+        // later change, we add a listener that redraws the app grid when window size changes.
+        LinearLayout windowBackground = requireViewById(R.id.apps_grid_background);
+        windowBackground.setOrientation(
+                isHorizontal() ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        PaginationController.DimensionUpdateCallback dimensionUpdateCallback =
+                new PaginationController.DimensionUpdateCallback();
+        dimensionUpdateCallback.addListener(mRecyclerView);
+        dimensionUpdateCallback.addListener(mPageIndicator);
+        dimensionUpdateCallback.addListener(this);
+        mPaginationController = new PaginationController(windowBackground, dimensionUpdateCallback);
     }
 
     @Override
@@ -285,6 +443,9 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         super.onNewIntent(intent);
         setIntent(intent);
         updateMode();
+        if (mCar.isConnected()) {
+            initializeLauncherModel();
+        }
     }
 
     @Override
@@ -293,6 +454,18 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
             mCar.disconnect();
             mCar = null;
         }
+
+        if (mMirroringService != null) {
+            Message msg = Message.obtain(null,
+                    getResources().getInteger(R.integer.config_msg_unregister_mirroring_pkg_code));
+            msg.replyTo = mMessenger;
+            try {
+                mMirroringService.send(msg);
+            } catch (RemoteException e) {
+                Log.d(TAG, "Exception sending message to mirroring service: " + e);
+            }
+        }
+
         super.onDestroy();
     }
 
@@ -302,6 +475,11 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         if (mShowToolbar) {
             CarUi.requireToolbar(this).setTitle(mMode.mTitleStringId);
         }
+    }
+
+    @VisibleForTesting
+    boolean isHorizontal() {
+        return AppGridConstants.isHorizontal(mPageOrientation);
     }
 
     /**
@@ -321,6 +499,41 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     @Override
     protected void onResume() {
         super.onResume();
+        updateScrollState();
+        mAdapter.setLayoutDirection(getResources().getConfiguration().getLayoutDirection());
+    }
+
+    @Override
+    public void onDimensionsUpdated(PageMeasurementHelper.PageDimensions pageDimens,
+            PageMeasurementHelper.GridDimensions gridDimens) {
+        // TODO(b/271637411): move this method into a scroll controller
+        mAppGridMarginHorizontal = pageDimens.marginHorizontalPx;
+        mAppGridMarginVertical = pageDimens.marginVerticalPx;
+        mAppGridWidth = gridDimens.gridWidthPx;
+        mAppGridHeight = gridDimens.gridHeightPx;
+    }
+
+    /**
+     * Updates the scroll state after receiving data changes, such as new apps being added or
+     * reordered, and when user returns to launcher onResume.
+     *
+     * Additionally, notify page indicator to handle resizing in case new app addition creates a
+     * new page or deleted a page.
+     */
+    void updateScrollState() {
+        // TODO(b/271637411): move this method into a scroll controller
+        // to calculate how many pages we need to offset, we use the scroll offset anchor position
+        // as item count and map to the page which the anchor is on.
+        int offsetPageCount = mAdapter.getPageCount(mNextScrollDestination + 1) - 1;
+        mRecyclerView.suppressLayout(false);
+        mCurrentScrollOffset = offsetPageCount * (isHorizontal()
+                ? (mAppGridWidth + 2 * mAppGridMarginHorizontal)
+                : (mAppGridHeight + 2 * mAppGridMarginVertical));
+        mLayoutManager.scrollToPositionWithOffset(/* position */
+                offsetPageCount * mNumOfRows * mNumOfCols, /* offset */ 0);
+
+        mPageIndicator.updateOffset(mCurrentScrollOffset);
+        mPageIndicator.updatePageCount(mAdapter.getPageCount());
     }
 
     @Override
@@ -363,14 +576,46 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
     @Override
     protected void onPause() {
-        if (mCarUiShortcutsPopup != null) {
-            mCarUiShortcutsPopup.dismissImmediate();
-            mCarUiShortcutsPopup = null;
-        }
-        if (mStopAppAlertDialog != null) {
-            mStopAppAlertDialog.dismiss();
-        }
+        dismissForceStopMenus();
         super.onPause();
+    }
+
+    @Override
+    public void onSnapToPosition(int position) {
+        mNextScrollDestination = position;
+    }
+
+    @Override
+    public void onItemLongPressed(boolean isLongPressed) {
+        // after the user long presses the app icon, scrolling should be disabled until long press
+        // is canceled as to allow MotionEvent to be interpreted as attempt to drag the app icon.
+        mRecyclerView.suppressLayout(isLongPressed);
+    }
+
+    @Override
+    public void onItemSelected(int gridPositionFrom) {
+        mIsCurrentlyDragging = true;
+        mLayoutManager.setShouldLayoutChildren(false);
+        mAdapter.setDragStartPoint(gridPositionFrom);
+        dismissShortcutPopup();
+    }
+
+    @Override
+    public void onItemDragged() {
+        mAppGridDragController.cancelDelayedPageFling();
+    }
+
+    @Override
+    public void onDragExited(int gridPosition, @AppItemBoundDirection int exitDirection) {
+        if (mAdapter.getOffsetBoundDirection(gridPosition) == exitDirection) {
+            mAppGridDragController.postDelayedPageFling(exitDirection);
+        }
+    }
+
+    @Override
+    public void onItemDropped(int gridPositionFrom, int gridPositionTo) {
+        mLayoutManager.setShouldLayoutChildren(true);
+        mAdapter.moveAppItem(gridPositionFrom, gridPositionTo);
     }
 
     /**
@@ -403,7 +648,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         int currentIndex = 0;
         int itemsAdded = 0;
         int statsSize = stats.size();
-        int itemCount = Math.min(mColumnNumber, statsSize);
+        int itemCount = Math.min(mNumOfCols, statsSize);
         while (itemsAdded < itemCount && currentIndex < statsSize) {
             UsageStats usageStats = stats.get(currentIndex);
             String packageName = usageStats.mPackageName;
@@ -457,7 +702,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
     @Override
     public void onShortcutsShow(CarUiShortcutsPopup carUiShortcutsPopup) {
-        mCarUiShortcutsPopup = carUiShortcutsPopup;
+        sCarUiShortcutsPopup = carUiShortcutsPopup;
     }
 
     @Override
@@ -485,6 +730,25 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
+    private void dismissShortcutPopup() {
+        // TODO (b/268563442): shortcut popup is set to be static since its
+        // sometimes recreated when taskview is present, find out why
+        if (sCarUiShortcutsPopup != null) {
+            sCarUiShortcutsPopup.dismiss();
+            sCarUiShortcutsPopup = null;
+        }
+    }
+
+    private void dismissForceStopMenus() {
+        if (sCarUiShortcutsPopup != null) {
+            sCarUiShortcutsPopup.dismissImmediate();
+            sCarUiShortcutsPopup = null;
+        }
+        if (mStopAppAlertDialog != null) {
+            mStopAppAlertDialog.dismiss();
+        }
+    }
+
     /**
      * Comparator for {@link UsageStats} that sorts the list by the "last time used" property
      * in descending order.
@@ -506,32 +770,168 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                 Log.e(TAG, "System sent an empty app install/uninstall broadcast");
                 return;
             }
+            // TODO b/256684061: find better way to get AppInfo from package name.
+            initializeLauncherModel();
+        }
+    }
 
-            if (intent.getAction().equals(Intent.ACTION_PACKAGE_ADDED)) {
-                // TODO b/256684061: find better way to get AppInfo from package name.
-                Set<String> appsToHide = mShowAllApps ? Collections.emptySet() : mHiddenApps;
-                mAppsInfo = AppLauncherUtils.getLauncherApps(getApplicationContext(),
-                        appsToHide,
-                        mCustomMediaComponents,
-                        mMode.mAppTypes,
-                        mMode.mOpenMediaCenter,
-                        getSystemService(LauncherApps.class),
-                        mCarPackageManager,
-                        mPackageManager,
-                        new AppLauncherUtils.VideoAppPredicate(mPackageManager),
-                        mCarMediaManager,
-                        AppGridActivity.this);
-                List<AppMetaData> apps = mAppsInfo.getLaunchableComponentsList();
-                AppMetaData appToInstall = apps.stream().filter(
-                        app -> packageName.equals(app.getPackageName())).findAny().orElse(null);
-                if (appToInstall != null) {
-                    mLauncherModel.addPackage(appToInstall);
+    private class AppGridOnScrollListener extends RecyclerView.OnScrollListener {
+        @Override
+        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+            mCurrentScrollOffset = mCurrentScrollOffset + (isHorizontal() ? dx : dy);
+            mPageIndicator.updateOffset(mCurrentScrollOffset);
+        }
+
+        @Override
+        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+            mCurrentScrollState = newState;
+            mSnapCallback.setScrollState(mCurrentScrollState);
+            switch (newState) {
+                case RecyclerView.SCROLL_STATE_DRAGGING:
+                    if (!mIsCurrentlyDragging) {
+                        mDragCallback.cancelDragTasks();
+                    }
+                    dismissShortcutPopup();
+                    mPageIndicator.animateAppearance();
+                    break;
+
+                case RecyclerView.SCROLL_STATE_SETTLING:
+                    mPageIndicator.animateAppearance();
+                    break;
+
+                case RecyclerView.SCROLL_STATE_IDLE:
+                    if (mIsCurrentlyDragging) {
+                        mLayoutManager.setShouldLayoutChildren(false);
+                    }
+                    mPageIndicator.animateFading();
+                    // in case the recyclerview was scrolled by rotary input, we need to handle
+                    // focusing the correct element: either on the first or last element on page
+                    mRecyclerView.maybeHandleRotaryFocus();
+            }
+        }
+    }
+
+    private class AppGridDragController {
+        // TODO: (b/271320404) move DragController to separate directory called dragndrop and
+        // migrate logic this class and AppItemViewHolder there.
+        private final Handler mHandler;
+
+        AppGridDragController() {
+            mHandler = new Handler(getMainLooper());
+        }
+
+        void cancelDelayedPageFling() {
+            mHandler.removeCallbacksAndMessages(null);
+        }
+
+        void postDelayedPageFling(@AppItemBoundDirection int exitDirection) {
+            boolean scrollToNextPage = isHorizontal()
+                    ? exitDirection == AppItemBoundDirection.RIGHT
+                    : exitDirection == AppItemBoundDirection.BOTTOM;
+            mHandler.removeCallbacksAndMessages(null);
+            mHandler.postDelayed(new Runnable() {
+                public void run() {
+                    if (mCurrentScrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                        mAdapter.updatePageScrollDestination(scrollToNextPage);
+                        mNextScrollDestination = mSnapCallback.getSnapPosition();
+
+                        mLayoutManager.setShouldLayoutChildren(true);
+                        mRecyclerView.smoothScrollToPosition(mNextScrollDestination);
+                    }
+                    // another delayed scroll will be queued to enable the user to input multiple
+                    // page scrolls by holding the recyclerview at the app grid margin
+                    postDelayedPageFling(exitDirection);
                 }
-            } else if (intent.getAction().equals(Intent.ACTION_PACKAGE_REMOVED)) {
-                AppItem item = (AppItem) mLauncherModel.getLauncherItemMap().get(packageName);
-                if (item != null) {
-                    mLauncherModel.removePackage(item.getAppMetaData());
+            }, mOffPageHoverBeforeScrollMs);
+        }
+    }
+
+    /**
+     * Private onDragListener for handling dispatching off page scroll event when user holds the app
+     * icon at the page margin.
+     */
+    private class AppGridDragListener implements View.OnDragListener {
+        @Override
+        public boolean onDrag(View v, DragEvent event) {
+            int action = event.getAction();
+            if (action == DragEvent.ACTION_DROP || action == DragEvent.ACTION_DRAG_ENDED) {
+                mIsCurrentlyDragging = false;
+                mAppGridDragController.cancelDelayedPageFling();
+                mDragCallback.resetCallbackState();
+                mLayoutManager.setShouldLayoutChildren(true);
+                if (action == DragEvent.ACTION_DROP) {
+                    return false;
+                } else {
+                    animateDropEnded(event.getDragSurface());
                 }
+            }
+            return true;
+        }
+    }
+
+    private void animateDropEnded(@Nullable SurfaceControl dragSurface) {
+        if (dragSurface == null) {
+            return;
+        }
+        // update default animation for the drag shadow after user lifts their finger
+        SurfaceControl.Transaction txn = new SurfaceControl.Transaction();
+        // set an animator to animate a delay before clearing the dragSurface
+        ValueAnimator delayedDismissAnimator = ValueAnimator.ofFloat(0f, 1f);
+        delayedDismissAnimator.setStartDelay(
+                getResources().getInteger(R.integer.ms_drop_animation_delay));
+        delayedDismissAnimator.addUpdateListener(
+                new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        txn.setAlpha(dragSurface, 0);
+                        txn.apply();
+                    }
+                });
+        delayedDismissAnimator.start();
+    }
+
+    @VisibleForTesting
+    void setCarUxRestrictionsManager(CarUxRestrictionsManager carUxRestrictionsManager) {
+        mCarUxRestrictionsManager = carUxRestrictionsManager;
+    }
+
+    @VisibleForTesting
+    void setPageIndicator(PageIndicator pageIndicator) {
+        mPageIndicator = pageIndicator;
+    }
+
+    class IncomingHandler extends Handler {
+
+        int mSendMirroringPkgCode = getResources()
+                .getInteger(R.integer.config_msg_send_mirroring_pkg_code);
+        String mMirroringPkgNameKey = getString(R.string.config_msg_mirroring_pkg_name_key);
+        String mMirroringRedirectUriKey = getString(R.string.config_msg_mirroring_redirect_uri_key);
+
+        IncomingHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Log.d(TAG, "Message received: " + msg);
+            if (msg.what
+                    == mSendMirroringPkgCode) {
+                Bundle bundle = (Bundle) msg.obj;
+                mMirroringPackageName =
+                        bundle.getString(mMirroringPkgNameKey);
+                Log.d(TAG, "message received with package name = " + mMirroringPackageName);
+                try {
+                    mMirroringIntentRedirect = Intent.parseUri(
+                            bundle.getString(mMirroringRedirectUriKey),
+                            URI_INTENT_SCHEME);
+                    Log.d(TAG, "intent is: " + mMirroringIntentRedirect);
+                    mLauncherModel.updateMirroringItem(mMirroringPackageName,
+                            mMirroringIntentRedirect);
+                } catch (URISyntaxException e) {
+                    Log.d(TAG, "Error parsing mirroring redirect intent " + e);
+                }
+            } else {
+                super.handleMessage(msg);
             }
         }
     }

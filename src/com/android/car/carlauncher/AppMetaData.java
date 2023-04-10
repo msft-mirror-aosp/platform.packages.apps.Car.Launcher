@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  * intent to either open the app or the media center (for media services).
  */
 
-final class AppMetaData {
+public final class AppMetaData {
     // The display name of the app
     @Nullable
     private final String mDisplayName;
@@ -39,6 +39,7 @@ final class AppMetaData {
     private final ComponentName mComponentName;
     private final Drawable mIcon;
     private final boolean mIsDistractionOptimized;
+    private final boolean mIsMirroring;
     private final Consumer<Context> mLaunchCallback;
     private final Consumer<Pair<Context, View>> mAlternateLaunchCallback;
 
@@ -58,18 +59,24 @@ final class AppMetaData {
             ComponentName componentName,
             Drawable icon,
             boolean isDistractionOptimized,
+            boolean isMirroring,
             Consumer<Context> launchCallback,
             Consumer<Pair<Context, View>> alternateLaunchCallback) {
         mDisplayName = displayName == null ? "" : displayName.toString();
         mComponentName = componentName;
         mIcon = icon;
         mIsDistractionOptimized = isDistractionOptimized;
+        mIsMirroring = isMirroring;
         mLaunchCallback = launchCallback;
         mAlternateLaunchCallback = alternateLaunchCallback;
     }
 
     public String getDisplayName() {
         return mDisplayName;
+    }
+
+    public String getClassName() {
+        return getComponentName().getClassName();
     }
 
     public String getPackageName() {
@@ -80,11 +87,11 @@ final class AppMetaData {
         return mComponentName;
     }
 
-    Consumer<Context> getLaunchCallback() {
+    public Consumer<Context> getLaunchCallback() {
         return mLaunchCallback;
     }
 
-    Consumer<Pair<Context, View>> getAlternateLaunchCallback() {
+    public Consumer<Pair<Context, View>> getAlternateLaunchCallback() {
         return mAlternateLaunchCallback;
     }
 
@@ -92,8 +99,12 @@ final class AppMetaData {
         return mIcon;
     }
 
-    boolean getIsDistractionOptimized() {
+    public boolean getIsDistractionOptimized() {
         return mIsDistractionOptimized;
+    }
+
+    boolean getIsMirroring() {
+        return mIsMirroring;
     }
 
     /**
@@ -107,7 +118,8 @@ final class AppMetaData {
         if (!(o instanceof AppMetaData)) {
             return false;
         } else {
-            return ((AppMetaData) o).getComponentName().equals(mComponentName);
+            return ((AppMetaData) o).getComponentName().equals(mComponentName)
+                    && ((AppMetaData) o).getIsMirroring() == mIsMirroring;
         }
     }
 
