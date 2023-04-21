@@ -21,7 +21,6 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearSnapHelper;
 import androidx.recyclerview.widget.OrientationHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,15 +40,22 @@ public class AppGridPageSnapper extends LinearSnapHelper {
     private int mPrevFirstVisiblePos = 0;
     private AppGridPageSnapCallback mSnapCallback;
 
-    public AppGridPageSnapper(@NonNull Context context, AppGridPageSnapCallback snapCallback) {
+    public AppGridPageSnapper(
+            @NonNull Context context,
+            int numOfCol,
+            int numOfRow,
+            AppGridPageSnapCallback snapCallback) {
         mSnapCallback = snapCallback;
         mContext = context;
         mPageSnapThreshold = context.getResources().getFloat(R.dimen.page_snap_threshold);
+        mBlockSize = numOfCol * numOfRow;
     }
 
     // Orientation helpers are lazily created per LayoutManager.
     @Nullable
     private OrientationHelper mHorizontalHelper;
+    @Nullable
+    private OrientationHelper mVerticalHelper;
 
     /**
      * Finds the view to snap to. The view to snap can be either the current, next or previous page.
@@ -68,15 +74,6 @@ public class AppGridPageSnapper extends LinearSnapHelper {
             return null;
         }
 
-        if (mBlockSize == 0) {
-            int screenSize = mRecyclerView.getWidth();
-            View currentPosView = getFirstMostVisibleChild(orientationHelper);
-            int itemWidth = currentPosView.getWidth();
-            // All items have the same width
-            int numOfColumns = screenSize / itemWidth;
-            mBlockSize = numOfColumns
-                    * ((GridLayoutManager) mRecyclerView.getLayoutManager()).getSpanCount();
-        }
         View currentPosView = getFirstMostVisibleChild(orientationHelper);
         RecyclerView.ViewHolder holder = mRecyclerView.findContainingViewHolder(currentPosView);
         int adapterPos = holder.getAbsoluteAdapterPosition();
@@ -96,7 +93,6 @@ public class AppGridPageSnapper extends LinearSnapHelper {
         }
         mPrevFirstVisiblePos = posToReturn;
         mRecyclerView.smoothScrollToPosition(posToReturn);
-
         mSnapCallback.notifySnapToPosition(posToReturn);
 
         // If there is a gap between the start of the first fully visible child and the start of
@@ -109,7 +105,11 @@ public class AppGridPageSnapper extends LinearSnapHelper {
             int start = orientationHelper.getStartAfterPadding();
             int viewStart = orientationHelper.getDecoratedStart(childToReturn.itemView);
             if (viewStart - start > 0) {
-                mRecyclerView.smoothScrollBy(viewStart - start, 0);
+                if (mHorizontalHelper != null) {
+                    mRecyclerView.smoothScrollBy(viewStart - start, 0);
+                } else {
+                    mRecyclerView.smoothScrollBy(0, viewStart - start);
+                }
             }
         }
         return null;
@@ -118,7 +118,17 @@ public class AppGridPageSnapper extends LinearSnapHelper {
     @NonNull
     private OrientationHelper getOrientationHelper(
             @NonNull RecyclerView.LayoutManager layoutManager) {
-        return getHorizontalHelper(layoutManager);
+        return layoutManager.canScrollVertically() ? getVerticalHelper(layoutManager)
+                : getHorizontalHelper(layoutManager);
+    }
+
+    @NonNull
+    private OrientationHelper getVerticalHelper(
+            @NonNull RecyclerView.LayoutManager layoutManager) {
+        if (mVerticalHelper == null || mVerticalHelper.getLayoutManager() != layoutManager) {
+            mVerticalHelper = OrientationHelper.createVerticalHelper(layoutManager);
+        }
+        return mVerticalHelper;
     }
 
     @NonNull

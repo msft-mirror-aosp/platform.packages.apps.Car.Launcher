@@ -44,7 +44,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.android.car.carlauncher.homescreen.HomeCardModule;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
-import com.android.wm.shell.TaskView;
+import com.android.wm.shell.taskview.TaskView;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -179,7 +179,7 @@ public class CarLauncher extends FragmentActivity {
                                     carTaskViewController.createControlledRemoteCarTaskView(
                                             new ControlledRemoteCarTaskViewConfig.Builder()
                                                     .setActivityIntent(mapIntent)
-                                                    .setShouldAutoRestartOnCrash(true)
+                                                    .setShouldAutoRestartOnTaskRemoval(true)
                                                     .build(),
                                             getMainExecutor(),
                                             new ControlledRemoteCarTaskViewCallback() {

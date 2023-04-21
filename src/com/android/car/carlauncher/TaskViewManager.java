@@ -54,7 +54,6 @@ import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.launcher3.icons.IconProvider;
 import com.android.wm.shell.ShellTaskOrganizer;
-import com.android.wm.shell.TaskViewTransitions;
 import com.android.wm.shell.common.DisplayController;
 import com.android.wm.shell.common.HandlerExecutor;
 import com.android.wm.shell.common.SyncTransactionQueue;
@@ -66,6 +65,7 @@ import com.android.wm.shell.startingsurface.phone.PhoneStartingWindowTypeAlgorit
 import com.android.wm.shell.sysui.ShellCommandHandler;
 import com.android.wm.shell.sysui.ShellController;
 import com.android.wm.shell.sysui.ShellInit;
+import com.android.wm.shell.taskview.TaskViewTransitions;
 import com.android.wm.shell.transition.Transitions;
 
 import java.util.ArrayList;
@@ -106,6 +106,7 @@ public final class TaskViewManager {
 
     private CarUserManager mCarUserManager;
     private Activity mContext;
+    private Car mCar;
 
     private final ShellTaskOrganizer.TaskListener mRootTaskListener =
             new ShellTaskOrganizer.TaskListener() {
@@ -253,17 +254,21 @@ public final class TaskViewManager {
                 Log.d(TAG, "onActivityRestartAttempt: taskId=" + task.taskId
                         + ", homeTaskVisible=" + homeTaskVisible + ", wasVisible=" + wasVisible);
             }
-            if (homeTaskVisible && mHostTaskId == task.taskId) {
-                for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
-                    ControlledCarTaskView taskView = mControlledTaskViews.get(i);
-                    // In the case of CarLauncher, this code handles the case where Home Intent is
-                    // sent when CarLauncher is foreground and the task in a ControlledTaskView is
-                    // crashed.
-                    if (taskView.getTaskId() == INVALID_TASK_ID) {
-                        taskView.startActivity();
-                    }
-                }
+            if (mHostTaskId != task.taskId) {
+                return;
             }
+            WindowContainerTransaction wct = new WindowContainerTransaction();
+            for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
+                // showEmbeddedTasks() will restart the crashed tasks too.
+                mControlledTaskViews.get(i).showEmbeddedTask(wct);
+            }
+            if (mLaunchRootCarTaskView != null) {
+                mLaunchRootCarTaskView.showEmbeddedTask(wct);
+            }
+            for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
+                mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
+            }
+            mSyncQueue.queue(wct);
         }
     };
 
@@ -375,7 +380,7 @@ public final class TaskViewManager {
     }
 
     private void initCar() {
-        Car.createCar(/* context= */ mContext, /* handler= */ null,
+        mCar = Car.createCar(/* context= */ mContext, /* handler= */ null,
                 Car.CAR_WAIT_TIMEOUT_WAIT_FOREVER,
                 (car, ready) -> {
                     if (!ready) {
@@ -543,6 +548,10 @@ public final class TaskViewManager {
             mContext.unregisterActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
             mTaskOrganizer.unregisterOrganizer();
             mTaskViewInputInterceptor.release();
+
+            if (mCar != null) {
+                mCar.disconnect();
+            }
         });
     }
 
@@ -560,39 +569,13 @@ public final class TaskViewManager {
             new ActivityLifecycleCallbacks() {
                 @Override
                 public void onActivityCreated(@NonNull Activity activity,
-                        @Nullable Bundle savedInstanceState) {
-                    if (DBG) {
-                        Log.d(TAG, "Host activity created");
-                    }
-                }
+                        @Nullable Bundle savedInstanceState) {}
 
                 @Override
-                public void onActivityStarted(@NonNull Activity activity) {
-                    if (DBG) {
-                        Log.d(TAG, "Host activity started");
-                    }
-                }
+                public void onActivityStarted(@NonNull Activity activity) {}
 
                 @Override
-                public void onActivityResumed(@NonNull Activity activity) {
-                    Log.d(TAG, "Host activity resumed");
-                    if (activity != mContext) {
-                        return;
-                    }
-                    mShellExecutor.execute(() -> {
-                        WindowContainerTransaction wct = new WindowContainerTransaction();
-                        for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
-                            mControlledTaskViews.get(i).showEmbeddedTask(wct);
-                        }
-                        if (mLaunchRootCarTaskView != null) {
-                            mLaunchRootCarTaskView.showEmbeddedTask(wct);
-                        }
-                        for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
-                            mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
-                        }
-                        mSyncQueue.queue(wct);
-                    });
-                }
+                public void onActivityResumed(@NonNull Activity activity) {}
 
                 @Override
                 public void onActivityPaused(@NonNull Activity activity) {}
