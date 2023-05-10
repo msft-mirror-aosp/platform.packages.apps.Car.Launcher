@@ -16,6 +16,8 @@
 
 package com.android.car.carlauncher;
 
+import static android.content.Intent.URI_INTENT_SCHEME;
+
 import static com.android.car.carlauncher.AppGridConstants.AppItemBoundDirection;
 import static com.android.car.carlauncher.AppGridConstants.PageOrientation;
 import static com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_LAUNCHABLES;
@@ -39,20 +41,20 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
-import android.graphics.Canvas;
-import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.DragEvent;
 import android.view.SurfaceControl;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -67,6 +69,12 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.carlauncher.AppLauncherUtils.LauncherAppsInfo;
+import com.android.car.carlauncher.pagination.PageMeasurementHelper;
+import com.android.car.carlauncher.pagination.PaginationController;
+import com.android.car.carlauncher.recyclerview.AppGridAdapter;
+import com.android.car.carlauncher.recyclerview.AppGridItemAnimator;
+import com.android.car.carlauncher.recyclerview.AppGridLayoutManager;
+import com.android.car.carlauncher.recyclerview.AppItemViewHolder;
 import com.android.car.ui.AlertDialogBuilder;
 import com.android.car.ui.FocusArea;
 import com.android.car.ui.baselayout.Insets;
@@ -77,8 +85,7 @@ import com.android.car.ui.toolbar.MenuItem;
 import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.ToolbarController;
 
-import org.jetbrains.annotations.NotNull;
-
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -94,7 +101,7 @@ import java.util.concurrent.Executors;
  */
 public class AppGridActivity extends AppCompatActivity implements InsetsChangedListener,
         AppGridPageSnapper.PageSnapListener, AppItemViewHolder.AppItemDragListener,
-        AppLauncherUtils.ShortcutsListener {
+        AppLauncherUtils.ShortcutsListener, PaginationController.DimensionUpdateListener {
     private static final String TAG = "AppGridActivity";
     private static final String MODE_INTENT_EXTRA = "com.android.car.carlauncher.mode";
     private static CarUiShortcutsPopup sCarUiShortcutsPopup;
@@ -116,14 +123,13 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     private LauncherViewModel mLauncherModel;
     private AppGridAdapter mAdapter;
     private AppGridRecyclerView mRecyclerView;
-    private AppGridPositionIndicator mPosIndicator;
+    private PageIndicator mPageIndicator;
     private AppGridLayoutManager mLayoutManager;
-    private LinearLayout mAppGridLayout;
-    private FrameLayout mPosIndicatorContainer;
     private boolean mIsCurrentlyDragging;
     private long mOffPageHoverBeforeScrollMs;
 
     private AppGridDragController mAppGridDragController;
+    private PaginationController mPaginationController;
 
     private int mNumOfRows;
     private int mNumOfCols;
@@ -131,9 +137,8 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     private int mAppGridMarginVertical;
     private int mAppGridWidth;
     private int mAppGridHeight;
-    private int mPosIndicatorSize;
     @PageOrientation
-    private int mAppGridOrientation;
+    private int mPageOrientation;
 
     private int mCurrentScrollOffset;
     private int mCurrentScrollState;
@@ -141,6 +146,11 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     private RecyclerView.ItemDecoration mPageMarginDecorator;
     private AppGridPageSnapper.AppGridPageSnapCallback mSnapCallback;
     private AppItemViewHolder.AppItemDragCallback mDragCallback;
+
+    private Messenger mMirroringService;
+    private Messenger mMessenger;
+    private String mMirroringPackageName;
+    private Intent mMirroringIntentRedirect;
 
     /**
      * enum to define the state of display area possible.
@@ -253,7 +263,9 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                     mPackageManager,
                     new AppLauncherUtils.VideoAppPredicate(mPackageManager),
                     mCarMediaManager,
-                    AppGridActivity.this);
+                    AppGridActivity.this,
+                    mMirroringPackageName,
+                    mMirroringIntentRedirect);
             mLauncherModel.generateAlphabetizedAppOrder(mAppsInfo);
             alphabetizeExecutorService.shutdown();
         });
@@ -282,7 +294,11 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                         mAdapter.setLauncherItems(launcherItems);
                         mNextScrollDestination = mSnapCallback.getSnapPosition();
                         updateScrollState();
-                        mLauncherModel.maybeSaveAppsOrder();
+                        //TODO: b/275079533 Disable drag and drop ability in AppGrid with
+                        // only Media apps
+                        if (mMode == Mode.ALL_APPS) {
+                            mLauncherModel.maybeSaveAppsOrder();
+                        }
                     }
                 }
         );
@@ -292,6 +308,44 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                 Arrays.asList(getResources().getStringArray(R.array.custom_media_packages)));
         setContentView(R.layout.app_grid_activity);
         updateMode();
+
+        ServiceConnection mirroringConnectionListener = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                Log.d(TAG, "Mirroring service connected");
+                mMirroringService = new Messenger(service);
+                mMessenger = new Messenger(new IncomingHandler(Looper.getMainLooper()));
+                Message msg = Message.obtain(null, getResources()
+                        .getInteger(R.integer.config_msg_register_mirroring_pkg_code));
+                msg.replyTo = mMessenger;
+                try {
+                    mMirroringService.send(msg);
+                } catch (RemoteException e) {
+                    Log.d(TAG, "Exception sending message to mirroring service: " + e);
+                }
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                Log.d(TAG, "Mirroring service disconnected");
+                mMirroringPackageName = null;
+                mMirroringIntentRedirect = null;
+            }
+        };
+
+        // Bind to service that will inform about apps that are being mirrored
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(new ComponentName(
+                    getString(R.string.config_msg_mirroring_service_pkg_name),
+                    getString(R.string.config_msg_mirroring_service_class_name)));
+            if (mPackageManager.resolveService(intent, /* flags = */ 0) != null) {
+                bindService(intent, mirroringConnectionListener,
+                        BIND_AUTO_CREATE | BIND_IMPORTANT);
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Error binding to mirroring service: " + e);
+        }
 
         if (mShowToolbar) {
             ToolbarController toolbar = CarUi.requireToolbar(this);
@@ -321,35 +375,38 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         mOffPageHoverBeforeScrollMs = getResources().getInteger(
                 R.integer.ms_off_page_hover_before_scroll);
 
-        mAppGridOrientation = getResources().getBoolean(R.bool.use_vertical_app_grid)
+        mPageOrientation = getResources().getBoolean(R.bool.use_vertical_app_grid)
                 ? PageOrientation.VERTICAL : PageOrientation.HORIZONTAL;
 
         mRecyclerView = requireViewById(R.id.apps_grid);
         mRecyclerView.setFocusable(false);
-        mLayoutManager = new AppGridLayoutManager(
-                this, mNumOfCols, mNumOfRows, mAppGridOrientation);
+        mLayoutManager = new AppGridLayoutManager(this, mNumOfCols, mNumOfRows, mPageOrientation);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        AppGridPageSnapper pageSnapper = new AppGridPageSnapper(this, mSnapCallback);
+        AppGridPageSnapper pageSnapper = new AppGridPageSnapper(
+                this,
+                mNumOfCols,
+                mNumOfRows,
+                mSnapCallback);
         pageSnapper.attachToRecyclerView(mRecyclerView);
 
         mRecyclerView.setItemAnimator(new AppGridItemAnimator());
 
-        // hide the default scrollbar and replace it with a visual position indicator
+        // hide the default scrollbar and replace it with a visual page indicator
         mRecyclerView.setVerticalScrollBarEnabled(false);
         mRecyclerView.setHorizontalScrollBarEnabled(false);
         mRecyclerView.addOnScrollListener(new AppGridOnScrollListener());
 
         // TODO: (b/271637411) move this to be contained in a scroll controller
-        mPosIndicator = requireViewById(R.id.position_indicator);
-        mPosIndicatorSize = getResources().getDimensionPixelSize(R.dimen.position_indicator_height);
-        mPosIndicatorContainer = requireViewById(R.id.position_indicator_container);
+        mPageIndicator = requireViewById(R.id.page_indicator);
+        FrameLayout pageIndicatorContainer = requireViewById(R.id.page_indicator_container);
+        mPageIndicator.setContainer(pageIndicatorContainer);
 
         // recycler view is set to LTR to prevent layout manager from reassigning layout direction.
-        // instead, AppGridPagingUtil will determine the grid index based on the system layout
+        // instead, PageIndexinghelper will determine the grid index based on the system layout
         // direction and provide LTR mapping at adapter level.
         mRecyclerView.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        mPosIndicatorContainer.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        pageIndicatorContainer.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
 
         // we create but do not attach the adapter to recyclerview until view tree layout is
         // complete and the total size of the app grid is measureable.
@@ -364,6 +421,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                 updateScrollState();
             }
         });
+        mRecyclerView.setAdapter(mAdapter);
 
         // set drag listener and global layout listener, which will dynamically adjust app grid
         // height and width depending on device screen size.
@@ -373,116 +431,15 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
         // since some measurements for window size may not be available yet during onCreate or may
         // later change, we add a listener that redraws the app grid when window size changes.
-        mAppGridLayout = requireViewById(R.id.apps_grid_background);
-        mAppGridLayout.setOrientation(
+        LinearLayout windowBackground = requireViewById(R.id.apps_grid_background);
+        windowBackground.setOrientation(
                 isHorizontal() ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        mAppGridLayout.getViewTreeObserver().addOnGlobalLayoutListener(
-                new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    int windowWidth = mAppGridLayout.getMeasuredWidth();
-                    int windowHeight = mAppGridLayout.getMeasuredHeight();
-                    boolean consumed = handleWindowDimensionUpdate(windowWidth, windowHeight);
-                    if (consumed) {
-                        // since the current window size has changed, we will need to update the
-                        // dimensions of the app grid and position indicator
-                        ViewGroup.LayoutParams recyclerViewParams = mRecyclerView.getLayoutParams();
-                        ViewGroup.LayoutParams posIndicatorContainerParams =
-                                mPosIndicatorContainer.getLayoutParams();
-                        if (isHorizontal()) {
-                            // horizontal app grid should have HORIZONTAL position indicator bar and
-                            // have their width span the entire app window
-                            recyclerViewParams.width = windowWidth;
-                            recyclerViewParams.height = mAppGridHeight;
-                            posIndicatorContainerParams.width = mAppGridWidth;
-                            posIndicatorContainerParams.height = mPosIndicatorSize;
-                        } else {
-                            // vertical app grid should have VERTICAL position indicator bar and
-                            // have their height span the entire app window
-                            recyclerViewParams.width = mAppGridWidth;
-                            recyclerViewParams.height = windowHeight;
-                            posIndicatorContainerParams.height = mAppGridHeight;
-                            posIndicatorContainerParams.width = mPosIndicatorSize;
-                        }
-                        mAppGridMarginVertical = (windowHeight - mAppGridHeight) / 2;
-                        mAppGridMarginHorizontal = (windowWidth - mAppGridWidth) / 2;
-                        mRecyclerView.setLayoutParams(recyclerViewParams);
-                        mPosIndicator.updateAppGridDimensions(windowWidth, windowHeight,
-                                mAppGridWidth, mAppGridHeight);
-                        mPosIndicatorContainer.setLayoutParams(posIndicatorContainerParams);
-
-                        // recreate and reattach the item decorator that draws the page margins
-                        updatePageMarginDecorator();
-
-                        // reattach the adapter to recreate view holders with the correct dimensions
-                        Rect recyclerViewBound = new Rect();
-                        mRecyclerView.getGlobalVisibleRect(recyclerViewBound);
-                        mAdapter.updateAppGridDimensions(/* gridBound */ recyclerViewBound,
-                                /* appItemWidth */ mAppGridWidth / mNumOfCols,
-                                /* appItemHeight */ mAppGridHeight / mNumOfRows);
-                        mRecyclerView.setAdapter(mAdapter);
-                        }
-                    }
-                });
-    }
-
-    @VisibleForTesting
-    boolean handleWindowDimensionUpdate(int windowWidth, int windowHeight) {
-        // if the app grid is configured to use predefined widths instead of filling
-        // the spaces available, use that resource instead.
-        if (getResources().getBoolean(R.bool.use_defined_app_grid_dimensions)) {
-            windowWidth = getResources().getDimensionPixelSize(R.dimen.app_grid_width);
-            windowHeight = getResources().getDimensionPixelSize(R.dimen.app_grid_height);
-        }
-        int marginHorizontal = getResources().getDimensionPixelSize(
-                R.dimen.app_grid_margin_horizontal);
-        int marginVertical = getResources().getDimensionPixelSize(R.dimen.app_grid_margin_vertical);
-        int appGridWidth = windowWidth - marginHorizontal * 2
-                - (isHorizontal() ? 0 : mPosIndicatorSize);
-        int appGridHeight = windowHeight - marginVertical * 2
-                - (isHorizontal() ? mPosIndicatorSize : 0);
-        // dimensions should be rounded down to the nearest modulo of mNumOfCols and
-        // mNumOfRows to have a pixel-exact fit.
-        appGridWidth = appGridWidth / mNumOfCols * mNumOfCols;
-        appGridHeight = appGridHeight / mNumOfRows * mNumOfRows;
-        if (appGridWidth != mAppGridWidth || appGridHeight != mAppGridHeight) {
-            mAppGridWidth = appGridWidth;
-            mAppGridHeight = appGridHeight;
-            return true;
-        }
-        return false;
-    }
-
-    private void updatePageMarginDecorator() {
-        if (mPageMarginDecorator != null) {
-            mRecyclerView.removeItemDecoration(mPageMarginDecorator);
-        }
-        mPageMarginDecorator = new RecyclerView.ItemDecoration() {
-            @Override
-            public void onDraw(@NotNull Canvas c, @NotNull RecyclerView parent,
-                    @NotNull RecyclerView.State state) {
-                super.onDraw(c, parent, state);
-            }
-            @Override
-            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
-                    @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-                outRect.set(0, 0, 0, 0);
-                switch (mAdapter.getOffsetBoundDirection(parent.getChildAdapterPosition(view))) {
-                    case AppItemBoundDirection.LEFT:
-                        outRect.left = mAppGridMarginHorizontal;
-                        break;
-                    case AppItemBoundDirection.RIGHT:
-                        outRect.right = mAppGridMarginHorizontal;
-                        break;
-                    case AppItemBoundDirection.TOP:
-                        outRect.top = mAppGridMarginVertical;
-                        break;
-                    case AppItemBoundDirection.BOTTOM:
-                        outRect.bottom = mAppGridMarginVertical;
-                }
-            }
-        };
-        mRecyclerView.addItemDecoration(mPageMarginDecorator);
+        PaginationController.DimensionUpdateCallback dimensionUpdateCallback =
+                new PaginationController.DimensionUpdateCallback();
+        dimensionUpdateCallback.addListener(mRecyclerView);
+        dimensionUpdateCallback.addListener(mPageIndicator);
+        dimensionUpdateCallback.addListener(this);
+        mPaginationController = new PaginationController(windowBackground, dimensionUpdateCallback);
     }
 
     @Override
@@ -490,6 +447,9 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         super.onNewIntent(intent);
         setIntent(intent);
         updateMode();
+        if (mCar.isConnected()) {
+            initializeLauncherModel();
+        }
     }
 
     @Override
@@ -498,6 +458,18 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
             mCar.disconnect();
             mCar = null;
         }
+
+        if (mMirroringService != null) {
+            Message msg = Message.obtain(null,
+                    getResources().getInteger(R.integer.config_msg_unregister_mirroring_pkg_code));
+            msg.replyTo = mMessenger;
+            try {
+                mMirroringService.send(msg);
+            } catch (RemoteException e) {
+                Log.d(TAG, "Exception sending message to mirroring service: " + e);
+            }
+        }
+
         super.onDestroy();
     }
 
@@ -511,7 +483,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
     @VisibleForTesting
     boolean isHorizontal() {
-        return AppGridConstants.isHorizontal(mAppGridOrientation);
+        return AppGridConstants.isHorizontal(mPageOrientation);
     }
 
     /**
@@ -535,14 +507,25 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         mAdapter.setLayoutDirection(getResources().getConfiguration().getLayoutDirection());
     }
 
+    @Override
+    public void onDimensionsUpdated(PageMeasurementHelper.PageDimensions pageDimens,
+            PageMeasurementHelper.GridDimensions gridDimens) {
+        // TODO(b/271637411): move this method into a scroll controller
+        mAppGridMarginHorizontal = pageDimens.marginHorizontalPx;
+        mAppGridMarginVertical = pageDimens.marginVerticalPx;
+        mAppGridWidth = gridDimens.gridWidthPx;
+        mAppGridHeight = gridDimens.gridHeightPx;
+    }
+
     /**
      * Updates the scroll state after receiving data changes, such as new apps being added or
      * reordered, and when user returns to launcher onResume.
      *
-     * Additionally, notify position indicator to handle resizing in case new app addition creates a
+     * Additionally, notify page indicator to handle resizing in case new app addition creates a
      * new page or deleted a page.
      */
     void updateScrollState() {
+        // TODO(b/271637411): move this method into a scroll controller
         // to calculate how many pages we need to offset, we use the scroll offset anchor position
         // as item count and map to the page which the anchor is on.
         int offsetPageCount = mAdapter.getPageCount(mNextScrollDestination + 1) - 1;
@@ -553,8 +536,8 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         mLayoutManager.scrollToPositionWithOffset(/* position */
                 offsetPageCount * mNumOfRows * mNumOfCols, /* offset */ 0);
 
-        mPosIndicator.updateOffset(mCurrentScrollOffset);
-        mPosIndicator.updatePageCount(mAdapter.getPageCount());
+        mPageIndicator.updateOffset(mCurrentScrollOffset);
+        mPageIndicator.updatePageCount(mAdapter.getPageCount());
     }
 
     @Override
@@ -800,7 +783,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         @Override
         public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
             mCurrentScrollOffset = mCurrentScrollOffset + (isHorizontal() ? dx : dy);
-            mPosIndicator.updateOffset(mCurrentScrollOffset);
+            mPageIndicator.updateOffset(mCurrentScrollOffset);
         }
 
         @Override
@@ -813,18 +796,18 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                         mDragCallback.cancelDragTasks();
                     }
                     dismissShortcutPopup();
-                    mPosIndicator.animateAppearance();
+                    mPageIndicator.animateAppearance();
                     break;
 
                 case RecyclerView.SCROLL_STATE_SETTLING:
-                    mPosIndicator.animateAppearance();
+                    mPageIndicator.animateAppearance();
                     break;
 
                 case RecyclerView.SCROLL_STATE_IDLE:
                     if (mIsCurrentlyDragging) {
                         mLayoutManager.setShouldLayoutChildren(false);
                     }
-                    mPosIndicator.animateFading();
+                    mPageIndicator.animateFading();
                     // in case the recyclerview was scrolled by rotary input, we need to handle
                     // focusing the correct element: either on the first or last element on page
                     mRecyclerView.maybeHandleRotaryFocus();
@@ -917,7 +900,43 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     }
 
     @VisibleForTesting
-    void setPosIndicator(AppGridPositionIndicator posIndicator) {
-        mPosIndicator = posIndicator;
+    void setPageIndicator(PageIndicator pageIndicator) {
+        mPageIndicator = pageIndicator;
+    }
+
+    class IncomingHandler extends Handler {
+
+        int mSendMirroringPkgCode = getResources()
+                .getInteger(R.integer.config_msg_send_mirroring_pkg_code);
+        String mMirroringPkgNameKey = getString(R.string.config_msg_mirroring_pkg_name_key);
+        String mMirroringRedirectUriKey = getString(R.string.config_msg_mirroring_redirect_uri_key);
+
+        IncomingHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Log.d(TAG, "Message received: " + msg);
+            if (msg.what
+                    == mSendMirroringPkgCode) {
+                Bundle bundle = (Bundle) msg.obj;
+                mMirroringPackageName =
+                        bundle.getString(mMirroringPkgNameKey);
+                Log.d(TAG, "message received with package name = " + mMirroringPackageName);
+                try {
+                    mMirroringIntentRedirect = Intent.parseUri(
+                            bundle.getString(mMirroringRedirectUriKey),
+                            URI_INTENT_SCHEME);
+                    Log.d(TAG, "intent is: " + mMirroringIntentRedirect);
+                    mLauncherModel.updateMirroringItem(mMirroringPackageName,
+                            mMirroringIntentRedirect);
+                } catch (URISyntaxException e) {
+                    Log.d(TAG, "Error parsing mirroring redirect intent " + e);
+                }
+            } else {
+                super.handleMessage(msg);
+            }
+        }
     }
 }

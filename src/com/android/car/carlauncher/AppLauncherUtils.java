@@ -39,6 +39,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
+import android.net.Uri;
 import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -97,6 +98,7 @@ public class AppLauncherUtils {
     // Max no. of uses tags in automotiveApp XML. This is an arbitrary limit to be defensive
     // to bad input.
     private static final int MAX_APP_TYPES = 64;
+    private static final String PACKAGE_URI_PREFIX = "package:";
 
     private AppLauncherUtils() {
     }
@@ -225,7 +227,9 @@ public class AppLauncherUtils {
             PackageManager packageManager,
             @NonNull Predicate<ResolveInfo> videoAppPredicate,
             CarMediaManager carMediaManager,
-            ShortcutsListener shortcutsListener) {
+            ShortcutsListener shortcutsListener,
+            String mirroringAppPkgName,
+            Intent mirroringAppRedirect) {
 
         if (launcherApps == null || carPackageManager == null || packageManager == null
                 || carMediaManager == null) {
@@ -271,6 +275,7 @@ public class AppLauncherUtils {
                             componentName,
                             info.serviceInfo.loadIcon(packageManager),
                             isDistractionOptimized,
+                            /* isMirroring = */ false,
                             contextArg -> {
                                 if (openMediaCenter) {
                                     AppLauncherUtils.launchApp(contextArg, intent);
@@ -303,12 +308,21 @@ public class AppLauncherUtils {
                             .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
                     CharSequence displayName = info.getLabel();
+                    boolean isMirroring = packageName.equals(mirroringAppPkgName);
                     AppMetaData appMetaData = new AppMetaData(
                             displayName,
                             componentName,
                             info.getBadgedIcon(0),
                             isDistractionOptimized,
-                            contextArg -> AppLauncherUtils.launchApp(contextArg, intent),
+                            isMirroring,
+                            contextArg -> {
+                                if (packageName.equals(mirroringAppPkgName)) {
+                                    Log.d(TAG, "non-media service package name "
+                                            + "equals mirroring pkg name");
+                                }
+                                AppLauncherUtils.launchApp(contextArg,
+                                        isMirroring ? mirroringAppRedirect : intent);
+                            },
                             buildShortcuts(packageName, displayName, shortcutsListener));
                     launchablesMap.put(componentName, appMetaData);
                 }
@@ -338,6 +352,7 @@ public class AppLauncherUtils {
                         componentName,
                         info.activityInfo.loadIcon(packageManager),
                         isDistractionOptimized,
+                        /* isMirroring = */ false,
                         contextArg -> {
                             packageManager.setApplicationEnabledSetting(packageName,
                                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0);
@@ -366,31 +381,71 @@ public class AppLauncherUtils {
             CharSequence displayName, ShortcutsListener shortcutsListener) {
         return pair -> {
             CarUiShortcutsPopup carUiShortcutsPopup = new CarUiShortcutsPopup.Builder()
-                    .addShortcut(new CarUiShortcutsPopup.ShortcutItem() {
-                        @Override
-                        public CarUiShortcutsPopup.ItemData data() {
-                            return new CarUiShortcutsPopup.ItemData(
-                                    R.drawable.ic_force_stop_caution_icon,
-                                    pair.first.getResources().getString(
-                                            R.string.app_launcher_stop_app_action));
-                        }
-
-                        @Override
-                        public boolean onClick() {
-                            shortcutsListener.onShortcutsItemClick(packageName, displayName,
-                                    /* allowStopApp= */ true);
-                            return true;
-                        }
-
-                        @Override
-                        public boolean isEnabled() {
-                            return shouldAllowStopApp(packageName, pair.first);
-                        }
-                    }).build(pair.first,
-                            pair.second);
+                    .addShortcut(
+                            buildForceStopShortcut(packageName, displayName, pair.first,
+                                    shortcutsListener)
+                    )
+                    .addShortcut(buildAppInfoShortcut(packageName, pair.first))
+                    .build(pair.first,
+                            pair.second
+                    );
 
             carUiShortcutsPopup.show();
             shortcutsListener.onShortcutsShow(carUiShortcutsPopup);
+        };
+    }
+
+    private static CarUiShortcutsPopup.ShortcutItem buildForceStopShortcut(String packageName,
+            CharSequence displayName,
+            Context context,
+            ShortcutsListener shortcutsListener) {
+        return new CarUiShortcutsPopup.ShortcutItem() {
+            @Override
+            public CarUiShortcutsPopup.ItemData data() {
+                return new CarUiShortcutsPopup.ItemData(
+                        R.drawable.ic_force_stop_caution_icon,
+                        context.getResources().getString(
+                                R.string.app_launcher_stop_app_action));
+            }
+
+            @Override
+            public boolean onClick() {
+                shortcutsListener.onShortcutsItemClick(packageName, displayName,
+                        /* allowStopApp= */ true);
+                return true;
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return shouldAllowStopApp(packageName, context);
+            }
+        };
+    }
+
+    private static CarUiShortcutsPopup.ShortcutItem buildAppInfoShortcut(String packageName,
+            Context context) {
+        return new CarUiShortcutsPopup.ShortcutItem() {
+            @Override
+            public CarUiShortcutsPopup.ItemData data() {
+                return new CarUiShortcutsPopup.ItemData(
+                        R.drawable.ic_app_info,
+                        context.getResources().getString(
+                                R.string.app_launcher_app_info_action));
+            }
+
+            @Override
+            public boolean onClick() {
+                Uri packageURI = Uri.parse(PACKAGE_URI_PREFIX + packageName);
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        packageURI);
+                context.startActivity(intent);
+                return true;
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return true;
+            }
         };
     }
 

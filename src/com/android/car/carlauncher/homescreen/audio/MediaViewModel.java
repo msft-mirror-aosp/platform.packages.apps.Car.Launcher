@@ -41,6 +41,7 @@ import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.CardContent;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
+import com.android.car.carlauncher.homescreen.ui.SeekBarViewModel;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.R;
 import com.android.car.media.common.playback.PlaybackProgress;
@@ -59,6 +60,8 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
 
     private static final String TAG = "MediaViewModel";
 
+    private static final String EMPTY_TIME = "";
+
     private HomeCardInterface.Presenter mAudioPresenter;
     // MediaSourceViewModel is for the current or last played media app
     private MediaSourceViewModel mSourceViewModel;
@@ -74,8 +77,7 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
     private CharSequence mArtistName;
     private CharSequence mTimes;
     private CharSequence mTimesSeparator;
-
-    private boolean mIsTimesAvailable;
+    private boolean mIsSeekEnabled;
     private boolean mUseMediaSourceColor;
     private int mDefaultSeekBarColor;
     private int mSeekBarColor;
@@ -108,6 +110,17 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
     private Observer<Object> mMediaSourceObserver = x -> updateModel();
     private Observer<Object> mProgressObserver = x -> updateProgress();
 
+    private Observer<PlaybackViewModel.PlaybackStateWrapper> mPlaybackStateWrapperObserver =
+            playbackStateWrapper -> {
+                if (playbackStateWrapper != null
+                        && mIsSeekEnabled != playbackStateWrapper.isSeekToEnabled()) {
+                    mIsSeekEnabled = playbackStateWrapper.isSeekToEnabled();
+                    if (mAudioPresenter != null) {
+                        mAudioPresenter.onModelUpdated(/* model = */ this, /* updateProgress = */
+                                false);
+                    }
+                }
+            };
 
     public MediaViewModel(Application application) {
         super(application);
@@ -148,14 +161,15 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
         mPlaybackViewModel.getMediaSourceColors().observeForever(mMediaSourceColorObserver);
         mPlaybackViewModel.getProgress().observeForever(mProgressObserver);
         mPlaybackViewModel.getPlaybackController().observeForever(mPlaybackControllerObserver);
-        mAudioPresenter.onModelUpdated(/* model = */ this);
+        mPlaybackViewModel.getPlaybackStateWrapper().observeForever(mPlaybackStateWrapperObserver);
 
-        mDefaultSeekBarColor = resources.getColor(
+        mSeekBarColor = mDefaultSeekBarColor = resources.getColor(
                 com.android.car.carlauncher.R.color.seek_bar_color, null);
         mSeekBarMax = resources.getInteger(
                 com.android.car.carlauncher.R.integer.optional_seekbar_max);
         mUseMediaSourceColor = resources.getBoolean(R.bool.use_media_source_color_for_seek_bar);
         mTimesSeparator = resources.getString(com.android.car.carlauncher.R.string.times_separator);
+        mAudioPresenter.onModelUpdated(/* model = */ this);
     }
 
     @Override
@@ -163,6 +177,7 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
         super.onCleared();
         mSourceViewModel.getPrimaryMediaSource().removeObserver(mMediaSourceObserver);
         mPlaybackViewModel.getMetadata().removeObserver(mMetadataObserver);
+        mPlaybackViewModel.getPlaybackStateWrapper().removeObserver(mPlaybackStateWrapperObserver);
     }
 
     @Override
@@ -201,21 +216,26 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
                 new CardContent.CardBackgroundImage(mAlbumImageBitmap, mMediaBackground),
                 mSongTitle,
                 mArtistName,
-                mTimes,
-                mIsTimesAvailable,
-                mSeekBarColor,
-                mProgress,
-                mPlaybackCallback
+                new SeekBarViewModel(
+                        mTimes,
+                        mIsSeekEnabled,
+                        mSeekBarColor,
+                        mProgress,
+                        mPlaybackCallback)
         );
 
     }
 
     /**
-     * Package private method to allow the {@link HomeAudioCardPresenter} to access the model to
+     * Allows the {@link HomeAudioCardPresenter} to access the model to
      * initialize the {@link com.android.car.media.common.PlaybackControlsActionBar}
      */
-    PlaybackViewModel getPlaybackViewModel() {
+    public PlaybackViewModel getPlaybackViewModel() {
         return mPlaybackViewModel;
+    }
+
+    protected MediaSourceViewModel getMediaSourceViewModel() {
+        return mSourceViewModel;
     }
 
     /**
@@ -267,7 +287,7 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
         mSeekBarColor = (mediaSourceColors == null || !mUseMediaSourceColor)
                 ? mDefaultSeekBarColor
                 : mediaSourceColors.getAccentColor(mDefaultSeekBarColor);
-        mAudioPresenter.onModelUpdated(/* model = */ this, mIsTimesAvailable);
+        mAudioPresenter.onModelUpdated(/* model = */ this, /* updateProgress = */ false);
     }
 
     private void updateProgress() {
@@ -275,12 +295,16 @@ public class MediaViewModel extends AndroidViewModel implements HomeCardInterfac
         if (playbackProgress == null) {
             return;
         }
-        mTimes = new StringBuilder(playbackProgress.getCurrentTimeText()).append(
-                mTimesSeparator).append(playbackProgress.getMaxTimeText()).toString();
-        mIsTimesAvailable = playbackProgress.hasTime();
+        mTimes = playbackProgress.hasTime() ? new StringBuilder(
+                playbackProgress.getCurrentTimeText()).append(
+                mTimesSeparator).append(playbackProgress.getMaxTimeText()).toString() : EMPTY_TIME;
         mRealMaxProgress = playbackProgress.getMaxProgress();
-        mProgress = (int) (mSeekBarMax * playbackProgress.getProgressFraction());
-        mAudioPresenter.onModelUpdated(/* model = */ this, mIsTimesAvailable);
+        int progress = playbackProgress.getProgressFraction() < 0 ? 0
+                : (int) (mSeekBarMax * playbackProgress.getProgressFraction());
+        if (mProgress != progress) {
+            mProgress = progress;
+            mAudioPresenter.onModelUpdated(/* model = */ this, /* updateProgress = */ true);
+        }
     }
 
     private void updateMetadata() {
