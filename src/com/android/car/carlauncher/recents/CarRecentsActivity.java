@@ -47,6 +47,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Recents activity to display list of recent tasks in Car.
+ */
 public class CarRecentsActivity extends AppCompatActivity implements
         RecentTasksViewModel.RecentTasksChangeListener {
     public static final String OPEN_RECENT_TASK_ACTION =
@@ -57,7 +60,7 @@ public class CarRecentsActivity extends AppCompatActivity implements
     private Group mRecentTasksGroup;
     private View mEmptyStateView;
     private Animator mClearAllAnimator;
-    private NonDOHiddenPackageProvider mNonDOHiddenPackageProvider;
+    private NonDODisabledTaskProvider mNonDODisabledTaskProvider;
     private Set<String> mPackagesToHideFromRecents;
     private TaskSnapHelper mTaskSnapHelper;
     private ViewTreeObserver.OnTouchModeChangeListener mOnTouchModeChangeListener;
@@ -74,9 +77,10 @@ public class CarRecentsActivity extends AppCompatActivity implements
         mRecentTasksViewModel = RecentTasksViewModel.getInstance();
         mRecentTasksViewModel.addRecentTasksChangeListener(this);
         mRecentTasksViewModel.addHiddenTaskProvider(
-                (packageName, className) -> mPackagesToHideFromRecents.contains(packageName));
-        mNonDOHiddenPackageProvider = new NonDOHiddenPackageProvider(this);
-        mRecentTasksViewModel.setDisabledTaskProvider(mNonDOHiddenPackageProvider);
+                (packageName, className, baseIntent) ->
+                        mPackagesToHideFromRecents.contains(packageName));
+        mNonDODisabledTaskProvider = new NonDODisabledTaskProvider(this);
+        mRecentTasksViewModel.setDisabledTaskProvider(mNonDODisabledTaskProvider);
         WindowMetrics windowMetrics = this.getWindowManager().getCurrentWindowMetrics();
         mRecentTasksViewModel.init(
                 /* displayId= */ getDisplay().getDisplayId(),
@@ -177,7 +181,7 @@ public class CarRecentsActivity extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mNonDOHiddenPackageProvider.terminate();
+        mNonDODisabledTaskProvider.terminate();
         mRecentTasksViewModel.terminate();
         mClearAllAnimator.end();
         mClearAllAnimator.removeAllListeners();
@@ -210,7 +214,10 @@ public class CarRecentsActivity extends AppCompatActivity implements
         }
     }
 
-    private void launchHomeIntent() {
+    /**
+     * Launches the Home Activity.
+     */
+    protected void launchHomeIntent() {
         Intent homeActivityIntent = new Intent(Intent.ACTION_MAIN);
         homeActivityIntent.addCategory(Intent.CATEGORY_HOME);
         homeActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
