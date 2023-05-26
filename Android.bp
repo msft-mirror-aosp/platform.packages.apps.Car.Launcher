@@ -43,8 +43,10 @@ android_library {
         "car-media-common",
         "car-telephony-common",
         "car-ui-lib",
+        "com.google.android.material_material",
         "WindowManager-Shell",
         "launcher_item",
+        "SystemUISharedLib"
     ],
 
     libs: ["android.car"],

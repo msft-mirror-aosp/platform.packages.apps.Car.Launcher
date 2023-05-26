@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.car.carlauncher;
+package com.android.car.carlauncher.recyclerview;
+
+import static com.android.car.carlauncher.AppGridConstants.PageOrientation;
+import static com.android.car.carlauncher.AppGridConstants.isHorizontal;
 
 import android.content.Context;
 
@@ -27,9 +30,11 @@ import androidx.recyclerview.widget.RecyclerView;
 public class AppGridLayoutManager extends GridLayoutManager {
     boolean mShouldLayoutChildren = true;
 
-    public AppGridLayoutManager(Context context, int spanCount,
-            int orientation, boolean reverseLayout) {
-        super(context, spanCount, orientation, reverseLayout);
+    public AppGridLayoutManager(Context context, int numOfCols, int numOfRows,
+            @PageOrientation int pageOrientation) {
+        super(context, isHorizontal(pageOrientation) ? numOfRows : numOfCols,
+                isHorizontal(pageOrientation)
+                        ? GridLayoutManager.HORIZONTAL : GridLayoutManager.VERTICAL, false);
     }
 
     /**
@@ -40,7 +45,7 @@ public class AppGridLayoutManager extends GridLayoutManager {
      * adjustment. By calling #setShouldLayoutChildren(false), we let the animation be exclusively
      * handled by ViewHolders themselves, rather than the parent ViewGroup.
      */
-    void setShouldLayoutChildren(boolean shouldLayoutChildren) {
+    public void setShouldLayoutChildren(boolean shouldLayoutChildren) {
         mShouldLayoutChildren = shouldLayoutChildren;
     }
 
