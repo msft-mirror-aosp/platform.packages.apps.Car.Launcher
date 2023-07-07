@@ -17,6 +17,7 @@
 package com.android.car.carlauncher;
 
 import android.content.ComponentName;
+import android.content.Intent;
 import android.util.Log;
 
 import androidx.annotation.VisibleForTesting;
@@ -53,7 +54,7 @@ public class LauncherViewModel extends ViewModel {
     private boolean mIsCustomized;
     private boolean mIsAlphabetized;
     private boolean mAppOrderRead;
-    private String mFileName = "order.data";
+    public static final String ORDER_FILE_NAME = "order.data";
     private Map<ComponentName, LauncherItem> mLauncherItemMap = new HashMap<>();
     private final MutableLiveData<List<LauncherItem>> mCurrentLauncher =
             new MutableLiveData<>(new ArrayList<>());
@@ -133,7 +134,7 @@ public class LauncherViewModel extends ViewModel {
     public void updateAppsOrder() {
         mItemsFromProto.clear();
         try {
-            File order = new File(mFileDir, mFileName);
+            File order = new File(mFileDir, ORDER_FILE_NAME);
             if (order.exists()) {
                 if (mInputStream == null) {
                     mInputStream = new FileInputStream(order);
@@ -202,6 +203,48 @@ public class LauncherViewModel extends ViewModel {
     }
 
     /**
+     * Update an AppItem's AppMetaData isMirroring state and its launchCallback
+     * Then, post the updated live data object
+     */
+    // TODO (b/272796126): refactor to data model and move deep copying to inside DiffUtil
+    public void updateMirroringItem(String packageName, Intent mirroringIntent) {
+        List<LauncherItem> launcherList = mCurrentLauncher.getValue();
+        if (launcherList == null) {
+            return;
+        }
+        List<LauncherItem> launcherListCopy = new ArrayList<>();
+        for (LauncherItem item : launcherList) {
+            if (item instanceof AppItem) {
+                AppMetaData metaData = ((AppItem) item).getAppMetaData();
+                if (item.getPackageName().equals(packageName)) {
+                    launcherListCopy.add(new AppItem(item.getPackageName(), item.getClassName(),
+                            item.getDisplayName(), new AppMetaData(metaData.getDisplayName(),
+                            metaData.getComponentName(), metaData.getIcon(),
+                            metaData.getIsDistractionOptimized(), /* isMirroring= */ true,
+                            contextArg -> AppLauncherUtils.launchApp(contextArg, mirroringIntent),
+                            metaData.getAlternateLaunchCallback())));
+                } else if (metaData.getIsMirroring()) {
+                    Intent intent = new Intent(Intent.ACTION_MAIN)
+                            .setComponent(metaData.getComponentName())
+                            .addCategory(Intent.CATEGORY_LAUNCHER)
+                            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    launcherListCopy.add(new AppItem(item.getPackageName(), item.getClassName(),
+                            item.getDisplayName(), new AppMetaData(metaData.getDisplayName(),
+                            metaData.getComponentName(), metaData.getIcon(),
+                            metaData.getIsDistractionOptimized(), /* isMirroring= */ false,
+                            contextArg -> AppLauncherUtils.launchApp(contextArg, intent),
+                            metaData.getAlternateLaunchCallback())));
+                } else {
+                    launcherListCopy.add(item);
+                }
+            } else {
+                launcherListCopy.add(item);
+            }
+        }
+        mCurrentLauncher.postValue(launcherListCopy);
+    }
+
+    /**
      * Record the current apps' order to a file if needed
      */
     public void maybeSaveAppsOrder() {
@@ -219,7 +262,7 @@ public class LauncherViewModel extends ViewModel {
                 mCurrentLauncher.getValue());
         try {
             if (mOutputStream == null) {
-                mOutputStream = new FileOutputStream(new File(mFileDir, mFileName), false);
+                mOutputStream = new FileOutputStream(new File(mFileDir, ORDER_FILE_NAME), false);
             }
             launcherItemListMessage.writeDelimitedTo(mOutputStream);
         } catch (IOException e) {
@@ -227,6 +270,10 @@ public class LauncherViewModel extends ViewModel {
         } finally {
             try {
                 if (mOutputStream != null) {
+                    mOutputStream.flush();
+                    if (mOutputStream instanceof FileOutputStream) {
+                        ((FileOutputStream) mOutputStream).getFD().sync();
+                    }
                     mOutputStream.close();
                     mOutputStream = null;
                 }
@@ -283,16 +330,18 @@ public class LauncherViewModel extends ViewModel {
     }
 
     /**
-     * Reset app order to alphabetized order
+     * Check if the order file exists
      */
-    public void resetToAlphabetizedOrder() {
-        mCurrentLauncher.postValue(mItemsFromPlatform);
-        mItemsFromProto.clear();
-        File order = new File(mFileDir, mFileName);
-        if (order.delete()) {
-            mIsCustomized = false;
-            mAppOrderRead = false;
-            mIsAlphabetized = true;
-        }
+    public boolean doesFileExist() {
+        File order = new File(mFileDir, ORDER_FILE_NAME);
+        return order.exists();
+    }
+
+    public void setCustomized(boolean customized) {
+        mIsCustomized = customized;
+    }
+
+    public void setAppOrderRead(boolean appOrderRead) {
+        mAppOrderRead = appOrderRead;
     }
 }
