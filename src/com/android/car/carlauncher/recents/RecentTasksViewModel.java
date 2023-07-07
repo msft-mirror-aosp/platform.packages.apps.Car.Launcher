@@ -19,6 +19,7 @@ package com.android.car.carlauncher.recents;
 import static android.view.Display.DEFAULT_DISPLAY;
 
 import android.content.ComponentName;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -77,6 +78,9 @@ public class RecentTasksViewModel {
     private Bitmap mDefaultThumbnail;
     private boolean isInitialised;
     private int mDisplayId = DEFAULT_DISPLAY;
+    private int mWindowWidth;
+    private int mWindowHeight;
+    private Rect mWindowInsets;
 
     private RecentTasksViewModel() {
         mDataStore = RecentTasksProvider.getInstance();
@@ -104,7 +108,10 @@ public class RecentTasksViewModel {
         isInitialised = true;
         mDataStore.setRecentsDataChangeListener(mRecentsDataChangeListener);
         mDisplayId = displayId;
-        createDefaultThumbnail(windowWidth, windowHeight, windowInsets, defaultThumbnailColor);
+        mWindowWidth = windowWidth;
+        mWindowHeight = windowHeight;
+        mWindowInsets = windowInsets;
+        mDefaultThumbnail = createThumbnail(defaultThumbnailColor);
     }
 
     /**
@@ -240,8 +247,7 @@ public class RecentTasksViewModel {
         if (!safeCheckIndex(mRecentTaskIds, index)) {
             return;
         }
-        mDataStore.removeTaskFromRecents(mRecentTaskIds.get(index));
-        mTaskIdToCroppedThumbnailMap.remove(mRecentTaskIds.get(index));
+        removeTaskWithId(mRecentTaskIds.get(index));
         mRecentTaskIds.remove(index);
         mRecentTasksChangeListener.forEach(l -> l.onRecentTaskRemoved(index));
     }
@@ -250,7 +256,9 @@ public class RecentTasksViewModel {
      * Removes all tasks from recents and clears cached data by calling {@link #clearCache}.
      */
     public void removeAllRecentTasks() {
-        mDataStore.removeAllRecentTasks();
+        for (int recentTaskId : mRecentTaskIds) {
+            removeTaskWithId(recentTaskId);
+        }
         clearCache();
     }
 
@@ -282,9 +290,12 @@ public class RecentTasksViewModel {
         mRecentTaskIds = new ArrayList<>(recentTaskIds.size());
         for (int taskId : recentTaskIds) {
             ComponentName topComponent = mDataStore.getRecentTaskComponentName(taskId);
+            Intent baseIntent = mDataStore.getRecentTaskBaseIntent(taskId);
             boolean isTaskHidden = mHiddenTaskProviders.stream()
                     .anyMatch(p -> p.isTaskHiddenFromRecents(
-                            topComponent.getPackageName(), topComponent.getClassName()));
+                            topComponent != null ? topComponent.getPackageName() : null,
+                            topComponent != null ? topComponent.getClassName() : null,
+                            baseIntent));
             if (isTaskHidden) {
                 // skip since it should be hidden
                 continue;
@@ -300,16 +311,29 @@ public class RecentTasksViewModel {
                 /* height= */ bitmap.getHeight() - insets.top - insets.bottom);
     }
 
-    private void createDefaultThumbnail(int width, int height, @NonNull Rect insets,
+    /**
+     * @return a new {@link Bitmap} with aspect ratio of the current window and the given
+     * {@code color}.
+     */
+    public Bitmap createThumbnail(@ColorInt Integer color) {
+        return createThumbnail(mWindowWidth, mWindowHeight, mWindowInsets, color);
+    }
+
+    private Bitmap createThumbnail(int width, int height, @NonNull Rect insets,
             @ColorInt Integer color) {
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawColor(color);
-        mDefaultThumbnail = cropInsets(bitmap, insets);
+        return cropInsets(bitmap, insets);
     }
 
     private boolean safeCheckIndex(List<?> list, int index) {
         return index >= 0 && index < list.size();
+    }
+
+    private void removeTaskWithId(int taskId) {
+        mDataStore.removeTaskFromRecents(taskId);
+        mTaskIdToCroppedThumbnailMap.remove(taskId);
     }
 
     /**
@@ -402,7 +426,7 @@ public class RecentTasksViewModel {
         /**
          * @return if the task should be hidden from recents.
          */
-        boolean isTaskHiddenFromRecents(String packageName, String className);
+        boolean isTaskHiddenFromRecents(String packageName, String className, Intent baseIntent);
     }
 
     /**

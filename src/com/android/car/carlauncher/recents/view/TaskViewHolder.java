@@ -19,59 +19,66 @@ package com.android.car.carlauncher.recents.view;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.carlauncher.R;
 
-public class TaskViewHolder extends RecyclerView.ViewHolder {
+/**
+ * Builds onto BaseViewHolder by adding functionality of disabled state and adding click and touch
+ * listeners.
+ */
+public class TaskViewHolder extends BaseViewHolder {
     private final ImageView mThumbnailImageView;
     private final ImageView mIconImageView;
-    private final View.OnTouchListener mTaskTouchListener;
+    private final ImageView mDismissButton;
     private final float mDisabledStateAlpha;
+    private ViewTreeObserver.OnTouchModeChangeListener mOnTouchModeChangeListener;
 
-    public TaskViewHolder(@NonNull View itemView, ItemTouchHelper itemTouchHelper) {
+    public TaskViewHolder(@NonNull View itemView) {
         super(itemView);
         mThumbnailImageView = itemView.findViewById(R.id.task_thumbnail);
         mIconImageView = itemView.findViewById(R.id.task_icon);
+        mDismissButton = itemView.findViewById(R.id.task_dismiss_button);
         mDisabledStateAlpha = itemView.getResources().getFloat(
                 R.dimen.disabled_recent_task_alpha);
-        float startSwipeThreshold = itemView.getResources().getFloat(
-                R.dimen.recent_task_start_swipe_threshold);
-        mTaskTouchListener = new TaskTouchListener(startSwipeThreshold,
-                itemTouchHelper, /* viewHolder= */ this);
     }
 
     public void bind(@Nullable Drawable icon, @Nullable Bitmap thumbnail, boolean isDisabled,
-            @Nullable View.OnClickListener onClickListener) {
-        updateThumbnail(thumbnail);
-        updateIcon(icon);
+            @Nullable View.OnClickListener openTaskClickListener,
+            @Nullable View.OnClickListener dismissTaskClickListener,
+            @Nullable View.OnTouchListener taskTouchListener) {
+        super.bind(icon, thumbnail);
 
         setDisabledAlpha(mThumbnailImageView, isDisabled);
         setDisabledAlpha(mIconImageView, isDisabled);
 
-        setListeners(mThumbnailImageView, mTaskTouchListener, onClickListener);
-        setListeners(mIconImageView, mTaskTouchListener, onClickListener);
+        setListeners(mThumbnailImageView, taskTouchListener, openTaskClickListener);
+        setListeners(mIconImageView, taskTouchListener, openTaskClickListener);
+
+        mDismissButton.setOnClickListener(dismissTaskClickListener);
     }
 
-    public void updateThumbnail(@Nullable Bitmap thumbnail) {
-        if (thumbnail == null) {
-            mThumbnailImageView.setImageDrawable(null);
-            return;
-        }
-        mThumbnailImageView.setImageBitmap(thumbnail);
+    /**
+     * Callback for when the vh is attached to the window.
+     * Used to set the state for Dismiss Button depending on the touch mode. This should be done
+     * after the view is attached to the window else {@link View#isInTouchMode} would always return
+     * the default value.
+     */
+    public void attachedToWindow() {
+        setDismissButtonVisibility(itemView.isInTouchMode());
+        mOnTouchModeChangeListener = this::setDismissButtonVisibility;
+        itemView.getViewTreeObserver().addOnTouchModeChangeListener(mOnTouchModeChangeListener);
     }
 
-    public void updateIcon(@Nullable Drawable icon) {
-        if (icon == null) {
-            mIconImageView.setImageDrawable(null);
-            return;
-        }
-        mIconImageView.setImageDrawable(icon);
+    /**
+     * Callback for when the vh is detached from the window.
+     */
+    public void detachedFromWindow() {
+        itemView.getViewTreeObserver().removeOnTouchModeChangeListener(mOnTouchModeChangeListener);
     }
 
     private void setListeners(View view, View.OnTouchListener onTouchListener,
@@ -86,5 +93,12 @@ public class TaskViewHolder extends RecyclerView.ViewHolder {
         } else {
             view.setAlpha(1f);
         }
+    }
+
+    private void setDismissButtonVisibility(boolean isInTouchMode) {
+        if (mDismissButton == null) {
+            return;
+        }
+        mDismissButton.setVisibility(isInTouchMode ? View.GONE : View.VISIBLE);
     }
 }

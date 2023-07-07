@@ -18,8 +18,6 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_title" msgid="1995858460392177468">"Auton käynnistysohjelma"</string>
-    <string name="reset_appgrid_title" msgid="814562055108028366">"Palauta sovellusruudukko A-Ö ‑järjestykseen"</string>
-    <string name="reset_appgrid_dialogue_message" msgid="8275758912490987735">"Toiminto poistaa kaikki omat järjestykset. Haluatko jatkaa?"</string>
     <string name="app_launcher_title_all_apps" msgid="3215107396036838217">"Kaikki sovellukset"</string>
     <string name="app_launcher_title_media_only" msgid="4400886555907422816">"Mediasovellukset"</string>
     <string name="app_launcher_stop_app_action" msgid="1081680842410279692">"Sulje sovellus"</string>
@@ -42,8 +40,6 @@
     <string name="fake_weather_footer_text" msgid="4570172025869749926">"Mountain View • Maks.: --° Min.: --°"</string>
     <string name="hide_debug_apps" msgid="6128313544379622475">"Piilota virheenkorjaussovellukset"</string>
     <string name="show_debug_apps" msgid="4521073121286325786">"Näytä virheenkorjaussovellukset"</string>
-    <string name="times_separator" msgid="6180368193321715816">"/"</string>
-    <string name="recents_empty_state_text" msgid="6703106170272215731">"Ei viimeaikaisia kohteita"</string>
-    <string name="recents_clear_all_text" msgid="2088678071417053923">"Tyhjennä kaikki"</string>
-    <string name="failure_opening_recent_task_message" msgid="9097595793150874357">"Sovellus ei ole käytettävissä"</string>
+    <!-- no translation found for times_separator (6180368193321715816) -->
+    <skip />
 </resources>
