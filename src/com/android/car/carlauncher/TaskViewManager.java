@@ -137,18 +137,7 @@ public final class TaskViewManager {
             if (mHostTaskId != task.taskId) {
                 return;
             }
-            WindowContainerTransaction wct = new WindowContainerTransaction();
-            for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
-                // showEmbeddedTasks() will restart the crashed tasks too.
-                mControlledTaskViews.get(i).showEmbeddedTask(wct);
-            }
-            if (mLaunchRootCarTaskView != null) {
-                mLaunchRootCarTaskView.showEmbeddedTask(wct);
-            }
-            for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
-                mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
-            }
-            mSyncQueue.queue(wct);
+            showEmbeddedTasks();
         }
     };
 
@@ -214,7 +203,7 @@ public final class TaskViewManager {
         this(context, mainHandler, handlerExecutor, taskOrganizer,
                 transactionPool,
                 shellinit,
-                new ShellController(shellinit, shellCommandHandler, handlerExecutor),
+                new ShellController(context, shellinit, shellCommandHandler, handlerExecutor),
                 new DisplayController(context,
                         WindowManagerGlobal.getWindowManagerService(), shellinit, handlerExecutor)
         );
@@ -294,17 +283,6 @@ public final class TaskViewManager {
      */
     void setCarUserManager(CarUserManager carUserManager) {
         mCarUserManager = carUserManager;
-    }
-
-    private ShellController initShellController(ShellInit shellInit, TransactionPool txPool) {
-        ShellCommandHandler shellCommandHandler = new ShellCommandHandler();
-        ShellController shellController = new ShellController(shellInit, shellCommandHandler,
-                mShellExecutor);
-        // StartingWindowController needs to be initialized so that splash screen is displayed.
-        new StartingWindowController(mContext, shellInit, shellController, mTaskOrganizer,
-                mShellExecutor, new PhoneStartingWindowTypeAlgorithm(), new IconProvider(mContext),
-                txPool);
-        return shellController;
     }
 
     private Transitions initTransitions(ShellInit shellInit, TransactionPool txPool,
@@ -433,6 +411,24 @@ public final class TaskViewManager {
                 mCar.disconnect();
             }
         });
+    }
+
+    /**
+     * Shows all the embedded tasks. If the tasks are
+     */
+    public void showEmbeddedTasks() {
+        WindowContainerTransaction wct = new WindowContainerTransaction();
+        for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
+            // showEmbeddedTasks() will restart the crashed tasks too.
+            mControlledTaskViews.get(i).showEmbeddedTask(wct);
+        }
+        if (mLaunchRootCarTaskView != null) {
+            mLaunchRootCarTaskView.showEmbeddedTask(wct);
+        }
+        for (int i = mSemiControlledTaskViews.size() - 1; i >= 0; --i) {
+            mSemiControlledTaskViews.get(i).showEmbeddedTask(wct);
+        }
+        mSyncQueue.queue(wct);
     }
 
     /**
