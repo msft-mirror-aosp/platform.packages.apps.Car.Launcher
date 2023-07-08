@@ -18,15 +18,9 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_title" msgid="1995858460392177468">"Car Launcher"</string>
-    <!-- no translation found for reset_appgrid_title (814562055108028366) -->
-    <skip />
-    <!-- no translation found for reset_appgrid_dialogue_message (8275758912490987735) -->
-    <skip />
     <string name="app_launcher_title_all_apps" msgid="3215107396036838217">"All apps"</string>
     <string name="app_launcher_title_media_only" msgid="4400886555907422816">"Media apps"</string>
     <string name="app_launcher_stop_app_action" msgid="1081680842410279692">"Stop app"</string>
-    <!-- no translation found for app_launcher_app_info_action (6388181061002827660) -->
-    <skip />
     <string name="app_launcher_stop_app_success_toast_text" msgid="2117271772351005349">"<xliff:g id="APP_NAME">%1$s</xliff:g> has been stopped."</string>
     <string name="app_launcher_stop_app_dialog_title" msgid="8276889322638001144">"Stop app?"</string>
     <string name="app_launcher_stop_app_dialog_text" msgid="3264059639436254372">"If you force stop an app, it may misbehave."</string>
@@ -47,11 +41,5 @@
     <string name="hide_debug_apps" msgid="6128313544379622475">"Hide debug apps"</string>
     <string name="show_debug_apps" msgid="4521073121286325786">"Show debug apps"</string>
     <!-- no translation found for times_separator (6180368193321715816) -->
-    <skip />
-    <!-- no translation found for recents_empty_state_text (6703106170272215731) -->
-    <skip />
-    <!-- no translation found for recents_clear_all_text (2088678071417053923) -->
-    <skip />
-    <!-- no translation found for failure_opening_recent_task_message (9097595793150874357) -->
     <skip />
 </resources>
