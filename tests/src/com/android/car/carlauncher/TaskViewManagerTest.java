@@ -405,6 +405,7 @@ public class TaskViewManagerTest extends AbstractExtendedMockitoTestCase {
         rootTaskListener.get().onBackPressedOnTaskRoot(launchRootTask);
         rootTaskListener.get().onTaskVanished(task3);
         rootTaskListener.get().onBackPressedOnTaskRoot(launchRootTask);
+        rootTaskListener.get().onTaskVanished(task2);
 
         // Assert
         ArgumentCaptor<WindowContainerTransaction> wctCaptor = ArgumentCaptor.forClass(
@@ -415,14 +416,14 @@ public class TaskViewManagerTest extends AbstractExtendedMockitoTestCase {
                 wcts.stream().flatMap(wct -> wct.getHierarchyOps().stream())
                         .filter(op -> op.getType() == HIERARCHY_OP_TYPE_REMOVE_TASK)
                         .collect(Collectors.toList());
-        assertWithMessage("There must be a WindowContainerTransaction to remove"
-                + " 2 of the 3 tasks.")
+        assertWithMessage("There must NOT be a WindowContainerTransaction to remove"
+                + " 3 of the 3 tasks.")
                 .that(removeTaskOps.size())
-                .isEqualTo(2);
+                .isEqualTo(3);
         assertThat(removeTaskOps.get(0).getContainer()).isEqualTo(task1Token);
         assertThat(removeTaskOps.get(1).getContainer()).isEqualTo(task3Token);
-        assertThat(taskViewManager.getRootTaskCount()).isEqualTo(1);
-        assertThat(taskViewManager.getTopTaskInLaunchRootTask().taskId).isEqualTo(2);
+        assertThat(removeTaskOps.get(2).getContainer()).isEqualTo(task2Token);
+        assertThat(taskViewManager.getRootTaskCount()).isEqualTo(0);
     }
 
     @Test

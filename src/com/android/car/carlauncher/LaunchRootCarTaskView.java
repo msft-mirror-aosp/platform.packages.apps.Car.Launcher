@@ -161,10 +161,7 @@ final class LaunchRootCarTaskView extends CarTaskView {
 
                 @Override
                 public void onBackPressedOnTaskRoot(ActivityManager.RunningTaskInfo taskInfo) {
-                    if (mLaunchRootStack.size() == 1) {
-                        Log.d(TAG, "Cannot remove last task from launch root.");
-                        return;
-                    }
+                    // TODO(b/315010471): handle back pressed when stack size is 1.
                     if (mLaunchRootStack.size() == 0) {
                         Log.d(TAG, "Launch root is empty, do nothing.");
                         return;
