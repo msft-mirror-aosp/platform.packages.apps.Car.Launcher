@@ -180,6 +180,11 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
     }
 
     @Override
+    public void onDestroy(Context context) {
+        mContext = null;
+    }
+
+    @Override
     protected void onCleared() {
         super.onCleared();
         mSourceViewModel.getPrimaryMediaSource().removeObserver(mMediaSourceObserver);
