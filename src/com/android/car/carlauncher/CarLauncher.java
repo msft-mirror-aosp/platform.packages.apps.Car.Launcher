@@ -17,6 +17,7 @@
 package com.android.car.carlauncher;
 
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
+import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
 import android.app.ActivityManager;
@@ -33,8 +34,11 @@ import android.car.user.CarUserManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.UserManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
 import android.view.ViewGroup;
@@ -84,6 +88,8 @@ public class CarLauncher extends FragmentActivity {
     private boolean mUseSmallCanvasOptimizedMap;
     private boolean mUseRemoteCarTaskView;
     private ViewGroup mMapsCard;
+    @VisibleForTesting
+    ContentObserver mTosContentObserver;
 
     private final TaskStackListener mTaskStackListener = new TaskStackListener() {
         @Override
@@ -251,6 +257,7 @@ public class CarLauncher extends FragmentActivity {
                                 }
                             });
                 });
+        setupContentObserversForTos();
     }
 
     private void setUpTaskView(ViewGroup parent) {
@@ -304,6 +311,11 @@ public class CarLauncher extends FragmentActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mTosContentObserver != null) {
+            Log.i(TAG, "Unregister content observer for tos state");
+            getContentResolver().unregisterContentObserver(mTosContentObserver);
+            mTosContentObserver = null;
+        }
         TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
         release();
     }
@@ -393,13 +405,49 @@ public class CarLauncher extends FragmentActivity {
             mActivityManager.moveTaskToFront(mCarLauncherTaskId,  /* flags= */ 0);
         }
     }
-
-    private Intent getMapsIntent() {
+    protected Intent getMapsIntent() {
         Intent mapIntent = mUseSmallCanvasOptimizedMap
                 ? CarLauncherUtils.getSmallCanvasOptimizedMapIntent(this)
                 : CarLauncherUtils.getMapsIntent(this);
+
+        String packageName = mapIntent.getComponent() != null
+                ? mapIntent.getComponent().getPackageName()
+                : null;
+        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(this);
+
+        // Launch tos map intent when the user has not accepted tos and when the
+        // default maps package is not available to package manager, or it's disabled by tos
+        if (!AppLauncherUtils.tosAccepted(this)
+                && (packageName == null || tosDisabledPackages.contains(packageName))) {
+            mapIntent = CarLauncherUtils.getTosMapIntent(this);
+            Log.i(TAG, "Launching tos activity in task view");
+        }
         // Don't want to show this Activity in Recents.
         mapIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         return mapIntent;
+    }
+
+    private void setupContentObserversForTos() {
+        if (AppLauncherUtils.tosStatusUninitialized(/* context = */ this)
+                || !AppLauncherUtils.tosAccepted(/* context = */ this)) {
+            Log.i(TAG, "TOS not accepted, setting up content observers for TOS state");
+        } else {
+            Log.i(TAG, "TOS accepted, state will remain accepted, "
+                    + "don't need to observe this value");
+            return;
+        }
+        mTosContentObserver = new ContentObserver(new Handler()) {
+            @Override
+            public void onChange(boolean selfChange) {
+                super.onChange(selfChange);
+                // TODO (b/280077391): Release the remote task view and recreate the map activity
+                Log.i(TAG, "TOS state updated:" + AppLauncherUtils.tosAccepted(getBaseContext()));
+                recreate();
+            }
+        };
+        getContentResolver().registerContentObserver(
+                Settings.Secure.getUriFor(KEY_USER_TOS_ACCEPTED),
+                /* notifyForDescendants*/ false,
+                mTosContentObserver);
     }
 }

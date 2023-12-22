@@ -17,6 +17,8 @@
 package com.android.car.carlauncher;
 
 import static android.car.settings.CarSettings.Secure.KEY_PACKAGES_DISABLED_ON_RESOURCE_OVERUSE;
+import static android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLED_APPS;
+import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
@@ -59,6 +61,7 @@ import com.android.car.ui.shortcutspopup.CarUiShortcutsPopup;
 import com.google.common.collect.Sets;
 
 import java.lang.annotation.Retention;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,6 +79,10 @@ import java.util.function.Consumer;
 public class AppLauncherUtils {
     private static final String TAG = "AppLauncherUtils";
     private static final String ANDROIDX_CAR_APP_LAUNCHABLE = "androidx.car.app.launchable";
+    private static final String TOS_NOT_ACCEPTED = "1";
+    // This value indicates if TOS is in uninitialized state
+    private static final String TOS_UNINITIALIZED = "0";
+    static final String TOS_DISABLED_APPS_SEPARATOR = ",";
 
     @Retention(SOURCE)
     @IntDef({APP_TYPE_LAUNCHABLES, APP_TYPE_MEDIA_SERVICES})
@@ -106,7 +113,7 @@ public class AppLauncherUtils {
      *
      * @param app the requesting app's AppMetaData
      */
-    static void launchApp(Context context, Intent intent) {
+    public static void launchApp(Context context, Intent intent) {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchDisplayId(context.getDisplayId());
         context.startActivity(intent, options.toBundle());
@@ -239,6 +246,10 @@ public class AppLauncherUtils {
                 context.getResources().getStringArray(
                         com.android.car.media.common.R.array.custom_media_packages));
 
+        // Get a list of packages disabled by the system because user has not accepted
+        // terms of service
+        Set<String> tosDisabledPackages = getTosDisabledPackages(context);
+
         // Process media services
         if ((appTypes & APP_TYPE_MEDIA_SERVICES) != 0) {
             for (ResolveInfo info : mediaServices) {
@@ -250,6 +261,7 @@ public class AppLauncherUtils {
                 if (shouldAddToLaunchables(packageManager, componentName, appsToHide,
                         customMediaComponents, appTypes, APP_TYPE_MEDIA_SERVICES)) {
                     final boolean isDistractionOptimized = true;
+                    boolean isDisabledByTos = tosDisabledPackages.contains(packageName);
 
                     Intent intent = new Intent(Car.CAR_INTENT_ACTION_MEDIA_TEMPLATE);
                     intent.putExtra(Car.CAR_EXTRA_MEDIA_COMPONENT, componentName.flattenToString());
@@ -261,6 +273,7 @@ public class AppLauncherUtils {
                             info.serviceInfo.loadIcon(packageManager),
                             isDistractionOptimized,
                             /* isMirroring = */ false,
+                            isDisabledByTos,
                             contextArg -> {
                                 if (openMediaCenter) {
                                     AppLauncherUtils.launchApp(contextArg, intent);
@@ -286,6 +299,7 @@ public class AppLauncherUtils {
                     boolean isDistractionOptimized =
                             isActivityDistractionOptimized(carPackageManager, packageName,
                                     info.getName());
+                    boolean isDisabledByTos = tosDisabledPackages.contains(packageName);
 
                     Intent intent = new Intent(Intent.ACTION_MAIN)
                             .setComponent(componentName)
@@ -300,6 +314,7 @@ public class AppLauncherUtils {
                             info.getBadgedIcon(0),
                             isDistractionOptimized,
                             isMirroring,
+                            isDisabledByTos,
                             contextArg -> {
                                 if (packageName.equals(mirroringAppPkgName)) {
                                     Log.d(TAG, "non-media service package name "
@@ -325,6 +340,7 @@ public class AppLauncherUtils {
                 }
                 boolean isDistractionOptimized =
                         isActivityDistractionOptimized(carPackageManager, packageName, className);
+                boolean isDisabledByTos = tosDisabledPackages.contains(packageName);
 
                 Intent intent = new Intent(Intent.ACTION_MAIN)
                         .setComponent(componentName)
@@ -338,6 +354,7 @@ public class AppLauncherUtils {
                         info.activityInfo.loadIcon(packageManager),
                         isDistractionOptimized,
                         /* isMirroring = */ false,
+                        isDisabledByTos,
                         contextArg -> {
                             packageManager.setApplicationEnabledSetting(packageName,
                                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0);
@@ -355,6 +372,37 @@ public class AppLauncherUtils {
                             AppLauncherUtils.launchApp(contextArg, intent);
                         },
                         buildShortcuts(packageName, displayName, shortcutsListener));
+                launchablesMap.put(componentName, appMetaData);
+            }
+
+            List<ResolveInfo> restrictedActivities = getTosDisabledActivities(
+                    context,
+                    packageManager,
+                    mEnabledPackages
+            );
+            for (ResolveInfo info: restrictedActivities) {
+                String packageName = info.activityInfo.packageName;
+                String className = info.activityInfo.name;
+                ComponentName componentName = new ComponentName(packageName, className);
+
+                boolean isDistractionOptimized =
+                        isActivityDistractionOptimized(carPackageManager, packageName, className);
+                boolean isDisabledByTos = tosDisabledPackages.contains(packageName);
+
+                CharSequence displayName = info.activityInfo.loadLabel(packageManager);
+                AppMetaData appMetaData = new AppMetaData(
+                        displayName,
+                        componentName,
+                        info.activityInfo.loadIcon(packageManager),
+                        isDistractionOptimized,
+                        /* isMirroring = */ false,
+                        isDisabledByTos,
+                        contextArg -> {
+                            Intent tosIntent = getIntentForTosAcceptanceFlow(contextArg);
+                            launchApp(contextArg, tosIntent);
+                        },
+                        /* alternateLaunchCallback */ null
+                );
                 launchablesMap.put(componentName, appMetaData);
             }
         }
@@ -705,5 +753,131 @@ public class AppLauncherUtils {
                 boolean allowStopApp);
 
         void onStopAppSuccess(String message);
+    }
+
+    /**
+     * Gets the intent for launching the TOS acceptance flow
+     *
+     * @param context The app context
+     * @return TOS intent, or null
+     */
+    @Nullable
+    public static Intent getIntentForTosAcceptanceFlow(Context context) {
+        String tosIntentName =
+                context.getResources().getString(R.string.user_tos_activity_intent);
+        try {
+            return Intent.parseUri(tosIntentName, Intent.URI_ANDROID_APP_SCHEME);
+        } catch (URISyntaxException se) {
+            Log.e(TAG, "Invalid intent URI in user_tos_activity_intent", se);
+            return null;
+        }
+    }
+
+    private static List<ResolveInfo> getTosDisabledActivities(
+            Context context,
+            PackageManager packageManager,
+            Set<String> enabledPackages) {
+        return getActivitiesFromSystemPreferences(
+                context,
+                packageManager,
+                enabledPackages,
+                KEY_UNACCEPTED_TOS_DISABLED_APPS,
+                PackageManager.MATCH_DISABLED_COMPONENTS,
+                TOS_DISABLED_APPS_SEPARATOR);
+    }
+
+    /**
+     * Get a list of activities from packages in system preferences by key
+     *
+     * @param context the app context
+     * @param packageManager The PackageManager
+     * @param enabledPackages Set of packages enabled by system
+     * @param settingsKey Key to read from system preferences
+     * @param sep Separator
+     *
+     * @return List of activities read from system preferences
+     */
+    private static List<ResolveInfo> getActivitiesFromSystemPreferences(
+            Context context,
+            PackageManager packageManager,
+            Set<String> enabledPackages,
+            String settingsKey,
+            int filter,
+            String sep) {
+        ContentResolver contentResolverForUser = context.createContextAsUser(
+                        UserHandle.getUserHandleForUid(Process.myUid()), /* flags= */ 0)
+                .getContentResolver();
+        String settingsValue = Settings.Secure.getString(contentResolverForUser, settingsKey);
+        Set<String> packages = TextUtils.isEmpty(settingsValue) ? new ArraySet<>()
+                : new ArraySet<>(Arrays.asList(settingsValue.split(
+                        sep)));
+
+        if (packages.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ResolveInfo> allActivities = packageManager.queryIntentActivities(
+                new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
+                PackageManager.GET_RESOLVED_FILTER | filter);
+
+        List<ResolveInfo> activities = new ArrayList<>();
+        for (int i = 0; i < allActivities.size(); ++i) {
+            ResolveInfo info = allActivities.get(i);
+            if (!enabledPackages.contains(info.activityInfo.packageName)
+                    && packages.contains(info.activityInfo.packageName)) {
+                activities.add(info);
+            }
+        }
+        return activities;
+    }
+
+    /**
+     * Returns a set of packages that are disabled by tos
+     *
+     * @param context The application context
+     * @return Set of packages disabled by tos
+     */
+    static Set<String> getTosDisabledPackages(Context context) {
+        ContentResolver contentResolverForUser = context.createContextAsUser(
+                        UserHandle.getUserHandleForUid(Process.myUid()), /* flags= */ 0)
+                .getContentResolver();
+        String settingsValue = Settings.Secure.getString(contentResolverForUser,
+                KEY_UNACCEPTED_TOS_DISABLED_APPS);
+        return TextUtils.isEmpty(settingsValue) ? new ArraySet<>()
+                : new ArraySet<>(Arrays.asList(settingsValue.split(
+                        TOS_DISABLED_APPS_SEPARATOR)));
+    }
+
+    /**
+     * Check if a user has accepted TOS
+     *
+     * @param context The application context
+     * @return true if the user has accepted Tos, false otherwise
+     */
+    static boolean tosAccepted(Context context) {
+        ContentResolver contentResolverForUser = context.createContextAsUser(
+                        UserHandle.getUserHandleForUid(Process.myUid()), /* flags= */ 0)
+                .getContentResolver();
+        String settingsValue = Settings.Secure.getString(
+                contentResolverForUser,
+                KEY_USER_TOS_ACCEPTED);
+        return !Objects.equals(settingsValue, TOS_NOT_ACCEPTED);
+    }
+
+    /**
+     * Check if TOS status is uninitialized
+     *
+     * @param context The application context
+     *
+     * @return true if tos is uninitialized, false otherwise
+     */
+    static boolean tosStatusUninitialized(Context context) {
+        ContentResolver contentResolverForUser = context.createContextAsUser(
+                        UserHandle.getUserHandleForUid(Process.myUid()), /* flags= */ 0)
+                .getContentResolver();
+        String settingsValue = Settings.Secure.getString(
+                contentResolverForUser,
+                KEY_USER_TOS_ACCEPTED);
+        return Objects.equals(settingsValue, TOS_UNINITIALIZED);
     }
 }

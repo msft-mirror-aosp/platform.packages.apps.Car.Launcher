@@ -209,6 +209,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="integer" name="config_msg_register_mirroring_pkg_code"/>
       <item type="integer" name="config_msg_send_mirroring_pkg_code"/>
       <item type="integer" name="config_msg_unregister_mirroring_pkg_code"/>
+      <item type="integer" name="config_tos_banner_resurface_time_days"/>
       <item type="integer" name="ms_background_highlight_duration"/>
       <item type="integer" name="ms_drop_animation_delay"/>
       <item type="integer" name="ms_long_press_animation_duration"/>
@@ -256,6 +257,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="string" name="config_msg_mirroring_service_pkg_name"/>
       <item type="string" name="config_passengerLauncherComponent"/>
       <item type="string" name="config_smallCanvasOptimizedMapIntent"/>
+      <item type="string" name="config_tosMapIntent"/>
       <item type="string" name="default_media_song_title"/>
       <item type="string" name="dialing_call_text"/>
       <item type="string" name="driving_toast_text"/>
@@ -276,6 +278,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="string" name="tap_for_more_info_text"/>
       <item type="string" name="tap_to_launch_text"/>
       <item type="string" name="times_separator"/>
+      <item type="string" name="user_tos_activity_intent"/>
       <item type="string" name="weather_app_name"/>
       <item type="style" name="ActionDialogTheme"/>
       <item type="style" name="AppDisplayNameStyle"/>
