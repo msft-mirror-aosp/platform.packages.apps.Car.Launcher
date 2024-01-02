@@ -80,4 +80,17 @@
         the passenger Launcher role too.
     -->
     <string name="config_passengerLauncherComponent">com.android.car.multidisplay/.launcher.LauncherActivity</string>
+
+    <!-- An intent to start tos map activity when user has not accepted terms of service
+         URI, for example:
+         "intent:#Intent;component=com.android.car.carlauncher/com.android.car.carlauncher.homescreen.MapActivityTos;action=android.intent.action.MAIN;end"
+    -->
+    <string name="config_tosMapIntent" translatable="false"></string>
+
+    <!--- The number of days to wait before resurfacing the terms of service banner
+         on the app grid after being dismissed
+
+         * Integer value 0 implies to show the banner after every reboot
+   -->
+    <integer name="config_tos_banner_resurface_time_days">0</integer>
 </resources>

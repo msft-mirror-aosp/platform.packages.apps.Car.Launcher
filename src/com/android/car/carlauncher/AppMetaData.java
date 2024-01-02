@@ -40,6 +40,7 @@ public final class AppMetaData {
     private final Drawable mIcon;
     private final boolean mIsDistractionOptimized;
     private final boolean mIsMirroring;
+    private final boolean mIsDisabledByTos;
     private final Consumer<Context> mLaunchCallback;
     private final Consumer<Pair<Context, View>> mAlternateLaunchCallback;
 
@@ -60,6 +61,7 @@ public final class AppMetaData {
             Drawable icon,
             boolean isDistractionOptimized,
             boolean isMirroring,
+            boolean isDisabledByTos,
             Consumer<Context> launchCallback,
             Consumer<Pair<Context, View>> alternateLaunchCallback) {
         mDisplayName = displayName == null ? "" : displayName.toString();
@@ -67,6 +69,7 @@ public final class AppMetaData {
         mIcon = icon;
         mIsDistractionOptimized = isDistractionOptimized;
         mIsMirroring = isMirroring;
+        mIsDisabledByTos = isDisabledByTos;
         mLaunchCallback = launchCallback;
         mAlternateLaunchCallback = alternateLaunchCallback;
     }
@@ -101,6 +104,9 @@ public final class AppMetaData {
 
     public boolean getIsDistractionOptimized() {
         return mIsDistractionOptimized;
+    }
+    public boolean getIsDisabledByTos() {
+        return mIsDisabledByTos;
     }
 
     boolean getIsMirroring() {
