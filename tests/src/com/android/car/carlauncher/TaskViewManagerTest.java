@@ -75,8 +75,6 @@ import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.wm.shell.ShellTaskOrganizer;
 import com.android.wm.shell.common.HandlerExecutor;
 import com.android.wm.shell.common.SyncTransactionQueue;
-import com.android.wm.shell.startingsurface.StartingWindowController;
-import com.android.wm.shell.sysui.ShellController;
 import com.android.wm.shell.sysui.ShellInit;
 import com.android.wm.shell.taskview.TaskView;
 import com.android.wm.shell.transition.Transitions;
@@ -127,10 +125,6 @@ public class TaskViewManagerTest extends AbstractExtendedMockitoTestCase {
     @Mock
     private WindowContainerToken mToken;
 
-    @Mock
-    private ShellController mShellController;
-    @Mock
-    private StartingWindowController mStartingWindowController;
     @Mock
     private TaskViewInputInterceptor mTaskViewInputInterceptor;
 
@@ -1036,8 +1030,7 @@ public class TaskViewManagerTest extends AbstractExtendedMockitoTestCase {
         }
 
         TaskViewManager taskViewManager =  new TaskViewManager(mActivity, mShellExecutor,
-                mOrganizer, mSyncQueue, mTransitions, new ShellInit(mShellExecutor),
-                mShellController, mStartingWindowController);
+                mOrganizer, mSyncQueue, mTransitions, new ShellInit(mShellExecutor));
         taskViewManager.setTaskViewInputInterceptor(mTaskViewInputInterceptor);
         return taskViewManager;
     }

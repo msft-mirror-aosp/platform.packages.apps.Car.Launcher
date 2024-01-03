@@ -20,7 +20,8 @@ import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_SWITCHING;
 import static android.car.user.CarUserManager.USER_LIFECYCLE_EVENT_TYPE_UNLOCKED;
-
+import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION;
+import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_STARTING;
 import static com.android.car.carlauncher.CarLauncher.TAG;
 import static com.android.wm.shell.ShellTaskOrganizer.TASK_LISTENER_TYPE_FULLSCREEN;
 
@@ -83,12 +84,12 @@ public final class TaskViewManager {
     static final boolean DBG = Log.isLoggable(TAG, Log.DEBUG);
     private static final String SCHEME_PACKAGE = "package";
 
+    private final Car mCar;
     private final AtomicReference<CarActivityManager> mCarActivityManagerRef =
             new AtomicReference<>();
     @ShellMainThread
     private final HandlerExecutor mShellExecutor;
     private final SyncTransactionQueue mSyncQueue;
-    private final Transitions mTransitions;
     private final TaskViewTransitions mTaskViewTransitions;
     private final ShellTaskOrganizer mTaskOrganizer;
     private final int mHostTaskId;
@@ -103,8 +104,17 @@ public final class TaskViewManager {
 
     private TaskViewInputInterceptor mTaskViewInputInterceptor;
     private CarUserManager mCarUserManager;
-    private Activity mContext;
-    private Car mCar;
+    private Activity mActivity;
+    /**
+     * An application context should be preferred over activity context where possible, given that
+     * the {@code TaskViewManager} and {@code TaskView}s will potentially outlive the host activity,
+     * particularly, when the activity is recreated by the framework (e.g., for configuration
+     * change).
+     *
+     * Having activity context retained through the activity re-creation would result in memory
+     * leaks.
+     */
+    private Context mApplicationContext;
     private boolean mReleased = false;
 
     private final TaskStackListener mTaskStackListener = new TaskStackListener() {
@@ -145,14 +155,13 @@ public final class TaskViewManager {
 
     private final CarUserManager.UserLifecycleListener mUserLifecycleListener = event -> {
         if (DBG) {
-            Log.d(TAG, "UserLifecycleListener.onEvent: For User "
-                    + mContext.getUserId()
+            Log.d(TAG, "UserLifecycleListener.onEvent: For User " + mApplicationContext.getUserId()
                     + ", received an event " + event);
         }
 
         // When user-unlocked, if task isn't launched yet, then try to start it.
         if (event.getEventType() == USER_LIFECYCLE_EVENT_TYPE_UNLOCKED
-                && mContext.getUserId() == event.getUserId()) {
+                && mApplicationContext.getUserId() == event.getUserId()) {
             for (int i = mControlledTaskViews.size() - 1; i >= 0; --i) {
                 ControlledCarTaskView taskView = mControlledTaskViews.get(i);
                 if (taskView.getTaskId() == INVALID_TASK_ID) {
@@ -164,7 +173,7 @@ public final class TaskViewManager {
         // When user-switching, onDestroy in the previous user's Host app isn't called.
         // So try to release the resource explicitly.
         if (event.getEventType() == USER_LIFECYCLE_EVENT_TYPE_SWITCHING
-                && mContext.getUserId() == event.getPreviousUserId()) {
+                && mApplicationContext.getUserId() == event.getPreviousUserId()) {
             release();
         }
     };
@@ -189,69 +198,68 @@ public final class TaskViewManager {
         }
     };
 
-    public TaskViewManager(Activity context, Handler mainHandler) {
-        this(context, mainHandler, new HandlerExecutor(mainHandler));
-    }
+    public static TaskViewManager create(Activity activity, Handler mainHandler) {
+        Context applicationContext = activity.getApplicationContext();
 
-    private TaskViewManager(Activity context, Handler mainHandler,
-            HandlerExecutor handlerExecutor) {
-        this(context, mainHandler, handlerExecutor, new ShellTaskOrganizer(handlerExecutor),
-                new TransactionPool(), new ShellCommandHandler(), new ShellInit(handlerExecutor));
-    }
+        HandlerExecutor handlerExecutor = new HandlerExecutor(mainHandler);
+        ShellTaskOrganizer taskOrganizer = new ShellTaskOrganizer(handlerExecutor);
+        TransactionPool transactionPool = new TransactionPool();
+        ShellInit shellInit = new ShellInit(handlerExecutor);
+        ShellController shellController = new ShellController(
+                applicationContext, shellInit, new ShellCommandHandler(), handlerExecutor);
+        SyncTransactionQueue syncQueue = new SyncTransactionQueue(transactionPool, handlerExecutor);
 
-    private TaskViewManager(Activity context, Handler mainHandler, HandlerExecutor handlerExecutor,
-            ShellTaskOrganizer taskOrganizer, TransactionPool transactionPool,
-            ShellCommandHandler shellCommandHandler, ShellInit shellinit) {
-        this(context, mainHandler, handlerExecutor, taskOrganizer,
-                transactionPool,
-                shellinit,
-                new ShellController(context, shellinit, shellCommandHandler, handlerExecutor),
-                new DisplayController(context,
-                        WindowManagerGlobal.getWindowManagerService(), shellinit, handlerExecutor)
-        );
-    }
-
-    private TaskViewManager(Activity context, Handler mainHandler, HandlerExecutor handlerExecutor,
-            ShellTaskOrganizer taskOrganizer, TransactionPool transactionPool, ShellInit shellinit,
-            ShellController shellController, DisplayController dc) {
-        this(context, handlerExecutor, taskOrganizer,
-                new SyncTransactionQueue(transactionPool, handlerExecutor),
-                new Transitions(context, shellinit, shellController, taskOrganizer,
-                        transactionPool, dc, handlerExecutor, mainHandler, handlerExecutor),
-                shellinit,
+        // Set up the starting window controller. Note: use window context instead of activity
+        // context to avoid leaking the latter during activity recreation.
+        Context windowContext =
+                activity.createWindowContext(TYPE_APPLICATION_STARTING, /* options= */ null);
+        new StartingWindowController(
+                windowContext,
+                shellInit,
                 shellController,
-                new StartingWindowController(context, shellinit,
-                        shellController,
-                        taskOrganizer,
-                        handlerExecutor,
-                        new PhoneStartingWindowTypeAlgorithm(),
-                        new IconProvider(context),
-                        transactionPool));
+                taskOrganizer,
+                handlerExecutor,
+                new PhoneStartingWindowTypeAlgorithm(),
+                new IconProvider(windowContext),
+                transactionPool);
+
+        DisplayController displayController = new DisplayController(windowContext, 
+                WindowManagerGlobal.getWindowManagerService(), shellInit, handlerExecutor);
+        Transitions transitions = new Transitions(applicationContext, shellInit, shellController,
+                taskOrganizer, transactionPool, displayController, handlerExecutor, mainHandler,
+                handlerExecutor);
+
+        return new TaskViewManager(
+                activity, handlerExecutor, taskOrganizer, syncQueue, transitions, shellInit);
     }
 
     @VisibleForTesting
-    TaskViewManager(Activity context, HandlerExecutor handlerExecutor,
-            ShellTaskOrganizer shellTaskOrganizer, SyncTransactionQueue syncQueue,
-            Transitions transitions, ShellInit shellInit, ShellController shellController,
-            StartingWindowController startingWindowController) {
-        if (DBG) Slog.d(TAG, "TaskViewManager(), u=" + context.getUserId());
-        mContext = context;
+    TaskViewManager(Activity activity, HandlerExecutor handlerExecutor,
+                    ShellTaskOrganizer shellTaskOrganizer, SyncTransactionQueue syncQueue,
+                    Transitions transitions, ShellInit shellInit) {
+        mActivity = activity;
+        mApplicationContext = activity.getApplicationContext();
+
+        if (DBG) Slog.d(TAG, "TaskViewManager(), u=" + mApplicationContext.getUserId());
+
         mShellExecutor = handlerExecutor;
         mTaskOrganizer = shellTaskOrganizer;
-        mHostTaskId = mContext.getTaskId();
+        mHostTaskId = activity.getTaskId();
         mSyncQueue = syncQueue;
-        mTransitions = transitions;
-        mTaskViewTransitions = new TaskViewTransitions(mTransitions);
-        mTaskViewInputInterceptor = new TaskViewInputInterceptor(context, this);
+        mTaskViewTransitions = new TaskViewTransitions(transitions);
 
-        initCar();
+        mTaskViewInputInterceptor = new TaskViewInputInterceptor(mActivity, this);
+
+        mCar = initCar();
+
         shellInit.init();
         initTaskOrganizer(mCarActivityManagerRef);
-        mContext.registerActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
+
+        mActivity.registerActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
     }
 
-    private void initCar() {
-        mCar = Car.createCar(/* context= */ mContext, /* handler= */ null,
+    private Car initCar() {
+        Car result = Car.createCar(mApplicationContext, /* handler= */ null,
                 Car.CAR_WAIT_TIMEOUT_WAIT_FOREVER,
                 (car, ready) -> {
                     if (!ready) {
@@ -260,23 +268,27 @@ public final class TaskViewManager {
                         return;
                     }
                     setCarUserManager((CarUserManager) car.getCarManager(Car.CAR_USER_SERVICE));
+
                     UserLifecycleEventFilter filter = new UserLifecycleEventFilter.Builder()
                             .addEventType(USER_LIFECYCLE_EVENT_TYPE_UNLOCKED)
-                            .addEventType(USER_LIFECYCLE_EVENT_TYPE_SWITCHING).build();
-                    mCarUserManager.addListener(mContext.getMainExecutor(), filter,
-                            mUserLifecycleListener);
-                    CarActivityManager carAM = (CarActivityManager) car.getCarManager(
-                            Car.CAR_ACTIVITY_SERVICE);
-                    mCarActivityManagerRef.set(carAM);
+                            .addEventType(USER_LIFECYCLE_EVENT_TYPE_SWITCHING)
+                            .build();
+                    mCarUserManager.addListener(
+                            mApplicationContext.getMainExecutor(), filter, mUserLifecycleListener);
 
-                    carAM.registerTaskMonitor();
+                    CarActivityManager activityManager =
+                            (CarActivityManager) car.getCarManager(Car.CAR_ACTIVITY_SERVICE);
+                    mCarActivityManagerRef.set(activityManager);
+                    activityManager.registerTaskMonitor();
                 });
 
         TaskStackChangeListeners.getInstance().registerTaskStackListener(mTaskStackListener);
 
         IntentFilter packageIntentFilter = new IntentFilter(Intent.ACTION_PACKAGE_REPLACED);
         packageIntentFilter.addDataScheme(SCHEME_PACKAGE);
-        mContext.registerReceiver(mPackageBroadcastReceiver, packageIntentFilter);
+        mApplicationContext.registerReceiver(mPackageBroadcastReceiver, packageIntentFilter);
+
+        return result;
     }
 
     // TODO(b/239958124A): Remove this method when unit tests for TaskViewManager have been added.
@@ -285,14 +297,6 @@ public final class TaskViewManager {
      */
     void setCarUserManager(CarUserManager carUserManager) {
         mCarUserManager = carUserManager;
-    }
-
-    private Transitions initTransitions(ShellInit shellInit, TransactionPool txPool,
-            ShellController shellController, Handler mainHandler) {
-        DisplayController dc = new DisplayController(mContext,
-                WindowManagerGlobal.getWindowManagerService(), shellInit, mShellExecutor);
-        return new Transitions(mContext, shellInit, shellController, mTaskOrganizer,
-                txPool, dc, mShellExecutor, mainHandler, mShellExecutor);
     }
 
     private void initTaskOrganizer(AtomicReference<CarActivityManager> carActivityManagerRef) {
@@ -317,9 +321,10 @@ public final class TaskViewManager {
             ControlledCarTaskViewConfig controlledCarTaskViewConfig,
             ControlledCarTaskViewCallbacks taskViewCallbacks) {
         mShellExecutor.execute(() -> {
-            ControlledCarTaskView taskView = new ControlledCarTaskView(mContext, mTaskOrganizer,
-                    mTaskViewTransitions, mSyncQueue, callbackExecutor, controlledCarTaskViewConfig,
-                    taskViewCallbacks, mContext.getSystemService(UserManager.class), this);
+            ControlledCarTaskView taskView = new ControlledCarTaskView(mActivity,
+                    mTaskOrganizer, mTaskViewTransitions, mSyncQueue, callbackExecutor,
+                    controlledCarTaskViewConfig, taskViewCallbacks,
+                    mApplicationContext.getSystemService(UserManager.class), this);
             mControlledTaskViews.add(taskView);
 
             if (controlledCarTaskViewConfig.mCaptureGestures
@@ -327,7 +332,6 @@ public final class TaskViewManager {
                 mTaskViewInputInterceptor.init();
             }
         });
-
     }
 
     /**
@@ -343,8 +347,8 @@ public final class TaskViewManager {
             if (mLaunchRootCarTaskView != null) {
                 throw new IllegalStateException("Cannot create more than one launch root task");
             }
-            mLaunchRootCarTaskView = new LaunchRootCarTaskView(mContext, mTaskOrganizer,
-                    mTaskViewTransitions, mSyncQueue,
+            mLaunchRootCarTaskView = new LaunchRootCarTaskView(mActivity,
+                    mTaskOrganizer, mTaskViewTransitions, mSyncQueue,
                     callbackExecutor, taskViewCallbacks, mCarActivityManagerRef);
         });
     }
@@ -387,7 +391,7 @@ public final class TaskViewManager {
             List<ComponentName> allowListedActivities,
             SemiControlledCarTaskViewCallbacks taskViewCallbacks) {
         mShellExecutor.execute(() -> {
-            SemiControlledCarTaskView taskView = new SemiControlledCarTaskView(mContext,
+            SemiControlledCarTaskView taskView = new SemiControlledCarTaskView(mActivity,
                     mTaskOrganizer, mTaskViewTransitions, mSyncQueue,
                     callbackExecutor, allowListedActivities, taskViewCallbacks,
                     mCarActivityManagerRef);
@@ -401,13 +405,13 @@ public final class TaskViewManager {
      */
     void release() {
         mShellExecutor.execute(() -> {
-            if (DBG) Slog.d(TAG, "TaskViewManager.release, u=" + mContext.getUser());
+            if (DBG) Slog.d(TAG, "TaskViewManager.release, u=" + mApplicationContext.getUser());
 
             if (mCarUserManager != null) {
                 mCarUserManager.removeListener(mUserLifecycleListener);
             }
             TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
-            mContext.unregisterReceiver(mPackageBroadcastReceiver);
+            mApplicationContext.unregisterReceiver(mPackageBroadcastReceiver);
 
             CarActivityManager carAM = mCarActivityManagerRef.get();
             if (carAM != null) {
@@ -430,9 +434,13 @@ public final class TaskViewManager {
                 mLaunchRootCarTaskView = null;
             }
 
-            mContext.unregisterActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
+            mActivity.unregisterActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
+            mActivity = null;
+
             mTaskOrganizer.unregisterOrganizer();
+
             mTaskViewInputInterceptor.release();
+            mTaskViewInputInterceptor = null;
 
             if (mCar != null) {
                 mCar.disconnect();
@@ -466,14 +474,14 @@ public final class TaskViewManager {
     boolean isHostVisible() {
         // This code relies on Activity#isVisibleForAutofill() instead of maintaining a custom
         // activity state.
-        return mContext.isVisibleForAutofill();
+        return mActivity.isVisibleForAutofill();
     }
 
     private final ActivityLifecycleCallbacks mActivityLifecycleCallbacks =
             new ActivityLifecycleCallbacks() {
                 @Override
                 public void onActivityCreated(@NonNull Activity activity,
-                        @Nullable Bundle savedInstanceState) {}
+                    @Nullable Bundle savedInstanceState) {}
 
                 @Override
                 public void onActivityStarted(@NonNull Activity activity) {}

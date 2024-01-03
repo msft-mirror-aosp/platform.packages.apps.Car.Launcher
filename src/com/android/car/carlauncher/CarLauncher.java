@@ -78,6 +78,7 @@ public class CarLauncher extends FragmentActivity {
     private ActivityManager mActivityManager;
     private TaskViewManager mTaskViewManager;
 
+    private Car mCar;
     private CarTaskView mTaskView;
     private ControlledRemoteCarTaskView mRemoteCarTaskView;
     private int mCarLauncherTaskId = INVALID_TASK_ID;
@@ -108,7 +109,6 @@ public class CarLauncher extends FragmentActivity {
                 // The embedded map component received an intent, therefore forcibly bringing the
                 // launcher to the foreground.
                 bringToForeground();
-                return;
             }
         }
     };
@@ -193,7 +193,7 @@ public class CarLauncher extends FragmentActivity {
                 mMapsCard = findViewById(R.id.maps_card);
                 if (mMapsCard != null) {
                     if (mUseRemoteCarTaskView) {
-                        setupRemoteCarTaskView(mMapsCard);
+                        setUpRemoteCarTaskView(mMapsCard);
                     } else {
                         setUpTaskView(mMapsCard);
                     }
@@ -203,59 +203,53 @@ public class CarLauncher extends FragmentActivity {
         initializeCards();
     }
 
-    private void setupRemoteCarTaskView(ViewGroup parent) {
-        Car.createCar(/* context= */ this, /* handler= */ null,
-                Car.CAR_WAIT_TIMEOUT_WAIT_FOREVER,
-                (car, ready) -> {
-                    if (!ready) {
-                        Log.w(TAG, "CarService is not ready.");
-                        return;
+    private void setUpRemoteCarTaskView(ViewGroup parent) {
+        mCar = Car.createCar(/* context= */ getApplicationContext());
+
+        CarActivityManager carAM =
+                (CarActivityManager) mCar.getCarManager(Car.CAR_ACTIVITY_SERVICE);
+
+        carAM.getCarTaskViewController(
+                this,
+                getMainExecutor(),
+                new CarTaskViewControllerCallback() {
+                    @Override
+                    public void onConnected(CarTaskViewController carTaskViewController) {
+                        Log.d(TAG, "onConnected");
+
+                        carTaskViewController.createControlledRemoteCarTaskView(
+                                new ControlledRemoteCarTaskViewConfig.Builder()
+                                        .setActivityIntent(getMapsIntent())
+                                        .setShouldAutoRestartOnTaskRemoval(true)
+                                        .build(),
+                                getMainExecutor(),
+                                new ControlledRemoteCarTaskViewCallback() {
+                                    @Override
+                                    public void onTaskViewCreated(
+                                            ControlledRemoteCarTaskView taskView) {
+                                        mRemoteCarTaskView = taskView;
+                                        parent.addView(taskView);
+                                    }
+
+                                    @Override
+                                    public void onTaskViewInitialized() {
+                                        maybeLogReady();
+                                    }
+
+                                    @Override
+                                    public void onTaskViewReleased() {
+                                        mRemoteCarTaskView = null;
+                                        parent.removeAllViews();
+                                    }
+                                });
                     }
-                    CarActivityManager carAM = (CarActivityManager) car.getCarManager(
-                            Car.CAR_ACTIVITY_SERVICE);
 
-                    carAM.getCarTaskViewController(
-                            this,
-                            getMainExecutor(),
-                            new CarTaskViewControllerCallback() {
-                                @Override
-                                public void onConnected(
-                                        CarTaskViewController carTaskViewController) {
-                                    carTaskViewController.createControlledRemoteCarTaskView(
-                                            new ControlledRemoteCarTaskViewConfig.Builder()
-                                                    .setActivityIntent(getMapsIntent())
-                                                    .setShouldAutoRestartOnTaskRemoval(true)
-                                                    .build(),
-                                            getMainExecutor(),
-                                            new ControlledRemoteCarTaskViewCallback() {
-                                                @Override
-                                                public void onTaskViewCreated(
-                                                        ControlledRemoteCarTaskView taskView) {
-                                                    mRemoteCarTaskView = taskView;
-                                                    parent.addView(taskView);
-                                                }
-
-                                                @Override
-                                                public void onTaskViewInitialized() {
-                                                    maybeLogReady();
-                                                }
-
-                                                @Override
-                                                public void onTaskViewReleased() {
-                                                    mRemoteCarTaskView = null;
-                                                    parent.removeAllViews();
-                                                }
-                                            });
-                                }
-
-                                @Override
-                                public void onDisconnected(
-                                        CarTaskViewController carTaskViewController) {
-                                    Log.d(TAG, "onDisconnected");
-                                    mRemoteCarTaskView = null;
-                                    parent.removeAllViews();
-                                }
-                            });
+                    @Override
+                    public void onDisconnected(CarTaskViewController carTaskViewController) {
+                        Log.d(TAG, "onDisconnected");
+                        mRemoteCarTaskView = null;
+                        parent.removeAllViews();
+                    }
                 });
         setupContentObserversForTos();
     }
@@ -263,7 +257,7 @@ public class CarLauncher extends FragmentActivity {
     private void setUpTaskView(ViewGroup parent) {
         Set<String> taskViewPackages = new ArraySet<>(getResources().getStringArray(
                 R.array.config_taskViewPackages));
-        mTaskViewManager = new TaskViewManager(this, getMainThreadHandler());
+        mTaskViewManager = TaskViewManager.create(this, getMainThreadHandler());
 
         mTaskViewManager.createControlledCarTaskView(
                 getMainExecutor(),
@@ -337,6 +331,12 @@ public class CarLauncher extends FragmentActivity {
     }
 
     private void release() {
+        if (mCar != null) {
+            mCar.disconnect();
+            mCar = null;
+        }
+
+        mTaskViewManager = null;
         mTaskView = null;
         mRemoteCarTaskView = null;
     }
