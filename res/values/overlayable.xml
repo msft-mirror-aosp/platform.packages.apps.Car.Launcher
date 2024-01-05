@@ -202,6 +202,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="top_card"/>
       <item type="id" name="top_edge"/>
       <item type="id" name="top_line"/>
+      <item type="id" name="tos_banner"/>
       <item type="id" name="vertical_barrier"/>
       <item type="integer" name="car_app_selector_column_number"/>
       <item type="integer" name="car_app_selector_row_number"/>
