@@ -32,7 +32,10 @@ android_library {
     name: "CarLauncher-core",
     platform_apis: true,
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 
     resource_dirs: ["res"],
 
