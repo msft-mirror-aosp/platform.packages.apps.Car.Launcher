@@ -16,6 +16,7 @@
 
 package com.android.car.carlauncher.homescreen.audio.media;
 
+import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
 import static android.graphics.Shader.TileMode.MIRROR;
 
 import android.content.res.ColorStateList;
@@ -25,6 +26,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
@@ -34,8 +36,10 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.apps.common.BitmapUtils;
+import com.android.car.carlauncher.Flags;
 import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.HomeCardFragment;
 import com.android.car.carlauncher.homescreen.audio.MediaViewModel;
@@ -43,6 +47,8 @@ import com.android.car.carlauncher.homescreen.ui.CardContent;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
 import com.android.car.carlauncher.homescreen.ui.SeekBarViewModel;
 import com.android.car.media.common.PlaybackControlsActionBar;
+import com.android.car.media.common.source.MediaModels;
+import com.android.car.media.common.ui.PlaybackCardViewModel;
 
 /**
  * {@link HomeCardInterface.View} for the media audio card. Displays and controls the current
@@ -118,20 +124,50 @@ public class MediaCardFragment extends HomeCardFragment {
                 }
             };
 
+    private MediaCardController mMediaCardController;
+    protected PlaybackCardViewModel mViewModel;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mBlurRadius = getResources().getFloat(R.dimen.card_background_image_blur_radius);
-        mDefaultCardBackgroundImage = new CardContent.CardBackgroundImage(
-                getContext().getDrawable(R.drawable.default_audio_background),
-                getContext().getDrawable(R.drawable.control_bar_image_background));
-        mShowSeekBar = getResources().getBoolean(R.bool.show_seek_bar);
+        if (!Flags.mediaCardFullscreen()) {
+            mBlurRadius = getResources().getFloat(R.dimen.card_background_image_blur_radius);
+            mDefaultCardBackgroundImage = new CardContent.CardBackgroundImage(
+                    getContext().getDrawable(R.drawable.default_audio_background),
+                    getContext().getDrawable(R.drawable.control_bar_image_background));
+            mShowSeekBar = getResources().getBoolean(R.bool.show_seek_bar);
+        } else {
+            mViewModel = new ViewModelProvider(this).get(PlaybackCardViewModel.class);
+            if (mViewModel.needsInitialization()) {
+                MediaModels models = new MediaModels(getActivity(), MEDIA_SOURCE_MODE_PLAYBACK);
+                mViewModel.init(models);
+            }
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        if (!Flags.mediaCardFullscreen()) {
+            return super.onCreateView(inflater, container, savedInstanceState);
+        } else {
+            return inflater.inflate(R.layout.media_card_fullscreen, container, false);
+        }
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        getRootView().addOnLayoutChangeListener(mOnRootLayoutChangeListener);
+        if (!Flags.mediaCardFullscreen()) {
+            super.onViewCreated(view, savedInstanceState);
+            getRootView().addOnLayoutChangeListener(mOnRootLayoutChangeListener);
+        } else {
+            mMediaCardController = (MediaCardController) new MediaCardController.Builder()
+                    .setModels(mViewModel.getPlaybackViewModel(),
+                            mViewModel,
+                            mViewModel.getMediaItemsRepository())
+                    .setViewGroup((ViewGroup) view)
+                    .build();
+        }
     }
 
     @Override
