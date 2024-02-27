@@ -18,4 +18,5 @@ limitations under the License.
     <color name="icon_default_color">#FFFFFF</color>
     <color name="icon_static_stroke_color">#000000</color>
     <color name="icon_excited_stroke_color">@*android:color/car_grey_900</color>
+    <color name="icon_restricted_stroke_color">#69696952</color>
 </resources>

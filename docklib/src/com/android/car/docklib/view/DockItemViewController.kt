@@ -38,8 +38,10 @@ class DockItemViewController(
     private val excitedIconStrokeWidth: Float,
     private val staticIconStrokeColor: Int,
     private val excitedIconStrokeColor: Int,
+    private val restrictedIconStrokeColor: Int,
     private val defaultIconColor: Int,
     private val excitedColorFilter: ColorFilter,
+    private val restrictedColorFilter: ColorFilter,
     private val excitedIconColorFilterAlpha: Float,
     private val exciteAnimationDuration: Int,
 ) {
@@ -56,7 +58,7 @@ class DockItemViewController(
     }
 
     private enum class OptionalStates {
-        EXCITED, UPDATING
+        EXCITED, UPDATING, RESTRICTED
     }
 
     private var dynamicIconStrokeColor: Int = defaultIconColor
@@ -105,6 +107,17 @@ class DockItemViewController(
             optionalState.remove(OptionalStates.UPDATING)
         }
         this.updatingColor = updatingColor ?: defaultIconColor
+    }
+
+    /**
+     * Setter to set if the DockItem is restricted.
+     */
+    fun setRestricted(isRestricted: Boolean) {
+        if (isRestricted) {
+            optionalState.add(OptionalStates.RESTRICTED)
+        } else {
+            optionalState.remove(OptionalStates.RESTRICTED)
+        }
     }
 
     /**
@@ -178,6 +191,8 @@ class DockItemViewController(
     private fun getStrokeColor(): Int {
         if (optionalState.contains(OptionalStates.UPDATING)) {
             return updatingColor
+        } else if (optionalState.contains(OptionalStates.RESTRICTED)) {
+            return restrictedIconStrokeColor
         } else if (optionalState.contains(OptionalStates.EXCITED)) {
             return excitedIconStrokeColor
         } else if (typeState == TypeStates.STATIC) {
@@ -206,6 +221,8 @@ class DockItemViewController(
     private fun getColorFilter(): ColorFilter? {
         if (optionalState.contains(OptionalStates.UPDATING)) {
             return PorterDuffColorFilter(updatingColor, PorterDuff.Mode.SRC_OVER)
+        }else if (optionalState.contains(OptionalStates.RESTRICTED)){
+            return restrictedColorFilter
         } else if (optionalState.contains(OptionalStates.EXCITED)) {
             return excitedColorFilter
         }
