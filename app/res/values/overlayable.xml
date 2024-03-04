@@ -40,6 +40,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="config_homecard_single_line_secondary_descriptive_text"/>
       <item type="bool" name="show_seek_bar"/>
       <item type="bool" name="use_media_source_color_for_seek_bar"/>
+      <item type="color" name="car_on_surface_40"/>
       <item type="color" name="card_background_scrim"/>
       <item type="color" name="clear_all_recents_text_color"/>
       <item type="color" name="date_divider_bar_color"/>
@@ -83,6 +84,19 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="horizontal_border_size"/>
       <item type="dimen" name="launcher_card_corner_radius"/>
       <item type="dimen" name="main_screen_widget_margin"/>
+      <item type="dimen" name="media_card_album_art_size"/>
+      <item type="dimen" name="media_card_app_icon_size"/>
+      <item type="dimen" name="media_card_artist_top_margin"/>
+      <item type="dimen" name="media_card_bottom_panel_button_size"/>
+      <item type="dimen" name="media_card_bottom_panel_margin_top"/>
+      <item type="dimen" name="media_card_card_radius"/>
+      <item type="dimen" name="media_card_horizontal_margin"/>
+      <item type="dimen" name="media_card_icon_padding"/>
+      <item type="dimen" name="media_card_large_button_size"/>
+      <item type="dimen" name="media_card_play_button_bottom_margin"/>
+      <item type="dimen" name="media_card_play_button_horizontal_margin"/>
+      <item type="dimen" name="media_card_small_button_size"/>
+      <item type="dimen" name="media_card_view_separation_margin"/>
       <item type="dimen" name="media_top_margin"/>
       <item type="dimen" name="playback_controls_margin"/>
       <item type="dimen" name="recent_task_col_space"/>
@@ -99,24 +113,46 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="drawable" name="car_button_background"/>
       <item type="drawable" name="control_bar_contact_image_background"/>
       <item type="drawable" name="control_bar_image_background"/>
+      <item type="drawable" name="dark_circle_button_background"/>
+      <item type="drawable" name="dark_radius_16_background"/>
       <item type="drawable" name="default_audio_background"/>
       <item type="drawable" name="dialer_button_active_state_circle"/>
+      <item type="drawable" name="empty_action_drawable"/>
       <item type="drawable" name="ic_apps_black"/>
       <item type="drawable" name="ic_arrow_back_black"/>
       <item type="drawable" name="ic_call_end"/>
       <item type="drawable" name="ic_call_end_button"/>
       <item type="drawable" name="ic_clear_black"/>
       <item type="drawable" name="ic_dialpad"/>
+      <item type="drawable" name="ic_history"/>
       <item type="drawable" name="ic_launcher_home"/>
       <item type="drawable" name="ic_media"/>
       <item type="drawable" name="ic_mic_on"/>
       <item type="drawable" name="ic_mute_activatable"/>
       <item type="drawable" name="ic_navigation"/>
+      <item type="drawable" name="ic_overflow_horizontal"/>
+      <item type="drawable" name="ic_play_pause_selector"/>
+      <item type="drawable" name="ic_queue"/>
       <item type="drawable" name="ic_recent_dismiss"/>
       <item type="drawable" name="ic_search_black"/>
       <item type="drawable" name="ic_temperature"/>
+      <item type="drawable" name="media_card_seekbar_progress"/>
+      <item type="drawable" name="media_card_seekbar_thumb"/>
+      <item type="drawable" name="pill_button_shape"/>
       <item type="drawable" name="recent_clear_all_button_background"/>
       <item type="drawable" name="recent_dismiss_button_background"/>
+      <item type="id" name="action_id1"/>
+      <item type="id" name="action_id10"/>
+      <item type="id" name="action_id2"/>
+      <item type="id" name="action_id3"/>
+      <item type="id" name="action_id4"/>
+      <item type="id" name="action_id5"/>
+      <item type="id" name="action_id6"/>
+      <item type="id" name="action_id7"/>
+      <item type="id" name="action_id8"/>
+      <item type="id" name="action_id9"/>
+      <item type="id" name="album_art"/>
+      <item type="id" name="artist"/>
       <item type="id" name="bottom_card"/>
       <item type="id" name="bottom_edge"/>
       <item type="id" name="bottom_line"/>
@@ -132,6 +168,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="card_name"/>
       <item type="id" name="card_view"/>
       <item type="id" name="clock"/>
+      <item type="id" name="content_format"/>
       <item type="id" name="date"/>
       <item type="id" name="descriptive_text_layout"/>
       <item type="id" name="descriptive_text_with_controls_layout"/>
@@ -139,6 +176,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="empty_state"/>
       <item type="id" name="end_edge"/>
       <item type="id" name="fragment_container_view"/>
+      <item type="id" name="history_button"/>
       <item type="id" name="in_call_fragment_container"/>
       <item type="id" name="maps_card"/>
       <item type="id" name="media_descriptive_text"/>
@@ -146,6 +184,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="media_layout"/>
       <item type="id" name="media_playback_controls_bar"/>
       <item type="id" name="media_title"/>
+      <item type="id" name="media_widget_app_icon"/>
       <item type="id" name="nav_state"/>
       <item type="id" name="nav_state_icon"/>
       <item type="id" name="optional_image"/>
@@ -155,7 +194,12 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="optional_timer"/>
       <item type="id" name="optional_timer_separator"/>
       <item type="id" name="optional_times"/>
+      <item type="id" name="overflow_button"/>
+      <item type="id" name="overflow_grid"/>
+      <item type="id" name="play_pause_button"/>
+      <item type="id" name="playback_seek_bar"/>
       <item type="id" name="primary_text"/>
+      <item type="id" name="queue_button"/>
       <item type="id" name="recent_tasks_group"/>
       <item type="id" name="recent_tasks_list"/>
       <item type="id" name="recent_tasks_list_focus_area"/>
@@ -170,6 +214,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="temperature_icon"/>
       <item type="id" name="text_block"/>
       <item type="id" name="text_block_layout"/>
+      <item type="id" name="title"/>
       <item type="id" name="top_card"/>
       <item type="id" name="top_edge"/>
       <item type="id" name="top_line"/>
