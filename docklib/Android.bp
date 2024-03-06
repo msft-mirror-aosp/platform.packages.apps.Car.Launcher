@@ -38,6 +38,7 @@ android_library {
         "CarLauncherCommon",
         "SystemUISharedLib",
         "iconloader",
+        "car-resource-common",
     ],
 
     platform_apis: true,
