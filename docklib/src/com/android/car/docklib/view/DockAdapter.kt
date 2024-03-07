@@ -41,9 +41,11 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
 
     enum class PayloadType {
         CHANGE_ITEM_TYPE,
+        CHANGE_UX_RESTRICTION_STATE,
     }
 
     private val positionToCallbackMap = HashMap<Int, Runnable>()
+    private var isUxRestrictionEnabled = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DockItemViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(
@@ -70,6 +72,10 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
                     if (DEBUG) Log.d(TAG, "Type changed for position $position")
                     viewHolder.itemTypeChanged(currentList[position])
                 }
+                PayloadType.CHANGE_UX_RESTRICTION_STATE -> {
+                    if (DEBUG) Log.d(TAG, "UX restriction changed for position $position")
+                    viewHolder.setUxRestrictions(isUxRestrictionEnabled)
+                }
             }
         }
     }
@@ -82,7 +88,7 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
         )
         if (DEBUG) Log.d(TAG, "Is callback set for $position: ${cleanupCallback != null}")
         positionToCallbackMap.remove(position)
-        viewHolder.bind(currentList[position], cleanupCallback)
+        viewHolder.bind(currentList[position], isUxRestrictionEnabled, cleanupCallback)
     }
 
     /** Used to set a callback for the [position] to be passed to the ViewHolder on the next bind. */
@@ -95,6 +101,14 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
      */
     fun setCarMediaManager(carMediaManager: CarMediaManager) {
         this.carMediaManager = carMediaManager
+    }
+
+    /** Set if the Ux restrictions are enabled */
+    fun setUxRestrictions(isUxRestrictionEnabled: Boolean) {
+        if (this.isUxRestrictionEnabled != isUxRestrictionEnabled) {
+            this.isUxRestrictionEnabled = isUxRestrictionEnabled
+            notifyItemRangeChanged(0, itemCount, PayloadType.CHANGE_UX_RESTRICTION_STATE)
+        }
     }
 }
 

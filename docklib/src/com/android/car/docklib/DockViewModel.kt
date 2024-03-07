@@ -248,6 +248,7 @@ open class DockViewModel(
                     )
             )
         }
+        currentItems.value = createDockList()
     }
 
     @VisibleForTesting

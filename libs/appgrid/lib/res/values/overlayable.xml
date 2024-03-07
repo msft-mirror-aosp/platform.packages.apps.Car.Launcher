@@ -120,7 +120,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="string" name="config_msg_mirroring_redirect_uri_key"/>
       <item type="string" name="config_msg_mirroring_service_class_name"/>
       <item type="string" name="config_msg_mirroring_service_pkg_name"/>
-      <item type="string" name="driving_toast_text"/>
       <item type="string" name="hide_debug_apps"/>
       <item type="string" name="reset_appgrid_dialogue_message"/>
       <item type="string" name="reset_appgrid_title"/>
