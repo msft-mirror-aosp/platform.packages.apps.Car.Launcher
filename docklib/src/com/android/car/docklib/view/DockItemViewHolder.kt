@@ -20,6 +20,8 @@ import android.car.media.CarMediaManager
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Point
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -69,6 +71,7 @@ class DockItemViewHolder(
     private val dockDragListener: DockDragListener
     private val dockItemViewController: DockItemViewController
     private var dockItem: DockAppItem? = null
+    private var dockItemClickListener: DockItemClickListener? = null
     private var dockItemLongClickListener: DockItemLongClickListener? = null
     private var droppedIconColor: Int = defaultIconColor
     private var iconColorFuture: Future<Int>? = null
@@ -96,10 +99,17 @@ class DockItemViewHolder(
                 R.color.icon_excited_stroke_color,
                 null // theme
             ),
+            restrictedIconStrokeColor = itemView.resources.getColor(
+                R.color.icon_restricted_stroke_color,
+                null // theme
+            ),
             defaultIconColor,
             excitedColorFilter = PorterDuffColorFilter(
                 Color.argb(excitedIconColorFilterAlpha, 0f, 0f, 0f),
                 PorterDuff.Mode.DARKEN
+            ),
+            restrictedColorFilter = ColorMatrixColorFilter(
+                    ColorMatrix().apply { setSaturation(0f) }
             ),
             excitedIconColorFilterAlpha,
             exciteAnimationDuration = itemView.resources
@@ -178,15 +188,23 @@ class DockItemViewHolder(
     /**
      * @param callback [Runnable] to be called after the new item is bound
      */
-    fun bind(dockAppItem: DockAppItem, callback: Runnable? = null) {
+    fun bind(
+        dockAppItem: DockAppItem,
+        isUxRestrictionEnabled: Boolean,
+        callback: Runnable? = null
+    ) {
         dockItem = dockAppItem
         itemTypeChanged(dockAppItem)
+        setUxRestrictions(isUxRestrictionEnabled)
         appIcon.contentDescription = dockAppItem.name
         appIcon.setImageDrawable(dockAppItem.icon)
         appIcon.postDelayed({ callback?.run() }, CLEANUP_DELAY)
-        appIcon.setOnClickListener {
-            dockController.launchApp(dockAppItem.component, dockAppItem.isMediaApp)
-        }
+        dockItemClickListener = DockItemClickListener(
+            dockController,
+            dockAppItem,
+            isRestricted = !dockAppItem.isDistractionOptimized && isUxRestrictionEnabled
+        )
+        appIcon.setOnClickListener(dockItemClickListener)
         dockItemLongClickListener = DockItemLongClickListener(
                 dockAppItem,
                 pinItemClickDelegate = { dockController.appPinned(dockAppItem.id) },
@@ -211,6 +229,14 @@ class DockItemViewHolder(
         }
         dockItemViewController.updateViewBasedOnState(appIcon)
         dockItemLongClickListener?.setDockAppItem(dockAppItem)
+    }
+
+    /** Set if the Ux restrictions are enabled */
+    fun setUxRestrictions(isUxRestrictionEnabled: Boolean) {
+        val shouldBeRestricted = dockItem?.isDistractionOptimized == false && isUxRestrictionEnabled
+        dockItemViewController.setRestricted(shouldBeRestricted)
+        dockItemViewController.updateViewBasedOnState(appIcon)
+        dockItemClickListener?.setIsRestricted(shouldBeRestricted)
     }
 
     // TODO: b/301484526 Add animation when app icon is changed

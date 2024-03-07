@@ -19,6 +19,7 @@ package com.android.car.docklib
 import android.app.ActivityOptions
 import android.car.Car
 import android.car.content.pm.CarPackageManager
+import android.car.drivingstate.CarUxRestrictionsManager
 import android.car.media.CarMediaManager
 import android.content.ComponentName
 import android.content.Context
@@ -106,6 +107,18 @@ class DockViewController(
                     car.getCarManager(CarMediaManager::class.java)?.let { carMM ->
                         adapter.setCarMediaManager(carMM)
                     }
+                    car.getCarManager(CarUxRestrictionsManager::class.java)?.let {
+                        adapter.setUxRestrictions(
+                            isUxRestrictionEnabled =
+                            it.currentCarUxRestrictions?.isRequiresDistractionOptimization ?: false
+                        )
+                        it.registerListener { carUxRestrictions ->
+                            adapter.setUxRestrictions(
+                                isUxRestrictionEnabled =
+                                carUxRestrictions.isRequiresDistractionOptimization
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -120,6 +133,7 @@ class DockViewController(
     /** Method to stop the dock. Call this upon View being destroyed. */
     fun destroy() {
         if (DEBUG) Log.d(TAG, "Destroy called")
+        car.getCarManager(CarUxRestrictionsManager::class.java)?.unregisterListener()
         car.disconnect()
         userContext.unregisterReceiver(dockEventsReceiver)
         userContext.unregisterReceiver(dockPackageChangeReceiver)
