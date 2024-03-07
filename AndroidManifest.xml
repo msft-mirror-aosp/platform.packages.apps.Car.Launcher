@@ -132,6 +132,7 @@
         <activity
             android:name=".AppGridActivity"
             android:launchMode="singleInstance"
+            android:windowSoftInputMode="adjustPan"
             android:exported="true"
             android:theme="@style/Theme.Launcher.AppGridActivity"
             android:excludeFromRecents="true">
