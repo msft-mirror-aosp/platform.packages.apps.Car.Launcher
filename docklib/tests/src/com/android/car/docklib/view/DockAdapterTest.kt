@@ -90,6 +90,10 @@ class DockAdapterTest {
         dockAdapter.setCallback(1, runnableMock)
         dockAdapter.onBindViewHolder(dockItemViewHolderMock, 1)
 
-        verify(dockItemViewHolderMock).bind(eq(dockItemList[1]), eq(runnableMock))
+        verify(dockItemViewHolderMock).bind(
+                eq(dockItemList[1]),
+                eq(false),
+                eq(runnableMock)
+        )
     }
 }
