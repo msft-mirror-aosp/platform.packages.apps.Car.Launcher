@@ -204,9 +204,17 @@ public class CarLauncher extends FragmentActivity {
         getLifecycle().addObserver(mCarLauncherViewModel);
 
         mCarLauncherViewModel.getRemoteCarTaskView().observe(this, taskView -> {
-            if (taskView != null && taskView.getParent() == null) {
-                parent.addView(taskView);
+            if (taskView == null || taskView.getParent() == parent) {
+                // Discard if the parent is still the same because it doesn't signify a config
+                // change.
+                return;
             }
+            if (taskView.getParent() != null) {
+                // Discard the previous parent as its invalid now.
+                ((ViewGroup) taskView.getParent()).removeView(taskView);
+            }
+            parent.removeAllViews(); // Just a defense against a dirty parent.
+            parent.addView(taskView);
         });
     }
 
@@ -236,10 +244,13 @@ public class CarLauncher extends FragmentActivity {
     }
 
     private void release() {
-        // When using a ViewModel for the RemoteCarTaskViews, the task view can still be attached
-        // to the mMapsCard due to which the CarLauncher activity does not get garbage collected
-        // during activity recreation.
-        mMapsCard = null;
+        if (mMapsCard != null) {
+            // This is important as the TaskView is preserved during config change in ViewModel and
+            // to avoid the memory leak, it should be plugged out of the View hierarchy.
+            mMapsCard.removeAllViews();
+            mMapsCard = null;
+        }
+
         if (mCar != null) {
             mCar.disconnect();
             mCar = null;
