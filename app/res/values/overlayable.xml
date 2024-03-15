@@ -16,7 +16,10 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
 <resources>
   <overlayable name="CarLauncher">
     <policy type="system|product|signature">
+      <item type="animator" name="calm_mode_enter"/>
       <item type="animator" name="recents_clear_all"/>
+      <item type="anim" name="fade_in"/>
+      <item type="anim" name="fade_out"/>
       <item type="array" name="config_homeCardModuleClasses"/>
       <item type="array" name="config_homeCardPreferredMapActivities"/>
       <item type="array" name="config_taskViewPackages"/>
@@ -143,7 +146,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="media_layout"/>
       <item type="id" name="media_playback_controls_bar"/>
       <item type="id" name="media_title"/>
-      <item type="id" name="nav_group"/>
       <item type="id" name="nav_state"/>
       <item type="id" name="nav_state_icon"/>
       <item type="id" name="optional_image"/>
@@ -165,7 +167,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="task_icon"/>
       <item type="id" name="task_thumbnail"/>
       <item type="id" name="temperature"/>
-      <item type="id" name="temperature_group"/>
       <item type="id" name="temperature_icon"/>
       <item type="id" name="text_block"/>
       <item type="id" name="text_block_layout"/>
@@ -173,6 +174,8 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="top_edge"/>
       <item type="id" name="top_line"/>
       <item type="id" name="vertical_barrier"/>
+      <item type="integer" name="calm_mode_activity_fade_duration"/>
+      <item type="integer" name="calm_mode_content_fade_duration"/>
       <item type="integer" name="card_content_text_block_max_lines"/>
       <item type="integer" name="optional_seekbar_max"/>
       <item type="integer" name="playback_controls_bar_columns"/>
