@@ -22,7 +22,7 @@
     <string name="stop_app_shortcut_label" msgid="5893149773635675147">"অ্যাপ বন্ধ করুন"</string>
     <string name="app_info_shortcut_label" msgid="6724408677044314793">"অ্যাপের তথ্য"</string>
     <string name="stop_app_dialog_title" msgid="7027389231920405129">"অ্যাপ বন্ধ করবেন?"</string>
-    <string name="stop_app_dialog_text" msgid="4997162043741899166">"আপনি কোনও অ্যাপকে জোর করে বন্ধ করলে, তা সঠিক ভাবে কাজ নাও করতে পারে।"</string>
+    <string name="stop_app_dialog_text" msgid="4997162043741899166">"আপনি কোনও অ্যাপকে জোর করে বন্ধ করলে, তা সঠিকভাবে কাজ নাও করতে পারে।"</string>
     <string name="stop_app_success_toast_text" msgid="3740858295088091414">"<xliff:g id="APP_NAME">%1$s</xliff:g> বন্ধ করা হয়েছে।"</string>
     <!-- no translation found for ndo_launch_fail_toast_text (633927891331266600) -->
     <skip />
