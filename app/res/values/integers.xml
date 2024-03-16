@@ -20,4 +20,8 @@ limitations under the License.
 
     <!-- Max for seekbar progress -->
     <integer name="optional_seekbar_max">1000</integer>
+
+    <!-- Calm mode animation duration -->
+    <integer name="calm_mode_activity_fade_duration">500</integer>
+    <integer name="calm_mode_content_fade_duration">750</integer>
 </resources>
