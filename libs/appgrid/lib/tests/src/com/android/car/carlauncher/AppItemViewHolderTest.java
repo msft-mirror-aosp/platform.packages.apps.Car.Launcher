@@ -79,7 +79,7 @@ public class AppItemViewHolderTest {
                         null,
                         null);
 
-        appItemViewHolder.bind(metaData, new AppItemViewHolder.BindInfo(false, null));
+        appItemViewHolder.bind(metaData, new AppItemViewHolder.BindInfo(false, null), false);
 
         verify(mAppIcon).setAlpha(0.46f);
     }
