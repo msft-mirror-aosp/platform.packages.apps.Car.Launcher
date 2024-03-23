@@ -69,7 +69,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     // the global bounding rect of the app grid including margins (excluding page indicator bar)
     private Rect mPageBound;
     private Mode mAppGridMode;
-    private List<String> mBypassRestrictionPackages;
+    private List<String> mBypassRestrictionPackages = new ArrayList<>();
 
     public AppGridAdapter(Context context, int numOfCols, int numOfRows,
             LauncherViewModel launcherViewModel, AppItemViewHolder.AppItemDragCallback dragCallback,
