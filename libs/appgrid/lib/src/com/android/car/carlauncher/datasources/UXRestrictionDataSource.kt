@@ -16,15 +16,26 @@
 
 package com.android.car.carlauncher.datasources
 
+import android.car.content.pm.CarPackageManager
 import android.car.drivingstate.CarUxRestrictionsManager
+import android.content.ComponentName
+import android.content.res.Resources
+import android.media.session.MediaSessionManager
+import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import com.android.car.carlauncher.Flags
+import com.android.car.carlauncher.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 
 /**
  * DataSource interface for providing ux restriction state
@@ -35,16 +46,24 @@ interface UXRestrictionDataSource {
      * Flow notifying if distraction optimization is required
      */
     fun requiresDistractionOptimization(): Flow<Boolean>
+
+    fun isDistractionOptimized(): Flow<(componentName: ComponentName) -> Boolean>
 }
 
 /**
  * Impl of [UXRestrictionDataSource]
  *
  * @property [uxRestrictionsManager] Used to listen for distraction optimization changes.
+ * @property [carPackageManager]
+ * @property [mediaSessionManager]
+ * @property [resources] Application resources, not bound to activity's configuration changes.
  * @property [bgDispatcher] Executes all the operations on this background coroutine dispatcher.
  */
 class UXRestrictionDataSourceImpl(
     private val uxRestrictionsManager: CarUxRestrictionsManager,
+    private val carPackageManager: CarPackageManager,
+    private val mediaSessionManager: MediaSessionManager,
+    private val resources: Resources,
     private val bgDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : UXRestrictionDataSource {
 
@@ -69,6 +88,49 @@ class UXRestrictionDataSourceImpl(
             }
             awaitClose {
                 uxRestrictionsManager.unregisterListener()
+            }
+        }.flowOn(bgDispatcher).conflate()
+    }
+
+    override fun isDistractionOptimized(): Flow<(componentName: ComponentName) -> Boolean> {
+        if (!(Flags.mediaSessionCard() &&
+                    resources.getBoolean(R.bool.config_enableMediaSessionAppsWhileDriving))
+        ) {
+            return flowOf(fun(componentName: ComponentName): Boolean {
+                return (carPackageManager.isActivityDistractionOptimized(
+                    componentName.packageName,
+                    componentName.className
+                ))
+            })
+        }
+        return getActiveMediaPlaybackSessions().map {
+            fun(componentName: ComponentName): Boolean {
+                if (it.contains(componentName.packageName)) {
+                    return true
+                }
+                return (carPackageManager.isActivityDistractionOptimized(
+                    componentName.packageName,
+                    componentName.className
+                ))
+            }
+        }.distinctUntilChanged()
+    }
+
+    private fun getActiveMediaPlaybackSessions(): Flow<List<String>> {
+        return callbackFlow {
+            val sessionsChangedListener =
+                OnActiveSessionsChangedListener { mediaSessions ->
+                    val mediaSessionPackages = mediaSessions?.filter {
+                        it.playbackState?.let { playbackState ->
+                            (playbackState.isActive ||
+                                    playbackState.actions and PlaybackStateCompat.ACTION_PLAY != 0L)
+                        } ?: false
+                    }?.map { it.packageName } ?: emptyList()
+                    trySend(mediaSessionPackages)
+                }
+            mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, null)
+            awaitClose {
+                mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener)
             }
         }.flowOn(bgDispatcher).conflate()
     }
