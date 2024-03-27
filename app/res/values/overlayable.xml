@@ -192,6 +192,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="layout" name="card_fragment_audio_card"/>
       <item type="layout" name="control_bar_container"/>
       <item type="layout" name="descriptive_text"/>
+      <item type="layout" name="media_card_fullscreen"/>
       <item type="layout" name="optional_seek_bar_with_times"/>
       <item type="layout" name="recent_clear_all_view"/>
       <item type="layout" name="recent_task_view"/>
