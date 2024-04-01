@@ -17,6 +17,8 @@
 
 <resources>
     <style name="Theme.Launcher" parent="Theme.CarUi.NoToolbar">
+        <!--TODO b/331250994, Remove this once we have a strategy to support edgeToEdge -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
         <item name="textAppearanceGridItem">@android:style/TextAppearance.DeviceDefault.Medium</item>
         <item name="textAppearanceGridItemSecondary">@android:style/TextAppearance.DeviceDefault.Small</item>
     </style>
