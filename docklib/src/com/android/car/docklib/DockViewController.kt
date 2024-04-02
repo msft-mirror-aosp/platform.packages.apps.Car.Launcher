@@ -28,6 +28,7 @@ import android.content.pm.LauncherApps
 import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
+import com.android.car.docklib.data.DockProtoDataController
 import com.android.car.docklib.events.DockEventsReceiver
 import com.android.car.docklib.events.DockPackageChangeReceiver
 import com.android.car.docklib.media.MediaUtils
@@ -36,6 +37,7 @@ import com.android.car.docklib.view.DockAdapter
 import com.android.car.docklib.view.DockView
 import com.android.launcher3.icons.IconFactory
 import com.android.systemui.shared.system.TaskStackChangeListeners
+import java.io.File
 import java.lang.ref.WeakReference
 import java.util.UUID
 
@@ -45,12 +47,14 @@ import java.util.UUID
  *
  * @param dockView the inflated dock view
  * @param userContext the foreground user context, since the view may be hosted on system context
+ * @param dataFile a file to store user's pinned apps with read and write permission
  */
 class DockViewController(
         dockView: DockView,
         private val userContext: Context = dockView.context,
+        dataFile: File,
 ) : DockInterface {
-    private companion object {
+    companion object {
         private const val TAG = "DockViewController"
         private val DEBUG = Build.isDebuggable()
     }
@@ -89,7 +93,8 @@ class DockViewController(
                         .mapNotNull(ComponentName::unflattenFromString).toHashSet(),
                 excludedPackages = dockView.resources
                         .getStringArray(R.array.config_packagesExcludedFromDock).toHashSet(),
-                iconFactory = IconFactory.obtain(dockView.context)
+                iconFactory = IconFactory.obtain(dockView.context),
+                dockProtoDataController = DockProtoDataController(dataFile),
         ) { updatedApps ->
             dockViewWeakReference.get()?.getAdapter()?.submitList(updatedApps)
                     ?: throw NullPointerException("the View referenced does not exist")
