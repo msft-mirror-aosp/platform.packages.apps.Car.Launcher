@@ -16,6 +16,7 @@
 
 package com.android.car.docklib
 
+import android.annotation.CallSuper
 import android.app.ActivityOptions
 import android.car.Car
 import android.car.content.pm.CarPackageManager
@@ -49,7 +50,7 @@ import java.util.UUID
  * @param userContext the foreground user context, since the view may be hosted on system context
  * @param dataFile a file to store user's pinned apps with read and write permission
  */
-class DockViewController(
+open class DockViewController(
         dockView: DockView,
         private val userContext: Context = dockView.context,
         dataFile: File,
@@ -68,6 +69,8 @@ class DockViewController(
     private val taskStackChangeListeners: TaskStackChangeListeners
     private val dockTaskStackChangeListener: DockTaskStackChangeListener
     private val launcherApps = userContext.getSystemService<LauncherApps>()
+    private val excludedItemsProviders: Set<ExcludedItemsProvider> =
+        hashSetOf(ResourceExcludedItemsProvider(userContext))
 
     init {
         if (DEBUG) Log.d(TAG, "Init DockViewController for user ${userContext.userId}")
@@ -88,11 +91,16 @@ class DockViewController(
                 defaultPinnedItems = dockView.resources
                         .getStringArray(R.array.config_defaultDockApps)
                         .mapNotNull(ComponentName::unflattenFromString),
-                excludedComponents = dockView.resources
-                        .getStringArray(R.array.config_componentsExcludedFromDock)
-                        .mapNotNull(ComponentName::unflattenFromString).toHashSet(),
-                excludedPackages = dockView.resources
-                        .getStringArray(R.array.config_packagesExcludedFromDock).toHashSet(),
+                isPackageExcluded = { pkg ->
+                    getExcludedItemsProviders()
+                            .map { it.isPackageExcluded(pkg) }
+                            .reduce { res1, res2 -> res1 or res2 }
+                },
+                isComponentExcluded = { cmp ->
+                    getExcludedItemsProviders()
+                            .map { it.isComponentExcluded(cmp) }
+                            .reduce { res1, res2 -> res1 or res2 }
+                },
                 iconFactory = IconFactory.obtain(dockView.context),
                 dockProtoDataController = DockProtoDataController(dataFile),
         ) { updatedApps ->
@@ -136,7 +144,8 @@ class DockViewController(
     }
 
     /** Method to stop the dock. Call this upon View being destroyed. */
-    fun destroy() {
+    @CallSuper
+    open fun destroy() {
         if (DEBUG) Log.d(TAG, "Destroy called")
         car.getCarManager(CarUxRestrictionsManager::class.java)?.unregisterListener()
         car.disconnect()
@@ -145,6 +154,8 @@ class DockViewController(
         taskStackChangeListeners.unregisterTaskStackListener(dockTaskStackChangeListener)
         dockViewModel.destroy()
     }
+
+    open fun getExcludedItemsProviders(): Set<ExcludedItemsProvider> = excludedItemsProviders
 
     override fun appPinned(componentName: ComponentName) = dockViewModel.pinItem(componentName)
 

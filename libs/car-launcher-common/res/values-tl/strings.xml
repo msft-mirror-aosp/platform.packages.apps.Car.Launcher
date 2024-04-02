@@ -24,6 +24,5 @@
     <string name="stop_app_dialog_title" msgid="7027389231920405129">"Ihinto ang app?"</string>
     <string name="stop_app_dialog_text" msgid="4997162043741899166">"Kung sapilitan mong ihihinto ang isang app, posible itong hindi gumana nang maayos."</string>
     <string name="stop_app_success_toast_text" msgid="3740858295088091414">"Inihinto ang <xliff:g id="APP_NAME">%1$s</xliff:g>."</string>
-    <!-- no translation found for ndo_launch_fail_toast_text (633927891331266600) -->
-    <skip />
+    <string name="ndo_launch_fail_toast_text" msgid="633927891331266600">"Hindi magagamit ang <xliff:g id="APP_NAME">%1$s</xliff:g> habang nagmamaneho."</string>
 </resources>

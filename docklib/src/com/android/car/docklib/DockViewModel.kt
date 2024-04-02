@@ -54,8 +54,8 @@ open class DockViewModel(
         private val userId: Int = context.userId,
         private var launcherActivities: MutableSet<ComponentName>,
         defaultPinnedItems: List<ComponentName>,
-        private val excludedComponents: Set<ComponentName>,
-        private val excludedPackages: Set<String>,
+        private val isPackageExcluded: (pkg: String) -> Boolean,
+        private val isComponentExcluded: (component: ComponentName) -> Boolean,
         private val iconFactory: IconFactory = IconFactory.obtain(context),
         private val dockProtoDataController: DockProtoDataController,
         private val observer: Observer<List<DockAppItem>>,
@@ -375,8 +375,7 @@ open class DockViewModel(
     }
 
     private fun isItemExcluded(component: ComponentName): Boolean =
-            (excludedPackages.contains(component.packageName) ||
-                    excludedComponents.contains(component))
+            (isPackageExcluded(component.packageName) || isComponentExcluded(component))
 
     private fun isItemInDock(component: ComponentName, ofType: DockAppItem.Type? = null): Boolean {
         return internalItems.values
