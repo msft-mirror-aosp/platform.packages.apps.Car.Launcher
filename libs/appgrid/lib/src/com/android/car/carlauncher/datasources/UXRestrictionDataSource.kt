@@ -22,6 +22,7 @@ import android.content.ComponentName
 import android.content.res.Resources
 import android.media.session.MediaSessionManager
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
+import android.os.Looper
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import com.android.car.carlauncher.Flags
@@ -47,7 +48,7 @@ interface UXRestrictionDataSource {
      */
     fun requiresDistractionOptimization(): Flow<Boolean>
 
-    fun isDistractionOptimized(): Flow<(componentName: ComponentName) -> Boolean>
+    fun isDistractionOptimized(): Flow<(componentName: ComponentName, isMedia: Boolean) -> Boolean>
 }
 
 /**
@@ -92,23 +93,24 @@ class UXRestrictionDataSourceImpl(
         }.flowOn(bgDispatcher).conflate()
     }
 
-    override fun isDistractionOptimized(): Flow<(componentName: ComponentName) -> Boolean> {
+    override fun isDistractionOptimized():
+            Flow<(componentName: ComponentName, isMedia: Boolean) -> Boolean> {
         if (!(Flags.mediaSessionCard() &&
                     resources.getBoolean(R.bool.config_enableMediaSessionAppsWhileDriving))
         ) {
-            return flowOf(fun(componentName: ComponentName): Boolean {
-                return (carPackageManager.isActivityDistractionOptimized(
+            return flowOf(fun(componentName: ComponentName, isMedia: Boolean): Boolean {
+                return isMedia || (carPackageManager.isActivityDistractionOptimized(
                     componentName.packageName,
                     componentName.className
                 ))
             })
         }
         return getActiveMediaPlaybackSessions().map {
-            fun(componentName: ComponentName): Boolean {
+            fun(componentName: ComponentName, isMedia: Boolean): Boolean {
                 if (it.contains(componentName.packageName)) {
                     return true
                 }
-                return (carPackageManager.isActivityDistractionOptimized(
+                return isMedia || (carPackageManager.isActivityDistractionOptimized(
                     componentName.packageName,
                     componentName.className
                 ))
@@ -118,6 +120,8 @@ class UXRestrictionDataSourceImpl(
 
     private fun getActiveMediaPlaybackSessions(): Flow<List<String>> {
         return callbackFlow {
+            // Return an emptyList to signify no activeMediaPlaybackSessions.
+            trySend(emptyList())
             val sessionsChangedListener =
                 OnActiveSessionsChangedListener { mediaSessions ->
                     val mediaSessionPackages = mediaSessions?.filter {
@@ -128,9 +132,15 @@ class UXRestrictionDataSourceImpl(
                     }?.map { it.packageName } ?: emptyList()
                     trySend(mediaSessionPackages)
                 }
+            // Since this is not a MainThread, we have explicitly start a Looper for the
+            // MediaSessionManager to listen for ActiveSessionChanges.
+            if (Looper.myLooper() == null) {
+                Looper.prepare()
+            }
             mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, null)
             awaitClose {
                 mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener)
+                Looper.myLooper()?.quitSafely()
             }
         }.flowOn(bgDispatcher).conflate()
     }
