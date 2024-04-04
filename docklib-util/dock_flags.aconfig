@@ -1,4 +1,5 @@
 package: "com.android.car.dockutil"
+container: "system_ext"
 
 flag {
   name: "dock_feature"

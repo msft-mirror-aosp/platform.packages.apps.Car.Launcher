@@ -48,7 +48,7 @@ android_library {
         "CarDockUtilLib",
         "CarLauncherCommon",
         "SystemUISharedLib",
-        "iconloader",
+        "//frameworks/libs/systemui:iconloader",
         "car-resource-common",
         "dock_item",
     ],

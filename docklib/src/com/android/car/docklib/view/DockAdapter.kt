@@ -74,7 +74,7 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
                 }
                 PayloadType.CHANGE_UX_RESTRICTION_STATE -> {
                     if (DEBUG) Log.d(TAG, "UX restriction changed for position $position")
-                    viewHolder.setUxRestrictions(isUxRestrictionEnabled)
+                    viewHolder.setUxRestrictions(currentList[position], isUxRestrictionEnabled)
                 }
             }
         }
