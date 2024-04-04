@@ -70,7 +70,6 @@ class DockItemViewHolder(
     private val iconColorExecutor = Executors.newSingleThreadExecutor()
     private val dockDragListener: DockDragListener
     private val dockItemViewController: DockItemViewController
-    private var dockItem: DockAppItem? = null
     private var dockItemClickListener: DockItemClickListener? = null
     private var dockItemLongClickListener: DockItemLongClickListener? = null
     private var droppedIconColor: Int = defaultIconColor
@@ -193,9 +192,8 @@ class DockItemViewHolder(
         isUxRestrictionEnabled: Boolean,
         callback: Runnable? = null
     ) {
-        dockItem = dockAppItem
         itemTypeChanged(dockAppItem)
-        setUxRestrictions(isUxRestrictionEnabled)
+        setUxRestrictions(dockAppItem, isUxRestrictionEnabled)
         appIcon.contentDescription = dockAppItem.name
         appIcon.setImageDrawable(dockAppItem.icon)
         appIcon.postDelayed({ callback?.run() }, CLEANUP_DELAY)
@@ -220,7 +218,6 @@ class DockItemViewHolder(
     }
 
     fun itemTypeChanged(dockAppItem: DockAppItem) {
-        dockItem = dockAppItem
         when (dockAppItem.type) {
             DockAppItem.Type.DYNAMIC ->
                 dockItemViewController.setDynamic(dockAppItem.iconColorWithScrim)
@@ -232,8 +229,8 @@ class DockItemViewHolder(
     }
 
     /** Set if the Ux restrictions are enabled */
-    fun setUxRestrictions(isUxRestrictionEnabled: Boolean) {
-        val shouldBeRestricted = dockItem?.isDistractionOptimized == false && isUxRestrictionEnabled
+    fun setUxRestrictions(dockAppItem: DockAppItem, isUxRestrictionEnabled: Boolean) {
+        val shouldBeRestricted = !dockAppItem.isDistractionOptimized && isUxRestrictionEnabled
         dockItemViewController.setRestricted(shouldBeRestricted)
         dockItemViewController.updateViewBasedOnState(appIcon)
         dockItemClickListener?.setIsRestricted(shouldBeRestricted)
