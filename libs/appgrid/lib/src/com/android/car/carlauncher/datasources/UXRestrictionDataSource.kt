@@ -20,9 +20,9 @@ import android.car.content.pm.CarPackageManager
 import android.car.drivingstate.CarUxRestrictionsManager
 import android.content.ComponentName
 import android.content.res.Resources
+import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
-import android.os.Looper
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import com.android.car.carlauncher.Flags
@@ -120,29 +120,32 @@ class UXRestrictionDataSourceImpl(
 
     private fun getActiveMediaPlaybackSessions(): Flow<List<String>> {
         return callbackFlow {
-            // Return an emptyList to signify no activeMediaPlaybackSessions.
-            trySend(emptyList())
-            val sessionsChangedListener =
-                OnActiveSessionsChangedListener { mediaSessions ->
-                    val mediaSessionPackages = mediaSessions?.filter {
+            val filterActiveMediaPackages: (List<MediaController>) -> List<String> =
+                { mediaControllers ->
+                    mediaControllers.filter {
                         it.playbackState?.let { playbackState ->
                             (playbackState.isActive ||
                                     playbackState.actions and PlaybackStateCompat.ACTION_PLAY != 0L)
                         } ?: false
-                    }?.map { it.packageName } ?: emptyList()
-                    trySend(mediaSessionPackages)
+                    }.map { it.packageName }
                 }
-            // Since this is not a MainThread, we have explicitly start a Looper for the
-            // MediaSessionManager to listen for ActiveSessionChanges.
-            if (Looper.myLooper() == null) {
-                Looper.prepare()
-            }
+            // Emits the initial list of filtered packages upon subscription
+            trySend(
+                filterActiveMediaPackages(mediaSessionManager.getActiveSessions(null))
+            )
+            val sessionsChangedListener =
+                OnActiveSessionsChangedListener {
+                    if (it != null) {
+                        trySend(filterActiveMediaPackages(it))
+                    }
+                }
             mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, null)
             awaitClose {
                 mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener)
-                Looper.myLooper()?.quitSafely()
             }
-        }.flowOn(bgDispatcher).conflate()
+            // Note this flow runs on the Main dispatcher, as the MediaSessionsChangedListener
+            // expects to dispatch updates on the Main looper.
+        }.flowOn(Dispatchers.Main).conflate()
     }
 
     companion object {
