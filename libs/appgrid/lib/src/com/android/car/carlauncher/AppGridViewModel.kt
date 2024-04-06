@@ -26,8 +26,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import androidx.savedstate.SavedStateRegistryOwner
+import com.android.car.carlauncher.AppGridActivity.APP_TYPE_LAUNCHABLES
 import com.android.car.carlauncher.AppGridActivity.Mode
-import com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_LAUNCHABLES
 import com.android.car.carlauncher.repositories.AppGridRepository
 import java.time.Clock
 import java.util.concurrent.TimeUnit
