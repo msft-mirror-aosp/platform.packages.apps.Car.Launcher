@@ -67,7 +67,7 @@ public class RecentAppsRowViewHolder extends RecyclerView.ViewHolder {
                     /* dragCallback */ null, /* snapCallback */ null);
             holder.bind(apps.get(i), new AppItemViewHolder.BindInfo(
                     /* isDistractionOptimizationRequired */ isDistractionOptimizationRequired,
-                    /* pageBound */ null), /* ignoreUxRestriction= */ false);
+                    /* pageBound */ null));
 
             LinearLayout.LayoutParams params =
                     (LinearLayout.LayoutParams) view.getLayoutParams();
@@ -88,4 +88,3 @@ public class RecentAppsRowViewHolder extends RecyclerView.ViewHolder {
 
     }
 }
-
