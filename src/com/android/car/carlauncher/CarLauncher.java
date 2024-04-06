@@ -50,6 +50,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
+import com.android.car.carlauncher.homescreen.audio.IntentHandler;
+import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
 import com.android.wm.shell.taskview.TaskView;
@@ -122,6 +124,17 @@ public class CarLauncher extends FragmentActivity {
         }
         mTaskViewManager.setCarUserManager(carUserManager);
     }
+
+    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
+        @Override
+        public void handleIntent(Intent intent) {
+            if (intent != null) {
+                ActivityOptions options = ActivityOptions.makeBasic();
+                options.setLaunchDisplayId(getDisplay().getDisplayId());
+                startActivity(intent, options.toBundle());
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -200,6 +213,7 @@ public class CarLauncher extends FragmentActivity {
                 }
             }
         }
+        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
         initializeCards();
     }
 
