@@ -1,0 +1,41 @@
+<!--
+  ~ Copyright (C) 2024 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <vector
+            android:width="40dp"
+            android:height="40dp"
+            android:viewportWidth="960"
+            android:viewportHeight="960">
+            <path
+                android:fillColor="@android:color/white"
+                android:pathData="M523.33,760L523.33,200L760,200L760,760L523.33,760ZM200,760L200,200L436.67,200L436.67,760L200,760ZM590,693.33L693.33,693.33L693.33,266.67L590,266.67L590,693.33ZM266.67,693.33L370,693.33L370,266.67L266.67,266.67L266.67,693.33ZM266.67,266.67L266.67,266.67L266.67,693.33L266.67,693.33L266.67,266.67ZM590,266.67L590,266.67L590,693.33L590,693.33L590,266.67Z"/>
+        </vector>
+    </item>
+    <item android:state_selected="false">
+        <vector
+            android:width="40dp"
+            android:height="40dp"
+            android:viewportWidth="960"
+            android:viewportHeight="960">
+            <path
+                android:fillColor="@android:color/white"
+                android:pathData="M320,758L320,198L760,478L320,758ZM386.67,478L386.67,478L386.67,478L386.67,478ZM386.67,636.67L636,478L386.67,319.33L386.67,636.67Z"/>
+        </vector>
+
+    </item>
+</selector>
