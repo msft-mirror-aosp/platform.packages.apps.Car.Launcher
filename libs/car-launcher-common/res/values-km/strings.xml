@@ -24,6 +24,5 @@
     <string name="stop_app_dialog_title" msgid="7027389231920405129">"បញ្ឈប់កម្មវិធីឬ?"</string>
     <string name="stop_app_dialog_text" msgid="4997162043741899166">"ប្រសិនបើអ្នក​បង្ខំឱ្យបញ្ឈប់​កម្មវិធី​ កម្មវិធីអាចនឹង​ដំណើរការ​មិនត្រឹមត្រូវ។"</string>
     <string name="stop_app_success_toast_text" msgid="3740858295088091414">"<xliff:g id="APP_NAME">%1$s</xliff:g> ត្រូវបានបញ្ឈប់។"</string>
-    <!-- no translation found for ndo_launch_fail_toast_text (633927891331266600) -->
-    <skip />
+    <string name="ndo_launch_fail_toast_text" msgid="633927891331266600">"មិនអាចប្រើ​ <xliff:g id="APP_NAME">%1$s</xliff:g> នៅពេលបើកបរបានទេ។"</string>
 </resources>

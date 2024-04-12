@@ -24,6 +24,5 @@
     <string name="stop_app_dialog_title" msgid="7027389231920405129">"برنامه متوقف شود؟"</string>
     <string name="stop_app_dialog_text" msgid="4997162043741899166">"توقف اجباری برنامه ممکن است باعث عملکرد نادرست آن شود."</string>
     <string name="stop_app_success_toast_text" msgid="3740858295088091414">"<xliff:g id="APP_NAME">%1$s</xliff:g> متوقف شده است."</string>
-    <!-- no translation found for ndo_launch_fail_toast_text (633927891331266600) -->
-    <skip />
+    <string name="ndo_launch_fail_toast_text" msgid="633927891331266600">"هنگام رانندگی نمی‌توان از <xliff:g id="APP_NAME">%1$s</xliff:g> استفاده کرد."</string>
 </resources>
