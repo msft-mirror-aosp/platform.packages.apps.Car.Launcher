@@ -37,6 +37,7 @@
         <item>com.google.android.apps.maps/com.google.android.apps.gmm.car.embedded.activity.LimitedMapsActivity</item>
         <item>com.google.android.carassistant/com.google.android.libraries.assistant.auto.tng.assistant.ui.activity.AutoAssistantActivity</item>
         <item>com.android.car.media/com.android.car.media.MediaDispatcherActivity</item>
+        <item>com.android.car.media/com.android.car.media.MediaBlockingActivity</item>
     </string-array>
 
     <!--

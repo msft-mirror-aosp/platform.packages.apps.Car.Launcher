@@ -26,9 +26,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
 import android.os.Build
+import android.os.UserHandle
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.content.getSystemService
+import com.android.car.carlauncher.Flags
 import com.android.car.docklib.data.DockProtoDataController
 import com.android.car.docklib.events.DockEventsReceiver
 import com.android.car.docklib.events.DockPackageChangeReceiver
@@ -41,6 +46,7 @@ import com.android.systemui.shared.system.TaskStackChangeListeners
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.UUID
+import kotlin.collections.emptyList
 
 /**
  * Create a controller for DockView. It initializes the view with default and persisted icons. Upon
@@ -64,6 +70,7 @@ open class DockViewController(
     private val car: Car
     private val dockViewWeakReference: WeakReference<DockView>
     private val dockViewModel: DockViewModel
+    private val adapter: DockAdapter
     private val dockEventsReceiver: DockEventsReceiver
     private val dockPackageChangeReceiver: DockPackageChangeReceiver
     private val taskStackChangeListeners: TaskStackChangeListeners
@@ -71,10 +78,15 @@ open class DockViewController(
     private val launcherApps = userContext.getSystemService<LauncherApps>()
     private val excludedItemsProviders: Set<ExcludedItemsProvider> =
         hashSetOf(ResourceExcludedItemsProvider(userContext))
+    private val mediaSessionManager: MediaSessionManager
+    private val sessionChangedListener: MediaSessionManager.OnActiveSessionsChangedListener =
+        MediaSessionManager.OnActiveSessionsChangedListener { mediaControllers ->
+            handleMediaSessionChange(mediaControllers)
+        }
 
     init {
         if (DEBUG) Log.d(TAG, "Init DockViewController for user ${userContext.userId}")
-        val adapter = DockAdapter(this, userContext)
+        adapter = DockAdapter(this, userContext)
         dockView.setAdapter(adapter)
         dockViewWeakReference = WeakReference(dockView)
 
@@ -135,6 +147,23 @@ open class DockViewController(
                 }
             }
         }
+        mediaSessionManager =
+            userContext.getSystemService(MediaSessionManager::class.java) as MediaSessionManager
+        if (Flags.mediaSessionCard()) {
+            handleMediaSessionChange(mediaSessionManager.getActiveSessionsForUser(
+                /* notificationListener= */
+                null,
+                UserHandle.of(userContext.userId)
+            ))
+            mediaSessionManager.addOnActiveSessionsChangedListener(
+                /* notificationListener= */
+                null,
+                UserHandle.of(userContext.userId),
+                userContext.getMainExecutor(),
+                sessionChangedListener
+            )
+        }
+
         dockEventsReceiver = DockEventsReceiver.registerDockReceiver(userContext, this)
         dockPackageChangeReceiver = DockPackageChangeReceiver.registerReceiver(userContext, this)
         dockTaskStackChangeListener =
@@ -152,6 +181,7 @@ open class DockViewController(
         userContext.unregisterReceiver(dockEventsReceiver)
         userContext.unregisterReceiver(dockPackageChangeReceiver)
         taskStackChangeListeners.unregisterTaskStackListener(dockTaskStackChangeListener)
+        mediaSessionManager.removeOnActiveSessionsChangedListener(sessionChangedListener)
         dockViewModel.destroy()
     }
 
@@ -203,4 +233,15 @@ open class DockViewController(
 
     override fun getMediaServiceComponents(): Set<ComponentName> =
         dockViewModel.getMediaServiceComponents()
+
+    private fun handleMediaSessionChange(mediaControllers: List<MediaController>?) {
+        val activeMediaSessions = mediaControllers?.filter {
+            it.playbackState?.let { playbackState ->
+                (playbackState.isActive ||
+                        playbackState.actions and PlaybackStateCompat.ACTION_PLAY != 0L)
+            } ?: false
+        }?.map { it.packageName } ?: emptyList()
+
+        adapter.onMediaSessionChange(activeMediaSessions)
+    }
 }
