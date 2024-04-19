@@ -16,7 +16,6 @@
 
 package com.android.car.carlauncher.homescreen.audio.media;
 
-import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
 import static android.graphics.Shader.TileMode.MIRROR;
 
 import android.content.res.ColorStateList;
@@ -139,7 +138,7 @@ public class MediaCardFragment extends HomeCardFragment {
         } else {
             mViewModel = new ViewModelProvider(this).get(PlaybackCardViewModel.class);
             if (mViewModel.needsInitialization()) {
-                MediaModels models = new MediaModels(getActivity(), MEDIA_SOURCE_MODE_PLAYBACK);
+                MediaModels models = new MediaModels(getActivity());
                 mViewModel.init(models);
             }
         }
