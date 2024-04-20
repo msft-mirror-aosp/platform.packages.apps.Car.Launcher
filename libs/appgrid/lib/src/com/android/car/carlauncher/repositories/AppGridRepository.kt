@@ -136,7 +136,9 @@ class AppGridRepositoryImpl(
                 order.compare(a1.appOrderInfo, a2.appOrderInfo)
             }.map {
                 if (mirroringSession.packageName == it.componentName.packageName) {
-                    it.launchActionType = MIRRORING
+                    it.redirectIntent = mirroringSession.launchIntent
+                } else if (it.launchActionType == MIRRORING) {
+                    it.redirectIntent = null
                 }
                 it.toAppItem(isDistractionOptimized(it.componentName, it.launchActionType == MEDIA))
             }
@@ -214,9 +216,15 @@ class AppGridRepositoryImpl(
         val displayName: CharSequence,
         val componentName: ComponentName,
         val icon: Drawable,
-        var launchActionType: AppLauncherProviderType,
-        var launchIntent: Intent? = null
+        private val _launchActionType: AppLauncherProviderType,
+        var redirectIntent: Intent? = null
     ) {
+        val launchActionType get() = if (redirectIntent == null) {
+            _launchActionType
+        } else {
+            MIRRORING
+        }
+
         val appOrderInfo =
             AppOrderInfo(componentName.packageName, componentName.className, displayName.toString())
     }
@@ -231,7 +239,8 @@ class AppGridRepositoryImpl(
             launchActionType == TOS_DISABLED,
             { context ->
                 appLaunchFactory
-                    .get(launchActionType)?.launch(context, componentName, launchIntent)
+                    .get(launchActionType)
+                    ?.launch(context, componentName, redirectIntent)
             },
             { contextViewPair ->
                 appShortcutsFactory.showShortcuts(
