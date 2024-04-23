@@ -477,21 +477,10 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
     }
 
     private boolean isCarAppCallingService(String packageName) {
-        // Check that app is integrated with CAL and handles calls
-        Intent serviceIntent =
+        Intent intent =
                 new Intent(CAR_APP_SERVICE_INTERFACE)
                         .setPackage(packageName)
                         .addCategory(CAR_APP_CATEGORY_CALLING);
-
-        if (mPackageManager.queryIntentServices(serviceIntent, GET_RESOLVED_FILTER).isEmpty()) {
-            return false;
-        }
-
-        // Check that app has CAl activity
-        Intent activityIntent = new Intent();
-        activityIntent.setComponent(new ComponentName(packageName, CAR_APP_ACTIVITY_INTERFACE));
-
-        return mPackageManager
-                .resolveActivity(activityIntent, PackageManager.MATCH_DEFAULT_ONLY) != null;
+        return !mPackageManager.queryIntentServices(intent, GET_RESOLVED_FILTER).isEmpty();
     }
 }
