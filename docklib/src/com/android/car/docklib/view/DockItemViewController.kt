@@ -136,9 +136,11 @@ class DockItemViewController(
         }
         appIcon.strokeColor = ColorStateList.valueOf(getStrokeColor())
         appIcon.strokeWidth = getStrokeWidth()
-        val cp = getContentPadding()
-        appIcon.setContentPadding(cp, cp, cp, cp)
         appIcon.colorFilter = getColorFilter()
+        val cp = getContentPadding()
+        // ContentPadding should not be set before the measure phase of the view otherwise it might
+        // set incorrect padding values on the view.
+        appIcon.post { appIcon.setContentPadding(cp, cp, cp, cp) }
     }
 
     /**

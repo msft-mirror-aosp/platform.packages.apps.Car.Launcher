@@ -29,7 +29,7 @@
     <dimen name="main_screen_widget_margin">16dp</dimen>
 
     <!-- Card dimensions -->
-    <dimen name="card_width">388dp</dimen>
+    <dimen name="card_width">400dp</dimen>
 
     <!-- Card Header dimensions -->
     <dimen name="card_content_margin">24dp</dimen>
@@ -96,4 +96,19 @@
     <dimen name="calm_mode_text_size">24sp</dimen>
     <dimen name="calm_mode_clock_translationY">40dp</dimen>
     <dimen name="calm_mode_clock_media_title_margin">-16dp</dimen>
+
+    <!-- Home fullscreen media card dimens -->
+    <dimen name="media_card_icon_padding">25dp</dimen>
+    <dimen name="media_card_app_icon_size">32dp</dimen>
+    <dimen name="media_card_horizontal_margin">32dp</dimen>
+    <dimen name="media_card_view_separation_margin">16dp</dimen>
+    <dimen name="media_card_artist_top_margin">4dp</dimen>
+    <dimen name="media_card_album_art_size">200dp</dimen>
+    <dimen name="media_card_small_button_size">40dp</dimen>
+    <dimen name="media_card_large_button_size">80dp</dimen>
+    <dimen name="media_card_bottom_panel_button_size">96dp</dimen>
+    <dimen name="media_card_card_radius">32dp</dimen>
+    <dimen name="media_card_play_button_bottom_margin">120dp</dimen>
+    <dimen name="media_card_play_button_horizontal_margin">8dp</dimen>
+    <dimen name="media_card_bottom_panel_margin_top">208dp</dimen>
 </resources>

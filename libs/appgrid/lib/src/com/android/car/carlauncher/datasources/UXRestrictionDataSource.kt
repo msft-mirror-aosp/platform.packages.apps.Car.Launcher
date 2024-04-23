@@ -20,6 +20,7 @@ import android.car.content.pm.CarPackageManager
 import android.car.drivingstate.CarUxRestrictionsManager
 import android.content.ComponentName
 import android.content.res.Resources
+import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
 import android.support.v4.media.session.PlaybackStateCompat
@@ -47,7 +48,7 @@ interface UXRestrictionDataSource {
      */
     fun requiresDistractionOptimization(): Flow<Boolean>
 
-    fun isDistractionOptimized(): Flow<(componentName: ComponentName) -> Boolean>
+    fun isDistractionOptimized(): Flow<(componentName: ComponentName, isMedia: Boolean) -> Boolean>
 }
 
 /**
@@ -92,23 +93,24 @@ class UXRestrictionDataSourceImpl(
         }.flowOn(bgDispatcher).conflate()
     }
 
-    override fun isDistractionOptimized(): Flow<(componentName: ComponentName) -> Boolean> {
+    override fun isDistractionOptimized():
+            Flow<(componentName: ComponentName, isMedia: Boolean) -> Boolean> {
         if (!(Flags.mediaSessionCard() &&
                     resources.getBoolean(R.bool.config_enableMediaSessionAppsWhileDriving))
         ) {
-            return flowOf(fun(componentName: ComponentName): Boolean {
-                return (carPackageManager.isActivityDistractionOptimized(
+            return flowOf(fun(componentName: ComponentName, isMedia: Boolean): Boolean {
+                return isMedia || (carPackageManager.isActivityDistractionOptimized(
                     componentName.packageName,
                     componentName.className
                 ))
             })
         }
         return getActiveMediaPlaybackSessions().map {
-            fun(componentName: ComponentName): Boolean {
+            fun(componentName: ComponentName, isMedia: Boolean): Boolean {
                 if (it.contains(componentName.packageName)) {
                     return true
                 }
-                return (carPackageManager.isActivityDistractionOptimized(
+                return isMedia || (carPackageManager.isActivityDistractionOptimized(
                     componentName.packageName,
                     componentName.className
                 ))
@@ -118,21 +120,32 @@ class UXRestrictionDataSourceImpl(
 
     private fun getActiveMediaPlaybackSessions(): Flow<List<String>> {
         return callbackFlow {
-            val sessionsChangedListener =
-                OnActiveSessionsChangedListener { mediaSessions ->
-                    val mediaSessionPackages = mediaSessions?.filter {
+            val filterActiveMediaPackages: (List<MediaController>) -> List<String> =
+                { mediaControllers ->
+                    mediaControllers.filter {
                         it.playbackState?.let { playbackState ->
                             (playbackState.isActive ||
                                     playbackState.actions and PlaybackStateCompat.ACTION_PLAY != 0L)
                         } ?: false
-                    }?.map { it.packageName } ?: emptyList()
-                    trySend(mediaSessionPackages)
+                    }.map { it.packageName }
+                }
+            // Emits the initial list of filtered packages upon subscription
+            trySend(
+                filterActiveMediaPackages(mediaSessionManager.getActiveSessions(null))
+            )
+            val sessionsChangedListener =
+                OnActiveSessionsChangedListener {
+                    if (it != null) {
+                        trySend(filterActiveMediaPackages(it))
+                    }
                 }
             mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, null)
             awaitClose {
                 mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener)
             }
-        }.flowOn(bgDispatcher).conflate()
+            // Note this flow runs on the Main dispatcher, as the MediaSessionsChangedListener
+            // expects to dispatch updates on the Main looper.
+        }.flowOn(Dispatchers.Main).conflate()
     }
 
     companion object {
