@@ -56,6 +56,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.car.media.common.source.MediaSource;
 import com.android.car.ui.shortcutspopup.CarUiShortcutsPopup;
 
 import com.google.common.collect.Sets;
@@ -170,7 +171,7 @@ public class AppLauncherUtils {
     private final static LauncherAppsInfo EMPTY_APPS_INFO = new LauncherAppsInfo(
             Collections.emptyMap(), Collections.emptyMap());
 
-    /*
+    /**
      * Gets the media source in a given package. If there are multiple sources in the package,
      * returns the first one.
      */
@@ -258,7 +259,7 @@ public class AppLauncherUtils {
                 ComponentName componentName = new ComponentName(packageName, className);
                 mediaServicesMap.put(componentName, info);
                 mEnabledPackages.add(packageName);
-                if (shouldAddToLaunchables(packageManager, componentName, appsToHide,
+                if (shouldAddToLaunchables(context, componentName, appsToHide,
                         customMediaComponents, appTypes, APP_TYPE_MEDIA_SERVICES)) {
                     final boolean isDistractionOptimized = true;
                     boolean isDisabledByTos = tosDisabledPackages.contains(packageName);
@@ -294,7 +295,7 @@ public class AppLauncherUtils {
                 ComponentName componentName = info.getComponentName();
                 String packageName = componentName.getPackageName();
                 mEnabledPackages.add(packageName);
-                if (shouldAddToLaunchables(packageManager, componentName, appsToHide,
+                if (shouldAddToLaunchables(context, componentName, appsToHide,
                         customMediaComponents, appTypes, APP_TYPE_LAUNCHABLES)) {
                     boolean isDistractionOptimized =
                             isActivityDistractionOptimized(carPackageManager, packageName,
@@ -334,7 +335,7 @@ public class AppLauncherUtils {
                 String packageName = info.activityInfo.packageName;
                 String className = info.activityInfo.name;
                 ComponentName componentName = new ComponentName(packageName, className);
-                if (!shouldAddToLaunchables(packageManager, componentName, appsToHide,
+                if (!shouldAddToLaunchables(context, componentName, appsToHide,
                         customMediaComponents, appTypes, APP_TYPE_LAUNCHABLES)) {
                     continue;
                 }
@@ -666,7 +667,7 @@ public class AppLauncherUtils {
         return disabledActivities;
     }
 
-    private static boolean shouldAddToLaunchables(PackageManager packageManager,
+    private static boolean shouldAddToLaunchables(Context context,
             @NonNull ComponentName componentName,
             @NonNull Set<String> appsToHide,
             @NonNull Set<String> customMediaComponents,
@@ -697,7 +698,7 @@ public class AppLauncherUtils {
                     return true;
                 }
                 // Only Keep MBS that is a media template
-                return isMediaTemplate(packageManager, componentName);
+                return MediaSource.isMediaTemplate(context, componentName);
             // Process activities
             case APP_TYPE_LAUNCHABLES:
                 return true;

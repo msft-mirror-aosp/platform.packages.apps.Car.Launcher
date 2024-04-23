@@ -148,7 +148,8 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder {
      *
      * @param app AppMetaData to be displayed. Pass {@code null} will empty out the viewHolder.
      */
-    public void bind(@Nullable AppMetaData app, @NonNull BindInfo bindInfo) {
+    public void bind(@Nullable AppMetaData app, @NonNull BindInfo bindInfo,
+            boolean ignoreUxRestriction) {
         resetViewHolder();
         if (app == null) {
             return;
@@ -177,8 +178,8 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder {
         // previous page, so we need to rebind the app with the correct visibility.
         setStateSelected(mComponentName.equals(mDragCallback.mSelectedComponent));
 
-        boolean isLaunchableDistractionOptimized =
-                !isDistractionOptimizationRequired || app.getIsDistractionOptimized();
+        boolean isLaunchableDistractionOptimized = !isDistractionOptimizationRequired
+                || app.getIsDistractionOptimized() || ignoreUxRestriction;
         boolean isDisabledByTos = app.getIsDisabledByTos();
         boolean isLaunchable = isLaunchableDistractionOptimized || isDisabledByTos;
 

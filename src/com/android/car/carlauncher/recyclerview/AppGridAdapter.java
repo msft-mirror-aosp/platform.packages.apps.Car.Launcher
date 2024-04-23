@@ -69,6 +69,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     // the global bounding rect of the app grid including margins (excluding page indicator bar)
     private Rect mPageBound;
     private Mode mAppGridMode;
+    private List<String> mBypassRestrictionPackages;
 
     public AppGridAdapter(Context context, int numOfCols, int numOfRows,
             LauncherViewModel dataModel, AppItemViewHolder.AppItemDragCallback dragCallback,
@@ -122,8 +123,10 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
      * Updates the current driving restriction to {@code isDistractionOptimizationRequired}, then
      * rebind the view holders.
      */
-    public void setIsDistractionOptimizationRequired(boolean isDistractionOptimizationRequired) {
+    public void setIsDistractionOptimizationRequired(boolean isDistractionOptimizationRequired,
+            List<String> bypassRestrictionPackages) {
         mIsDistractionOptimizationRequired = isDistractionOptimizationRequired;
+        mBypassRestrictionPackages = bypassRestrictionPackages;
         // notifyDataSetChanged will rebind distraction optimization to all app items
         notifyDataSetChanged();
     }
@@ -188,11 +191,13 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         int adapterIndex = mIndexingHelper.gridPositionToAdaptorIndex(position);
         if (adapterIndex >= mLauncherItems.size()) {
             // the current view holder is an empty item used to pad the last page.
-            viewHolder.bind(null, bindInfo);
+            viewHolder.bind(null, bindInfo, /* ignoreUxRestriction= */ false);
             return;
         }
         AppItem item = (AppItem) mLauncherItems.get(adapterIndex);
-        viewHolder.bind(item.getAppMetaData(), bindInfo);
+        viewHolder.bind(item.getAppMetaData(), bindInfo,
+                /* ignoreUxRestriction= */ mBypassRestrictionPackages
+                        .contains(item.getPackageName()));
     }
 
     /**
