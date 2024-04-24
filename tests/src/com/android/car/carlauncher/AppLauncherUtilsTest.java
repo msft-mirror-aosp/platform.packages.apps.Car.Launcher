@@ -68,6 +68,8 @@ import android.util.ArraySet;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.car.media.common.source.MediaSource;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -156,6 +158,7 @@ public final class AppLauncherUtilsTest extends AbstractExtendedMockitoTestCase 
     @Override
     protected void onSessionBuilder(CustomMockitoSessionBuilder session) {
         session.spyStatic(Settings.Secure.class);
+        session.spyStatic(MediaSource.class);
     }
 
     @Test
@@ -429,6 +432,8 @@ public final class AppLauncherUtilsTest extends AbstractExtendedMockitoTestCase 
                     .thenReturn(new ServiceInfo());
             when(mMockPackageManager.getLaunchIntentForPackage(mbs.getComponentInfo().packageName))
                     .thenReturn(null);
+            doReturn(true).when(() -> MediaSource.isMediaTemplate(any(),
+                    eq(mbs.getComponentInfo().getComponentName())));
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -447,6 +452,8 @@ public final class AppLauncherUtilsTest extends AbstractExtendedMockitoTestCase 
             when(mMockPackageManager.getLaunchIntentForPackage(
                     videoApp.getComponentInfo().packageName))
                     .thenReturn(new Intent());
+            doReturn(false).when(() -> MediaSource.isMediaTemplate(any(),
+                    eq(videoApp.getComponentInfo().getComponentName())));
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -472,6 +479,8 @@ public final class AppLauncherUtilsTest extends AbstractExtendedMockitoTestCase 
             when(mMockPackageManager.getLaunchIntentForPackage(
                     launchableMBSApp.getComponentInfo().packageName))
                     .thenReturn(new Intent());
+            doReturn(true).when(() -> MediaSource.isMediaTemplate(any(),
+                    eq(launchableMBSApp.getComponentInfo().getComponentName())));
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -496,6 +505,8 @@ public final class AppLauncherUtilsTest extends AbstractExtendedMockitoTestCase 
             when(mMockPackageManager.getLaunchIntentForPackage(
                     notlaunchableMBSApp.getComponentInfo().packageName))
                     .thenReturn(new Intent());
+            doReturn(false).when(() -> MediaSource.isMediaTemplate(any(),
+                    eq(notlaunchableMBSApp.getComponentInfo().getComponentName())));
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }
