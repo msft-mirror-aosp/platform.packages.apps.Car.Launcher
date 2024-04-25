@@ -18,6 +18,7 @@ package com.android.car.carlauncher.homescreen.audio.media;
 
 import static android.graphics.Shader.TileMode.MIRROR;
 
+import android.app.Application;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.RenderEffect;
@@ -34,6 +35,7 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -124,7 +126,7 @@ public class MediaCardFragment extends HomeCardFragment {
             };
 
     private MediaCardController mMediaCardController;
-    protected PlaybackCardViewModel mViewModel;
+    protected MediaCardViewModel mViewModel;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -136,7 +138,7 @@ public class MediaCardFragment extends HomeCardFragment {
                     getContext().getDrawable(R.drawable.control_bar_image_background));
             mShowSeekBar = getResources().getBoolean(R.bool.show_seek_bar);
         } else {
-            mViewModel = new ViewModelProvider(this).get(PlaybackCardViewModel.class);
+            mViewModel = new ViewModelProvider(this).get(MediaCardViewModel.class);
             if (mViewModel.needsInitialization()) {
                 MediaModels models = new MediaModels(getActivity());
                 mViewModel.init(models);
@@ -391,5 +393,22 @@ public class MediaCardFragment extends HomeCardFragment {
                     R.id.optional_seek_bar_with_times_container);
         }
         return mSeekBarWithTimesContainer;
+    }
+
+    public static class MediaCardViewModel extends PlaybackCardViewModel {
+
+        private boolean mPanelExpanded = false;
+
+        public MediaCardViewModel(@NonNull Application application) {
+            super(application);
+        }
+
+        public void setPanelExpanded(boolean expanded) {
+            mPanelExpanded = expanded;
+        }
+
+        public boolean getPanelExpanded() {
+            return mPanelExpanded;
+        }
     }
 }

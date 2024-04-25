@@ -14,8 +14,9 @@
   ~ limitations under the License.
   -->
 
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <corners android:radius="@dimen/media_card_pill_radius" />
-    <solid android:color="@@color/car_surface" />
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/car_surface"
+        android:state_selected="false"/>
+    <item android:color="@color/car_on_surface"
+        android:state_selected="true"/>
+</selector>
