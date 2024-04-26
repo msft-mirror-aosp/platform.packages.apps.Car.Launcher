@@ -23,9 +23,49 @@
     app:cardCornerRadius="@dimen/media_card_card_radius"
     app:cardElevation="0dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.constraintlayout.motion.widget.MotionLayout
+        android:id="@+id/motion_layout"
         android:layout_height="match_parent"
-        android:layout_width="match_parent">
+        android:layout_width="match_parent"
+        app:layoutDescription="@xml/panel_animation_motion_scene">
+
+        <LinearLayout
+            android:id="@+id/media_card_panel_content_container"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/media_card_panel_content_height"
+            android:background="@color/car_surface"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent">
+            <FrameLayout
+                android:id="@+id/media_card_panel_handlebar"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/media_card_panel_handlebar_touch_target_height"
+                android:paddingStart="@dimen/media_card_panel_handlebar_horizontal_padding"
+                android:paddingEnd="@dimen/media_card_panel_handlebar_horizontal_padding"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/media_card_panel_handlebar_height"
+                    android:layout_gravity="center"
+                    android:background="@drawable/media_card_panel_handlebar" />
+            </FrameLayout>
+
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/view_pager"
+                android:background="@color/car_surface"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/empty_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/car_surface_variant"
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <ImageView
             android:id="@+id/media_widget_app_icon"
@@ -54,7 +94,7 @@
             android:layout_width="0dp"
             android:text="@string/metadata_default_title"
             android:textColor="@color/car_on_surface"
-            style="@style/TextAppearance.Car.Body.Medium"
+            android:gravity="center_vertical"
             android:maxLines="1"
             android:ellipsize="end"
             android:layout_marginTop="@dimen/media_card_view_separation_margin"
@@ -101,7 +141,6 @@
             app:layout_constraintEnd_toStartOf="@id/content_format"
             app:layout_constraintTop_toBottomOf="@id/subtitle" />
 
-        <!-- should be wrap content for width -->
         <com.android.car.media.common.ContentFormatView
             android:id="@+id/content_format"
             android:layout_width="wrap_content"
@@ -133,7 +172,7 @@
             app:layout_constraintEnd_toStartOf="@id/playback_action_id2"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintVertical_bias="1"/>
+            app:layout_constraintVertical_bias="1" />
 
         <ImageButton
             android:id="@+id/playback_action_id1"
@@ -175,7 +214,6 @@
             android:layout_height="@dimen/media_card_bottom_panel_height"
             android:background="@drawable/media_card_button_panel_background"
             android:backgroundTint="@color/car_surface"
-            android:state_selected="false"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -187,180 +225,24 @@
                 android:layout_height="@dimen/media_card_bottom_panel_button_size"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_overflow_horizontal"
-                android:scaleType="centerInside"
-                android:padding="@dimen/media_card_panel_button_icon_padding"
-                android:cropToPadding="true"
-                android:tint="@color/media_card_panel_button_tint_state_list"
-                android:background="@drawable/media_card_panel_button_shape"
-                android:backgroundTint="@color/media_card_panel_button_background_tint_state_list"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                style="@style/MediaCardPanelButtonStyle"/>
             <ImageButton
                 android:id="@+id/queue_button"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/media_card_bottom_panel_button_size"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_queue"
-                android:scaleType="centerInside"
-                android:padding="@dimen/media_card_panel_button_icon_padding"
-                android:cropToPadding="true"
-                android:tint="@color/media_card_panel_button_tint_state_list"
-                android:background="@drawable/media_card_panel_button_shape"
-                android:backgroundTint="@color/media_card_panel_button_background_tint_state_list"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                style="@style/MediaCardPanelButtonStyle"/>
             <ImageButton
                 android:id="@+id/history_button"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/media_card_bottom_panel_button_size"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_history"
-                android:scaleType="centerInside"
-                android:padding="@dimen/media_card_panel_button_icon_padding"
-                android:cropToPadding="true"
-                android:tint="@color/media_card_panel_button_tint_state_list"
-                android:background="@drawable/media_card_panel_button_shape"
-                android:backgroundTint="@color/media_card_panel_button_background_tint_state_list"
-                android:layout_weight="1"/>
+                android:layout_weight="1"
+                style="@style/MediaCardPanelButtonStyle"/>
         </LinearLayout>
-
-        <TableLayout
-            android:id="@+id/overflow_grid"
-            android:layout_width="fill_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="@dimen/media_card_bottom_panel_margin_top"
-            android:background="@color/car_surface"
-            android:stretchColumns="0,1"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
-            <TableRow
-                android:layout_weight="1"
-                android:gravity="center">
-                <ImageButton
-                    android:id="@+id/playback_action_id3"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:maxWidth="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-
-                <ImageButton
-                    android:id="@+id/playback_action_id4"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-            </TableRow>
-            <TableRow
-                android:layout_weight="1"
-                android:gravity="center">
-                <ImageButton
-                    android:id="@+id/playback_action_id5"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-
-                <ImageButton
-                    android:id="@+id/playback_action_id6"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-            </TableRow>
-
-            <TableRow
-                android:layout_weight="1"
-                android:gravity="center">
-                <ImageButton
-                    android:id="@+id/playback_action_id7"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-
-                <ImageButton
-                    android:id="@+id/playback_action_id8"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-            </TableRow>
-
-            <TableRow
-                android:layout_weight="1"
-                android:gravity="center">
-                <ImageButton
-                    android:id="@+id/playback_action_id9"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-
-                <ImageButton
-                    android:id="@+id/playback_action_id10"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-            </TableRow>
-        </TableLayout>
-
-        <FrameLayout
-            android:id="@+id/queue_list_container"
-            android:layout_width="fill_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="@dimen/media_card_bottom_panel_margin_top"
-            android:background="@color/car_surface"
-            android:paddingStart="@dimen/media_card_horizontal_margin"
-            android:paddingEnd="@dimen/media_card_horizontal_margin"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
-            <com.android.car.apps.common.CarUiRecyclerViewNoScrollbar
-                android:id="@+id/queue_list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:enableDivider="true"/>
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/history_list_container"
-            android:layout_width="fill_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="@dimen/media_card_bottom_panel_margin_top"
-            android:background="@color/car_surface"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
-            <com.android.car.ui.recyclerview.CarUiRecyclerView
-                android:id="@+id/history_list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </FrameLayout>
-
-        <View
-            android:id="@+id/media_card_panel_handlebar"
-            android:layout_width="@dimen/media_card_bottom_panel_button_size"
-            android:layout_height="@dimen/media_card_panel_handlebar_height"
-            android:background="@drawable/media_card_panel_handlebar"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.motion.widget.MotionLayout>
 </androidx.cardview.widget.CardView>

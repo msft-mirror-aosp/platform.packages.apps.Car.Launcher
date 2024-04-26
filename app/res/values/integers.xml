@@ -26,5 +26,5 @@ limitations under the License.
     <integer name="calm_mode_content_fade_duration">750</integer>
 
     <!-- Fullscreen media card animation duration in ms -->
-    <integer name="media_card_bottom_panel_open_duration">300</integer>
+    <integer name="media_card_bottom_panel_open_duration">400</integer>
 </resources>

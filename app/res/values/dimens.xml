@@ -114,9 +114,19 @@
     <dimen name="media_card_play_button_horizontal_margin">8dp</dimen>
     <dimen name="media_card_margin_panel_open">24dp</dimen>
     <dimen name="media_card_bottom_panel_margin_top">208dp</dimen>
+    <dimen name="media_card_bottom_panel_animated_final_position">128dp</dimen>
+    <dimen name="media_card_panel_handlebar_offscreen_start_position">1000dp</dimen>
+    <dimen name="media_card_bottom_panel_animated_size">@dimen/media_card_bottom_panel_button_size</dimen>
+    <dimen name="media_card_bottom_panel_animated_horizontal_margin">0dp</dimen>
     <dimen name="media_card_pill_radius">160dp</dimen>
     <dimen name="media_card_panel_handlebar_height">8dp</dimen>
-    <dimen name="media_card_queue_header_top_margin">60dp</dimen>
+    <dimen name="media_card_panel_handlebar_touch_target_height">60dp</dimen>
+    <dimen name="media_card_panel_handlebar_horizontal_padding">164dp</dimen>
     <dimen name="media_card_queue_header_app_icon_size">26dp</dimen>
     <dimen name="media_card_queue_item_thumbnail_size">80dp</dimen>
+    <dimen name="media_card_panel_content_height">416dp</dimen>
+    <dimen name="media_card_title_animated_line_height">36dp</dimen>
+    <dimen name="media_card_title_default_line_height">40dp</dimen>
+    <dimen name="media_card_title_animated_text_size">28sp</dimen>
+    <dimen name="media_card_title_default_text_size">32sp</dimen>
 </resources>
