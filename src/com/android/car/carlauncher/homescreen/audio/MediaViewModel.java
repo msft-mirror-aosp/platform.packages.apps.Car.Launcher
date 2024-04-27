@@ -16,12 +16,7 @@
 
 package com.android.car.carlauncher.homescreen.audio;
 
-import static android.car.media.CarMediaIntents.EXTRA_MEDIA_COMPONENT;
-import static android.car.media.CarMediaManager.MEDIA_SOURCE_MODE_PLAYBACK;
-
 import android.app.Application;
-import android.car.media.CarMediaIntents;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -34,7 +29,6 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.Observer;
 
 import com.android.car.apps.common.imaging.ImageBinder;
-import com.android.car.carlauncher.AppLauncherUtils;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.CardContent;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
@@ -44,13 +38,11 @@ import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.R;
 import com.android.car.media.common.playback.PlaybackProgress;
 import com.android.car.media.common.playback.PlaybackViewModel;
+import com.android.car.media.common.source.MediaModels;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceColors;
 import com.android.car.media.common.source.MediaSourceViewModel;
 import com.android.internal.annotations.VisibleForTesting;
-
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -141,13 +133,12 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
 
     @Override
     public void onCreate(@NonNull Context context) {
+        MediaModels mediaModels = new MediaModels(context);
         if (mSourceViewModel == null) {
-            mSourceViewModel = MediaSourceViewModel.get(getApplication(),
-                    MEDIA_SOURCE_MODE_PLAYBACK);
+            mSourceViewModel = mediaModels.getMediaSourceViewModel();
         }
         if (mPlaybackViewModel == null) {
-            mPlaybackViewModel = PlaybackViewModel.get(getApplication(),
-                    MEDIA_SOURCE_MODE_PLAYBACK);
+            mPlaybackViewModel = mediaModels.getPlaybackViewModel();
         }
 
         mContext = context;
@@ -195,12 +186,8 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
     @Override
     public Intent getIntent() {
         MediaSource mediaSource = getMediaSourceViewModel().getPrimaryMediaSource().getValue();
-        Intent intent = new Intent(CarMediaIntents.ACTION_MEDIA_TEMPLATE);
-        if (mediaSource != null) {
-            intent.putExtra(EXTRA_MEDIA_COMPONENT,
-                    mediaSource.getBrowseServiceComponentName().flattenToString());
-        }
-        return intent;
+
+        return mediaSource != null ? mediaSource.getIntent() : null;
     }
 
     @Override
@@ -252,8 +239,7 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
     private void updateModel() {
         MediaSource mediaSource = mSourceViewModel.getPrimaryMediaSource().getValue();
         if (mediaSourceChanged()) {
-            if (mediaSource != null
-                    && supportsMediaWidget(mediaSource.getBrowseServiceComponentName())) {
+            if (mediaSource != null) {
                 if (Log.isLoggable(TAG, Log.INFO)) {
                     Log.i(TAG, "Setting Media view to source "
                             + mediaSource.getDisplayName(mContext));
@@ -273,17 +259,6 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
                 }
             }
         }
-    }
-
-    /**
-     * Ensure the app is supported in media widget. This should either be a media templated
-     * app or a custom media component
-     */
-    private boolean supportsMediaWidget(ComponentName componentName) {
-        List<String> customMediaComponents = Arrays.asList(
-                mContext.getResources().getStringArray(R.array.custom_media_packages));
-        return AppLauncherUtils.isMediaTemplate(getApplication().getPackageManager(), componentName)
-                || customMediaComponents.contains(componentName.flattenToString());
     }
 
     /**

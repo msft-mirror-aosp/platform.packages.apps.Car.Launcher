@@ -44,6 +44,9 @@ import android.content.ServiceConnection;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -54,6 +57,7 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -127,6 +131,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     private CarUxRestrictionsManager mCarUxRestrictionsManager;
     private CarPackageManager mCarPackageManager;
     private CarMediaManager mCarMediaManager;
+    private MediaSessionManager mMediaSessionManager;
     private Mode mMode;
     private AlertDialog mStopAppAlertDialog;
     private LauncherAppsInfo mAppsInfo;
@@ -218,7 +223,8 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                     isDistractionOptimizationRequired = carUxRestrictions
                             .isRequiresDistractionOptimization();
                 }
-                mAdapter.setIsDistractionOptimizationRequired(isDistractionOptimizationRequired);
+                mAdapter.setIsDistractionOptimizationRequired(isDistractionOptimizationRequired,
+                        getActiveMediaSessions());
                 mAdapter.setMode(mMode);
                 // set listener to update the app grid components and apply interaction restrictions
                 // when driving state changes
@@ -245,7 +251,12 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
      * Updates the state of the app grid components depending on the driving state.
      */
     private void handleDistractionOptimization(boolean requiresDistractionOptimization) {
-        mAdapter.setIsDistractionOptimizationRequired(requiresDistractionOptimization);
+        // Allow active media sessions apps to be clickable while driving
+        List<String> activeMediaSessions = requiresDistractionOptimization
+                ? getActiveMediaSessions() : new ArrayList<>();
+
+        mAdapter.setIsDistractionOptimizationRequired(requiresDistractionOptimization,
+                activeMediaSessions);
         if (requiresDistractionOptimization) {
             // if the user start driving while drag is in action, we cancel existing drag operations
             if (mIsCurrentlyDragging) {
@@ -255,6 +266,31 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
             }
             dismissForceStopMenus();
         }
+    }
+
+    private List<String> getActiveMediaSessions() {
+        List<String> activeMediaSessions = new ArrayList<>();
+        if (!(getResources().getBoolean(R.bool.config_enableMediaSessionAppsWhileDriving))) {
+            return activeMediaSessions;
+        }
+        List<MediaController> mediaSessions =
+                mMediaSessionManager.getActiveSessions(/* notificationListener= */ null);
+
+        // Active media sessions doesn't mean active playback state. Filter for those that are
+        // ready to play.
+        for (MediaController mediaController : mediaSessions) {
+            if (isActivePlaybackState(mediaController.getPlaybackState())) {
+                activeMediaSessions.add(mediaController.getPackageName());
+            }
+        }
+
+        return activeMediaSessions;
+    }
+
+    /** Returns whether the playback state is ready to be played */
+    private boolean isActivePlaybackState(PlaybackState playbackState) {
+        return playbackState != null && (playbackState.isActive()
+                || ((playbackState.getActions() & PlaybackStateCompat.ACTION_PLAY) != 0));
     }
 
     private void initializeLauncherModel() {
@@ -316,6 +352,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
                     }
                 }
         );
+        mMediaSessionManager = getSystemService(MediaSessionManager.class);
         mCar = Car.createCar(this, mCarConnectionListener);
         mHiddenApps.addAll(Arrays.asList(getResources().getStringArray(R.array.hidden_apps)));
         mClock = Clock.systemUTC();

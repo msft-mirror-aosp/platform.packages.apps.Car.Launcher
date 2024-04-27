@@ -34,6 +34,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="car_app_show_recent_apps"/>
       <item type="bool" name="car_app_show_toolbar"/>
       <item type="bool" name="config_allow_reordering"/>
+      <item type="bool" name="config_enableMediaSessionAppsWhileDriving"/>
       <item type="bool" name="config_useRemoteCarTaskView"/>
       <item type="bool" name="show_seek_bar"/>
       <item type="bool" name="use_defined_app_grid_dimensions"/>

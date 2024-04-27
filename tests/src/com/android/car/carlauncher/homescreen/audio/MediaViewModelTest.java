@@ -30,11 +30,11 @@ import android.content.ComponentName;
 import android.graphics.drawable.Drawable;
 
 import androidx.lifecycle.MutableLiveData;
+import androidx.test.annotation.UiThreadTest;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.car.apps.common.testutils.InstantTaskExecutorRule;
-import com.android.car.carlauncher.AppLauncherUtils;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
@@ -45,7 +45,6 @@ import com.android.car.media.common.playback.PlaybackViewModel;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceColors;
 import com.android.car.media.common.source.MediaSourceViewModel;
-import com.android.dx.mockito.inline.extended.ExtendedMockito;
 
 import org.junit.After;
 import org.junit.Before;
@@ -105,13 +104,8 @@ public class MediaViewModelTest extends AbstractExtendedMockitoTestCase  {
     public final InstantTaskExecutorRule mTaskExecutorRule = new InstantTaskExecutorRule();
     private int mSeekBarMax;
 
-    @Override
-    protected void onSessionBuilder(
-            AbstractExtendedMockitoTestCase.CustomMockitoSessionBuilder session) {
-        session.spyStatic(AppLauncherUtils.class);
-    }
-
     @Before
+    @UiThreadTest
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         mMediaViewModel = new MediaViewModel(ApplicationProvider.getApplicationContext(),
@@ -155,10 +149,6 @@ public class MediaViewModelTest extends AbstractExtendedMockitoTestCase  {
         when(mMediaSource.getBrowseServiceComponentName())
                 .thenReturn(ComponentName.createRelative("com.test", ".mbs"));
 
-        // ensure media source is considered a legacy media app
-        ExtendedMockito.doReturn(Boolean.TRUE)
-                .when(() -> AppLauncherUtils.isMediaTemplate(any(), any()));
-
         mLiveMediaSource.setValue(mMediaSource);
         mLiveMetadata.setValue(mMetadata);
 
@@ -182,10 +172,6 @@ public class MediaViewModelTest extends AbstractExtendedMockitoTestCase  {
         when(mMediaSource.getBrowseServiceComponentName())
                 .thenReturn(ComponentName.createRelative("com.test", ".mbs"));
 
-        // ensure media source is considered a legacy media app
-        ExtendedMockito.doReturn(Boolean.TRUE)
-                .when(() -> AppLauncherUtils.isMediaTemplate(any(), any()));
-
         mLiveMediaSource.setValue(mMediaSource);
 
         verify(mOnModelUpdateListener).onModelUpdate(mMediaViewModel);
@@ -200,25 +186,6 @@ public class MediaViewModelTest extends AbstractExtendedMockitoTestCase  {
     }
 
     @Test
-    public void changeSourceOnlyNonLegacyMediaApp_doesNotCallPresenter() {
-        when(mMediaSource.getDisplayName(any())).thenReturn(APP_NAME);
-        when(mMediaSource.getIcon()).thenReturn(APP_ICON);
-
-        when(mMediaSource.getBrowseServiceComponentName())
-                .thenReturn(ComponentName.createRelative("com.test", ".mbs"));
-
-        // not a legacy media app
-        ExtendedMockito.doReturn(Boolean.FALSE)
-                .when(() -> AppLauncherUtils.isMediaTemplate(any(), any()));
-
-        mLiveMediaSource.setValue(mMediaSource);
-
-        verify(mOnModelUpdateListener, never()).onModelUpdate(any());
-        // Card does not get updated.
-        assertNull(mMediaViewModel.getCardHeader());
-
-    }
-    @Test
     public void changeSourceToCustomMediaComponentApp_updatesModel() {
         when(mMediaSource.getDisplayName(any())).thenReturn(APP_NAME);
         when(mMediaSource.getIcon()).thenReturn(APP_ICON);
@@ -226,10 +193,6 @@ public class MediaViewModelTest extends AbstractExtendedMockitoTestCase  {
         // Radio is a custom component app
         when(mMediaSource.getBrowseServiceComponentName())
                 .thenReturn(ComponentName.createRelative("com.android.car.radio", ".service"));
-
-        // not legacy media app
-        ExtendedMockito.doReturn(Boolean.TRUE)
-                .when(() -> AppLauncherUtils.isMediaTemplate(any(), any()));
 
         mLiveMediaSource.setValue(mMediaSource);
 
