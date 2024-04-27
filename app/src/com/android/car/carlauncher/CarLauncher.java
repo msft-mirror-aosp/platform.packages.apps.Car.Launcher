@@ -203,6 +203,7 @@ public class CarLauncher extends FragmentActivity {
                 .get(CarLauncherViewModel.class);
 
         getLifecycle().addObserver(mCarLauncherViewModel);
+        addOnNewIntentListener(mCarLauncherViewModel.getNewIntentListener());
 
         mCarLauncherViewModel.getRemoteCarTaskView().observe(this, taskView -> {
             if (taskView == null || taskView.getParent() == parent) {
