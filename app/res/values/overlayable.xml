@@ -40,6 +40,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="config_homecard_single_line_secondary_descriptive_text"/>
       <item type="bool" name="show_seek_bar"/>
       <item type="bool" name="use_media_source_color_for_seek_bar"/>
+      <item type="bool" name="config_launch_most_recent_task_on_recents_dismiss"/>
       <item type="color" name="car_on_surface_40"/>
       <item type="color" name="card_background_scrim"/>
       <item type="color" name="clear_all_recents_text_color"/>
