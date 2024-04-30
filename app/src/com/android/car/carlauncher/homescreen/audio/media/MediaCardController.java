@@ -90,9 +90,13 @@ public class MediaCardController extends PlaybackCardController {
         mViewResources = mView.getContext().getResources();
 
         mView.setOnClickListener(view -> {
-            MediaSource mediaSource = mDataModel.getMediaSource().getValue();
-            Intent intent = mediaSource != null ? mediaSource.getIntent() : null;
-            mMediaIntentRouter.handleMediaIntent(intent);
+            if (mCardViewModel.getPanelExpanded()) {
+                animateClosePanel();
+            } else {
+                MediaSource mediaSource = mDataModel.getMediaSource().getValue();
+                Intent intent = mediaSource != null ? mediaSource.getIntent() : null;
+                mMediaIntentRouter.handleMediaIntent(intent);
+            }
         });
 
         mPanel = mView.findViewById(R.id.button_panel_background);
