@@ -30,6 +30,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
 
@@ -48,6 +49,7 @@ import com.android.car.media.common.playback.PlaybackViewModel;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceColors;
 import com.android.car.media.common.ui.PlaybackCardController;
+import com.android.car.media.common.ui.PlaybackQueueController;
 
 public class MediaCardController extends PlaybackCardController {
 
@@ -69,6 +71,8 @@ public class MediaCardController extends PlaybackCardController {
     private int mAlbumCoverVisibility;
     private int mSubtitleVisibility;
     private int mLogoVisibility;
+
+    private PlaybackQueueController mPlaybackQueueController;
 
     /** Builder for {@link MediaCardController}. Overrides build() method to return
      * NowPlayingController rather than base {@link PlaybackCardController}
@@ -238,9 +242,17 @@ public class MediaCardController extends PlaybackCardController {
                 }
         );
         mPanelHandlebar.setOnClickListener(null);
-        mPanelHandlebar.setOnTouchListener((v, event) -> {
-            return mCloseGestureDetector.onTouchEvent(event);
-        });
+        mPanelHandlebar.setOnTouchListener((v, event) -> mCloseGestureDetector.onTouchEvent(event));
+
+        mPlaybackQueueController = new PlaybackQueueController(
+                mQueueRecyclerView, /* queueResource */ Resources.ID_NULL,
+                R.layout.media_card_queue_item, R.layout.media_card_queue_header_item,
+                getViewLifecycleOwner(), mDataModel, mCardViewModel.getMediaItemsRepository(),
+                /* uxrContentLimiter */ null, /* uxrConfigurationId */ 0);
+        mPlaybackQueueController.setShowTimeForActiveQueueItem(false);
+        mPlaybackQueueController.setShowIconForActiveQueueItem(false);
+        mPlaybackQueueController.setShowThumbnailForQueueItem(true);
+        mPlaybackQueueController.setShowSubtitleForQueueItem(true);
     }
 
     @Override
@@ -300,7 +312,7 @@ public class MediaCardController extends PlaybackCardController {
 
     @Override
     protected void updateViewsWithMediaSourceColors(MediaSourceColors colors) {
-        int defaultColor = mViewResources.getColor(R.color.car_on_surface, null);
+        int defaultColor = mViewResources.getColor(R.color.car_on_surface, /* theme */ null);
         ColorStateList accentColor = colors != null ? ColorStateList.valueOf(
                 colors.getAccentColor(defaultColor)) :
                 ColorStateList.valueOf(defaultColor);
@@ -315,6 +327,7 @@ public class MediaCardController extends PlaybackCardController {
 
     @Override
     protected void updatePlaybackState(PlaybackViewModel.PlaybackStateWrapper playbackState) {
+        Drawable defaultDrawable = mView.getContext().getDrawable(R.drawable.empty_action_drawable);
         if (playbackState != null) {
             updatePlayButtonWithPlaybackState(mPlayPauseButton, playbackState);
             updateActionsWithPlaybackState(mView.getContext(), mActions, playbackState,
@@ -325,11 +338,19 @@ public class MediaCardController extends PlaybackCardController {
                             com.android.car.media.common.R.drawable.ic_skip_next),
                     mView.getContext().getDrawable(R.drawable.dark_circle_button_background),
                     mView.getContext().getDrawable(R.drawable.dark_circle_button_background),
-                    /* reserveSkipSlots */ true, mView.getContext().getDrawable(
-                            R.drawable.empty_action_drawable));
+                    /* reserveSkipSlots */ true, defaultDrawable);
         } else {
             mActions.get(0).setVisibility(View.GONE);
             mActions.get(1).setVisibility(View.GONE);
+        }
+        for (ImageButton button: mActions) {
+            if (button.getDrawable() == defaultDrawable) {
+                button.setImageTintList(ColorStateList.valueOf(
+                        mViewResources.getColor(R.color.car_surface_variant, /* theme */ null)));
+            } else {
+                button.setImageTintList(ColorStateList.valueOf(
+                        mViewResources.getColor(R.color.car_on_surface, /* theme */ null)));
+            }
         }
         if (mCardViewModel.getPanelExpanded()) {
             mSkipPrevVisibility = mActions.get(0).getVisibility();

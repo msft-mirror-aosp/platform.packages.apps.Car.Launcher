@@ -116,4 +116,7 @@
     <dimen name="media_card_bottom_panel_margin_top">208dp</dimen>
     <dimen name="media_card_pill_radius">160dp</dimen>
     <dimen name="media_card_panel_handlebar_height">8dp</dimen>
+    <dimen name="media_card_queue_header_top_margin">60dp</dimen>
+    <dimen name="media_card_queue_header_app_icon_size">26dp</dimen>
+    <dimen name="media_card_queue_item_thumbnail_size">80dp</dimen>
 </resources>
