@@ -51,6 +51,8 @@ android_library {
         "//frameworks/libs/systemui:iconloader",
         "car-resource-common",
         "dock_item",
+        "car_launcher_flags_java_lib",
+        "car-media-common",
     ],
 
     platform_apis: true,
