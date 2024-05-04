@@ -174,7 +174,9 @@ public class CarRecentsActivity extends AppCompatActivity implements
         super.onDestroy();
         mNonDODisabledTaskProvider.terminate();
         mRecentTasksViewModel.terminate();
-        mClearAllAnimator.end();
+        if (mClearAllAnimator.isRunning()) {
+            mClearAllAnimator.end();
+        }
         mClearAllAnimator.removeAllListeners();
     }
 
