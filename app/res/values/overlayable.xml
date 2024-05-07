@@ -155,18 +155,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="drawable" name="radius_8_background"/>
       <item type="drawable" name="recent_clear_all_button_background"/>
       <item type="drawable" name="recent_dismiss_button_background"/>
-      <item type="id" name="action_id1"/>
-      <item type="id" name="action_id10"/>
-      <item type="id" name="action_id2"/>
-      <item type="id" name="action_id3"/>
-      <item type="id" name="action_id4"/>
-      <item type="id" name="action_id5"/>
-      <item type="id" name="action_id6"/>
-      <item type="id" name="action_id7"/>
-      <item type="id" name="action_id8"/>
-      <item type="id" name="action_id9"/>
       <item type="id" name="album_art"/>
-      <item type="id" name="artist"/>
       <item type="id" name="bottom_card"/>
       <item type="id" name="bottom_edge"/>
       <item type="id" name="bottom_line"/>
@@ -217,6 +206,16 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="overflow_button"/>
       <item type="id" name="overflow_grid"/>
       <item type="id" name="play_pause_button"/>
+      <item type="id" name="playback_action_id1"/>
+      <item type="id" name="playback_action_id10"/>
+      <item type="id" name="playback_action_id2"/>
+      <item type="id" name="playback_action_id3"/>
+      <item type="id" name="playback_action_id4"/>
+      <item type="id" name="playback_action_id5"/>
+      <item type="id" name="playback_action_id6"/>
+      <item type="id" name="playback_action_id7"/>
+      <item type="id" name="playback_action_id8"/>
+      <item type="id" name="playback_action_id9"/>
       <item type="id" name="playback_seek_bar"/>
       <item type="id" name="primary_text"/>
       <item type="id" name="queue_button"/>
@@ -230,6 +229,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="recents_clear_all_button"/>
       <item type="id" name="secondary_text"/>
       <item type="id" name="start_edge"/>
+      <item type="id" name="subtitle"/>
       <item type="id" name="tap_for_more_text"/>
       <item type="id" name="task_dismiss_button"/>
       <item type="id" name="task_icon"/>
