@@ -28,5 +28,5 @@
     <string name="user_tos_activity_intent" msgid="5323981034042569291">"intent:#Intent;action=com.android.car.SHOW_USER_TOS_ACTIVITY;B.show_value_prop=false;end"</string>
     <string name="banner_title_text" msgid="8827498256184464356">"برای استفاده از برنامه‌هایی که به‌دلیل شرایط خدمات کاربر غیرفعال شده‌اند، با «شرایط خدمات کاربر» موافقت کنید"</string>
     <string name="banner_review_button_text" msgid="369410598918950148">"مرور کردن"</string>
-    <string name="banner_dismiss_button_text" msgid="5389352614429069562">"اکنون نه"</string>
+    <string name="banner_dismiss_button_text" msgid="5389352614429069562">"حالا نه"</string>
 </resources>
