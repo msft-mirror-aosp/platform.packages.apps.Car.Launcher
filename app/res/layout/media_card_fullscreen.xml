@@ -66,7 +66,7 @@
             app:layout_constraintVertical_bias="0"/>
 
         <TextView
-            android:id="@+id/artist"
+            android:id="@+id/subtitle"
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             style="@style/TextAppearance.Car.Body.Small"
@@ -99,7 +99,7 @@
             app:layout_goneMarginEnd="@dimen/media_card_horizontal_margin"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/content_format"
-            app:layout_constraintTop_toBottomOf="@id/artist" />
+            app:layout_constraintTop_toBottomOf="@id/subtitle" />
 
         <!-- should be wrap content for width -->
         <com.android.car.media.common.ContentFormatView
@@ -129,14 +129,14 @@
             android:layout_marginBottom="@dimen/media_card_play_button_bottom_margin"
             app:layout_goneMarginEnd="@dimen/media_card_horizontal_margin"
             app:layout_goneMarginStart="@dimen/media_card_horizontal_margin"
-            app:layout_constraintStart_toEndOf="@id/action_id1"
-            app:layout_constraintEnd_toStartOf="@id/action_id2"
+            app:layout_constraintStart_toEndOf="@id/playback_action_id1"
+            app:layout_constraintEnd_toStartOf="@id/playback_action_id2"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias="1"/>
 
         <ImageButton
-            android:id="@+id/action_id1"
+            android:id="@+id/playback_action_id1"
             android:layout_width="@dimen/media_card_large_button_size"
             android:layout_height="@dimen/media_card_large_button_size"
             android:scaleType="centerInside"
@@ -153,7 +153,7 @@
             app:layout_constraintHorizontal_bias="0"/>
 
         <ImageButton
-            android:id="@+id/action_id2"
+            android:id="@+id/playback_action_id2"
             android:layout_width="@dimen/media_card_large_button_size"
             android:layout_height="@dimen/media_card_large_button_size"
             android:scaleType="centerInside"
@@ -238,7 +238,7 @@
                 android:layout_weight="1"
                 android:gravity="center">
                 <ImageButton
-                    android:id="@+id/action_id3"
+                    android:id="@+id/playback_action_id3"
                     android:layout_width="@dimen/media_card_small_button_size"
                     android:layout_height="@dimen/media_card_small_button_size"
                     android:maxWidth="@dimen/media_card_small_button_size"
@@ -247,7 +247,7 @@
                     android:background="@android:color/transparent" />
 
                 <ImageButton
-                    android:id="@+id/action_id4"
+                    android:id="@+id/playback_action_id4"
                     android:layout_width="@dimen/media_card_small_button_size"
                     android:layout_height="@dimen/media_card_small_button_size"
                     android:scaleType="fitCenter"
@@ -258,7 +258,7 @@
                 android:layout_weight="1"
                 android:gravity="center">
                 <ImageButton
-                    android:id="@+id/action_id5"
+                    android:id="@+id/playback_action_id5"
                     android:layout_width="@dimen/media_card_small_button_size"
                     android:layout_height="@dimen/media_card_small_button_size"
                     android:scaleType="fitCenter"
@@ -266,27 +266,7 @@
                     android:background="@android:color/transparent" />
 
                 <ImageButton
-                    android:id="@+id/action_id6"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-            </TableRow>
-
-            <TableRow
-                android:layout_weight="1"
-                android:gravity="center">
-                <ImageButton
-                    android:id="@+id/action_id7"
-                    android:layout_width="@dimen/media_card_small_button_size"
-                    android:layout_height="@dimen/media_card_small_button_size"
-                    android:scaleType="fitCenter"
-                    android:tint="@color/car_on_surface"
-                    android:background="@android:color/transparent" />
-
-                <ImageButton
-                    android:id="@+id/action_id8"
+                    android:id="@+id/playback_action_id6"
                     android:layout_width="@dimen/media_card_small_button_size"
                     android:layout_height="@dimen/media_card_small_button_size"
                     android:scaleType="fitCenter"
@@ -298,7 +278,7 @@
                 android:layout_weight="1"
                 android:gravity="center">
                 <ImageButton
-                    android:id="@+id/action_id9"
+                    android:id="@+id/playback_action_id7"
                     android:layout_width="@dimen/media_card_small_button_size"
                     android:layout_height="@dimen/media_card_small_button_size"
                     android:scaleType="fitCenter"
@@ -306,7 +286,27 @@
                     android:background="@android:color/transparent" />
 
                 <ImageButton
-                    android:id="@+id/action_id10"
+                    android:id="@+id/playback_action_id8"
+                    android:layout_width="@dimen/media_card_small_button_size"
+                    android:layout_height="@dimen/media_card_small_button_size"
+                    android:scaleType="fitCenter"
+                    android:tint="@color/car_on_surface"
+                    android:background="@android:color/transparent" />
+            </TableRow>
+
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center">
+                <ImageButton
+                    android:id="@+id/playback_action_id9"
+                    android:layout_width="@dimen/media_card_small_button_size"
+                    android:layout_height="@dimen/media_card_small_button_size"
+                    android:scaleType="fitCenter"
+                    android:tint="@color/car_on_surface"
+                    android:background="@android:color/transparent" />
+
+                <ImageButton
+                    android:id="@+id/playback_action_id10"
                     android:layout_width="@dimen/media_card_small_button_size"
                     android:layout_height="@dimen/media_card_small_button_size"
                     android:scaleType="fitCenter"

@@ -52,7 +52,7 @@ android_library {
         "car-resource-common",
         "dock_item",
         "car_launcher_flags_java_lib",
-        "car-media-common",
+        "car-media-common-no-overlayable",
     ],
 
     platform_apis: true,
