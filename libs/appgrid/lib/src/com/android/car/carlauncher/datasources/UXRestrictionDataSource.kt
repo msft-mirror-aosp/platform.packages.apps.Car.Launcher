@@ -23,7 +23,6 @@ import android.content.res.Resources
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import com.android.car.carlauncher.Flags
 import com.android.car.carlauncher.R
@@ -123,10 +122,7 @@ class UXRestrictionDataSourceImpl(
             val filterActiveMediaPackages: (List<MediaController>) -> List<String> =
                 { mediaControllers ->
                     mediaControllers.filter {
-                        it.playbackState?.let { playbackState ->
-                            (playbackState.isActive ||
-                                    playbackState.actions and PlaybackStateCompat.ACTION_PLAY != 0L)
-                        } ?: false
+                        it.playbackState?.isActive ?: false
                     }.map { it.packageName }
                 }
             // Emits the initial list of filtered packages upon subscription
