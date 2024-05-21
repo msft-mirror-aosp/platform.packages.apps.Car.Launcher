@@ -46,6 +46,7 @@ import com.android.car.carlauncher.R;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.playback.PlaybackProgress;
 import com.android.car.media.common.playback.PlaybackViewModel;
+import com.android.car.media.common.playback.PlaybackViewModel.PlaybackController;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceColors;
 import com.android.car.media.common.ui.PlaybackCardController;
@@ -328,11 +329,11 @@ public class MediaCardController extends PlaybackCardController {
     @Override
     protected void updatePlaybackState(PlaybackViewModel.PlaybackStateWrapper playbackState) {
         Drawable defaultDrawable = mView.getContext().getDrawable(R.drawable.empty_action_drawable);
+        PlaybackController playbackController = mDataModel.getPlaybackController().getValue();
         if (playbackState != null) {
-            updatePlayButtonWithPlaybackState(mPlayPauseButton, playbackState);
+            updatePlayButtonWithPlaybackState(mPlayPauseButton, playbackState, playbackController);
             updateActionsWithPlaybackState(mView.getContext(), mActions, playbackState,
-                    mDataModel.getPlaybackController().getValue(),
-                    mView.getContext().getDrawable(
+                    playbackController, mView.getContext().getDrawable(
                             com.android.car.media.common.R.drawable.ic_skip_previous),
                     mView.getContext().getDrawable(
                             com.android.car.media.common.R.drawable.ic_skip_next),
