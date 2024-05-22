@@ -237,7 +237,7 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
     @Override
     public Bitmap getRecentTaskThumbnail(int taskId) {
         ThumbnailData thumbnailData = getRecentTaskThumbnailData(taskId);
-        return thumbnailData != null ? thumbnailData.thumbnail : null;
+        return thumbnailData != null ? thumbnailData.getThumbnail() : null;
     }
 
     @NonNull
