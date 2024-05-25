@@ -17,4 +17,5 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <corners android:radius="112dp" />
+    <solid android:color="@color/media_card_panel_button_background_tint_state_list"/>
 </shape>
