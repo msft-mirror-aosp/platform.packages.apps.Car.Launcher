@@ -51,6 +51,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="color" name="launcher_home_icon_color"/>
       <item type="color" name="media_card_panel_button_background_tint_state_list"/>
       <item type="color" name="media_card_panel_button_tint_state_list"/>
+      <item type="color" name="media_card_seekbar_thumb_color"/>
       <item type="color" name="media_card_subtitle_color"/>
       <item type="color" name="recents_background_color"/>
       <item type="color" name="seek_bar_color"/>
