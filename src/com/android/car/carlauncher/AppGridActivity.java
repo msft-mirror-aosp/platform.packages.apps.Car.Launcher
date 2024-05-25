@@ -57,7 +57,6 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.provider.Settings;
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -289,8 +288,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
     /** Returns whether the playback state is ready to be played */
     private boolean isActivePlaybackState(PlaybackState playbackState) {
-        return playbackState != null && (playbackState.isActive()
-                || ((playbackState.getActions() & PlaybackStateCompat.ACTION_PLAY) != 0));
+        return playbackState != null && playbackState.isActive();
     }
 
     private void initializeLauncherModel() {
