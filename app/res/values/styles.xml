@@ -133,4 +133,18 @@
 
     </style>
 
+    <style name="MediaCardPanelButtonStyle">
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:padding">@dimen/media_card_panel_button_icon_padding</item>
+        <item name="android:cropToPadding">true</item>
+        <item name="android:tint">@color/media_card_panel_button_tint_state_list</item>
+        <item name="android:background">@drawable/media_card_panel_button_shape</item>
+    </style>
+
+    <style name="MediaCardCustomActionButtonStyle">
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:tint">@color/car_on_surface</item>
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+
 </resources>

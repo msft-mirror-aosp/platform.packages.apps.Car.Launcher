@@ -17,8 +17,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_height="wrap_content"
     android:layout_width="match_parent"
-    android:paddingBottom="@dimen/media_card_view_separation_margin"
-    android:layout_marginTop="@dimen/media_card_queue_header_top_margin">
+    android:paddingBottom="@dimen/media_card_view_separation_margin">
 
     <ImageView
         android:id="@+id/header_app_icon"
