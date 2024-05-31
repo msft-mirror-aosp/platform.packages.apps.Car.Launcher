@@ -16,30 +16,23 @@
 
 package com.android.car.carlauncher.homescreen.audio.media;
 
-import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.updateActionsWithPlaybackState;
 import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.updatePlayButtonWithPlaybackState;
 
-import android.animation.Animator;
-import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.GestureDetector;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.TableLayout;
 
-import androidx.annotation.NonNull;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
-import androidx.transition.Slide;
-import androidx.transition.Transition;
-import androidx.transition.TransitionManager;
+import androidx.constraintlayout.motion.widget.MotionLayout;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.carlauncher.R;
@@ -47,26 +40,26 @@ import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.playback.PlaybackProgress;
 import com.android.car.media.common.playback.PlaybackViewModel;
 import com.android.car.media.common.playback.PlaybackViewModel.PlaybackController;
+import com.android.car.media.common.playback.PlaybackViewModel.PlaybackStateWrapper;
 import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.source.MediaSourceColors;
 import com.android.car.media.common.ui.PlaybackCardController;
 import com.android.car.media.common.ui.PlaybackQueueController;
 
-public class MediaCardController extends PlaybackCardController {
+public class MediaCardController extends PlaybackCardController implements
+        MediaCardPanelViewPagerAdapter.ViewPagerQueueCreator {
 
     private static final int SWIPE_MAX_OFF_PATH = 75;
     private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 
     private final MediaIntentRouter mMediaIntentRouter = MediaIntentRouter.getInstance();
     private Resources mViewResources;
-    private TableLayout mOverflowActionsGrid;
-    private FrameLayout mQueueRecyclerView;
-    private FrameLayout mHistoryRecyclerView;
     private View mPanelHandlebar;
     private LinearLayout mPanel;
-    private ObjectAnimator mPanelAnimation;
-    private ObjectAnimator mPanelHandlebarAnimation;
+    private MotionLayout mMotionLayout;
     private MediaCardFragment.MediaCardViewModel mCardViewModel;
+    private ImageButton mSkipPrevButton;
+    private ImageButton mSkipNextButton;
     private int mSkipPrevVisibility;
     private int mSkipNextVisibility;
     private int mAlbumCoverVisibility;
@@ -74,6 +67,23 @@ public class MediaCardController extends PlaybackCardController {
     private int mLogoVisibility;
 
     private PlaybackQueueController mPlaybackQueueController;
+
+    private ViewPager2 mPager;
+    private MediaCardPanelViewPagerAdapter mPagerAdapter;
+    private Handler mHandler;
+
+    @Override
+    public void createQueueController(ViewGroup queueContainer) {
+        mPlaybackQueueController = new PlaybackQueueController(
+                queueContainer, /* queueResource */ Resources.ID_NULL,
+                R.layout.media_card_queue_item, R.layout.media_card_queue_header_item,
+                getViewLifecycleOwner(), mDataModel, mCardViewModel.getMediaItemsRepository(),
+                /* uxrContentLimiter */ null, /* uxrConfigurationId */ 0);
+        mPlaybackQueueController.setShowTimeForActiveQueueItem(false);
+        mPlaybackQueueController.setShowIconForActiveQueueItem(false);
+        mPlaybackQueueController.setShowThumbnailForQueueItem(true);
+        mPlaybackQueueController.setShowSubtitleForQueueItem(true);
+    }
 
     /** Builder for {@link MediaCardController}. Overrides build() method to return
      * NowPlayingController rather than base {@link PlaybackCardController}
@@ -104,127 +114,56 @@ public class MediaCardController extends PlaybackCardController {
             }
         });
 
+        mPager = mView.findViewById(R.id.view_pager);
+        mPagerAdapter = new MediaCardPanelViewPagerAdapter(mView.getContext());
+        mPager.setAdapter(mPagerAdapter);
+        mPagerAdapter.setQueueControllerProvider(this);
+        mPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                if (!mCardViewModel.getPanelExpanded()) {
+                    return;
+                }
+                selectOverflow(position == getOverflowTabIndex());
+                selectQueue(position == getQueueTabIndex());
+                selectHistory(position == getHistoryTabIndex());
+            }
+        });
+
+        mMotionLayout = mView.findViewById(R.id.motion_layout);
+
         mPanel = mView.findViewById(R.id.button_panel_background);
-        mPanelAnimation = ObjectAnimator.ofFloat(mPanel, "y",
-                        mViewResources.getDimension(
-                                R.dimen.media_card_bottom_panel_margin_top)
-                                - mViewResources.getDimension(
-                                        R.dimen.media_card_bottom_panel_button_size)
-                                - mViewResources.getDimension(
-                                        R.dimen.media_card_margin_panel_open))
-                .setDuration(mViewResources.getInteger(
-                        R.integer.media_card_bottom_panel_open_duration));
-
-        mOverflowActionsGrid = mView.findViewById(R.id.overflow_grid);
-        mQueueRecyclerView = mView.findViewById(R.id.queue_list_container);
-        mHistoryRecyclerView = mView.findViewById(R.id.history_list_container);
-        mOverflowActionsGrid.setOnClickListener(null);
-        mQueueRecyclerView.setOnClickListener(null);
-        mHistoryRecyclerView.setOnClickListener(null);
         mPanelHandlebar = mView.findViewById(R.id.media_card_panel_handlebar);
-        int height = mViewResources.getDisplayMetrics().heightPixels;
-        mPanelHandlebarAnimation = ObjectAnimator.ofFloat(mPanelHandlebar, "y",
-                height, mViewResources.getDimension(
-                        R.dimen.media_card_bottom_panel_margin_top))
-                .setDuration(mViewResources.getInteger(
-                        R.integer.media_card_bottom_panel_open_duration));
-        mPanelHandlebarAnimation.addListener(new Animator.AnimatorListener() {
+
+        mSkipPrevButton = mView.findViewById(R.id.playback_action_id1);
+        mSkipNextButton = mView.findViewById(R.id.playback_action_id2);
+
+        mMotionLayout.addTransitionListener(new MotionLayout.TransitionListener() {
             @Override
-            public void onAnimationStart(@NonNull Animator animation, boolean isReverse) {
-                mPanelHandlebar.setVisibility(View.VISIBLE);
-                if (!isReverse) {
-                    setPanelLayoutParams(mViewResources.getDimension(
-                                    R.dimen.media_card_bottom_panel_button_size),
-                            mViewResources.getDimension(R.dimen.media_card_horizontal_margin));
-                    mPanel.setSelected(true);
+            public void onTransitionStarted(MotionLayout motionLayout, int i, int i1) {
+            }
 
-                    mAlbumCoverVisibility = mAlbumCover.getVisibility();
-                    mAlbumCover.setVisibility(View.INVISIBLE);
-                    mAppIcon.setVisibility(View.INVISIBLE);
-                } else {
-                    setPanelLayoutParams(mViewResources.getDimension(
-                            R.dimen.media_card_bottom_panel_height), 0);
-                    mPanel.setSelected(false);
+            @Override
+            public void onTransitionChange(MotionLayout motionLayout, int i, int i1, float v) {
+            }
 
-                    setPlayButtonLayoutParams(0, 0, ConstraintSet.UNSET, 1);
-                    setSeekBarLayoutParams(mViewResources.getDimension(
-                            R.dimen.media_card_horizontal_margin),
-                            ConstraintSet.PARENT_ID, ConstraintSet.UNSET, ConstraintSet.UNSET,
-                            mSubtitle.getId());
-                    mSeekBar.getThumb().mutate().setAlpha(255);
-                    mSeekBar.setSplitTrack(true);
-
-                    setTitleLayoutParams(mViewResources.getDimension(
-                                    R.dimen.media_card_horizontal_margin),
-                            ConstraintSet.PARENT_ID, ConstraintSet.UNSET, ConstraintSet.UNSET,
-                            ConstraintSet.UNSET);
-                    mTitle.setTextAppearance(R.style.TextAppearance_Car_Body_Medium);
-
-                    mAlbumCover.setVisibility(mAlbumCoverVisibility);
-                    mAppIcon.setVisibility(View.VISIBLE);
-                    mActions.get(0).setVisibility(mSkipPrevVisibility);
-                    mActions.get(1).setVisibility(mSkipNextVisibility);
-                    mSubtitle.setVisibility(mSubtitleVisibility);
-                    mLogo.setVisibility(mLogoVisibility);
+            @Override
+            public void onTransitionCompleted(MotionLayout motionLayout, int i) {
+                if (mCardViewModel.getPanelExpanded()) {
+                    mSkipPrevButton.setVisibility(View.GONE);
+                    mSkipNextButton.setVisibility(View.GONE);
                 }
             }
 
             @Override
-            public void onAnimationEnd(@NonNull Animator animation, boolean isReverse) {
-                if (!isReverse) {
-                    setPlayButtonLayoutParams(mViewResources.getDimension(
-                            R.dimen.media_card_large_button_size), mViewResources.getDimension(
-                            R.dimen.media_card_margin_panel_open), 0, 0);
-                    mSkipPrevVisibility = mActions.get(0).getVisibility();
-                    mSkipNextVisibility = mActions.get(1).getVisibility();
-                    mActions.get(0).setVisibility(View.GONE);
-                    mActions.get(1).setVisibility(View.GONE);
-
-                    setSeekBarLayoutParams(mViewResources.getDimension(
-                            R.dimen.media_card_margin_panel_open),
-                            ConstraintSet.UNSET, mPlayPauseButton.getId(), mPlayPauseButton.getId(),
-                            mTitle.getId());
-                    mSeekBar.getThumb().mutate().setAlpha(0);
-                    mSeekBar.setSplitTrack(false);
-
-                    setTitleLayoutParams(mViewResources.getDimension(
-                            R.dimen.media_card_margin_panel_open),
-                            ConstraintSet.UNSET, mPlayPauseButton.getId(), mPlayPauseButton.getId(),
-                            mSeekBar.getId());
-                    mTitle.setTextAppearance(R.style.TextAppearance_Car_Body_Small);
-
-                    mSubtitleVisibility = mSubtitle.getVisibility();
-                    mLogoVisibility = mLogo.getVisibility();
-                    mSubtitle.setVisibility(View.GONE);
-                    mLogo.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onAnimationStart(@NonNull Animator animation) {
-            }
-
-            @Override
-            public void onAnimationEnd(@NonNull Animator animation) {
-            }
-
-            @Override
-            public void onAnimationCancel(@NonNull Animator animation) {
-            }
-
-            @Override
-            public void onAnimationRepeat(@NonNull Animator animation) {
+            public void onTransitionTrigger(MotionLayout motionLayout, int i, boolean b, float v) {
             }
         });
 
         GestureDetector mCloseGestureDetector = new GestureDetector(mView.getContext(),
                 new GestureDetector.SimpleOnGestureListener() {
-
-                    @Override
-                    public boolean onSingleTapUp(@NonNull MotionEvent e) {
-                        return super.onSingleTapUp(e);
-                    }
-
                     @Override
                     public boolean onFling(MotionEvent event1, MotionEvent event2,
                             float velocityX, float velocityY) {
@@ -242,26 +181,19 @@ public class MediaCardController extends PlaybackCardController {
                     }
                 }
         );
-        mPanelHandlebar.setOnClickListener(null);
-        mPanelHandlebar.setOnTouchListener((v, event) -> mCloseGestureDetector.onTouchEvent(event));
+        mPanelHandlebar.setOnClickListener((view) -> animateClosePanel());
+        mPanelHandlebar.setOnTouchListener((view, event) ->
+                mCloseGestureDetector.onTouchEvent(event));
 
-        mPlaybackQueueController = new PlaybackQueueController(
-                mQueueRecyclerView, /* queueResource */ Resources.ID_NULL,
-                R.layout.media_card_queue_item, R.layout.media_card_queue_header_item,
-                getViewLifecycleOwner(), mDataModel, mCardViewModel.getMediaItemsRepository(),
-                /* uxrContentLimiter */ null, /* uxrConfigurationId */ 0);
-        mPlaybackQueueController.setShowTimeForActiveQueueItem(false);
-        mPlaybackQueueController.setShowIconForActiveQueueItem(false);
-        mPlaybackQueueController.setShowThumbnailForQueueItem(true);
-        mPlaybackQueueController.setShowSubtitleForQueueItem(true);
+        mHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     protected void setupController() {
         super.setupController();
 
-        mSkipPrevVisibility = mActions.get(0).getVisibility();
-        mSkipNextVisibility = mActions.get(1).getVisibility();
+        mSkipPrevVisibility = mSkipPrevButton.getVisibility();
+        mSkipNextVisibility = mSkipNextButton.getVisibility();
         mAlbumCoverVisibility = mAlbumCover.getVisibility();
         mSubtitleVisibility = mSubtitle.getVisibility();
         mLogoVisibility = mLogo.getVisibility();
@@ -328,36 +260,22 @@ public class MediaCardController extends PlaybackCardController {
 
     @Override
     protected void updatePlaybackState(PlaybackViewModel.PlaybackStateWrapper playbackState) {
-        Drawable defaultDrawable = mView.getContext().getDrawable(R.drawable.empty_action_drawable);
         PlaybackController playbackController = mDataModel.getPlaybackController().getValue();
         if (playbackState != null) {
             updatePlayButtonWithPlaybackState(mPlayPauseButton, playbackState, playbackController);
-            updateActionsWithPlaybackState(mView.getContext(), mActions, playbackState,
-                    playbackController, mView.getContext().getDrawable(
-                            com.android.car.media.common.R.drawable.ic_skip_previous),
-                    mView.getContext().getDrawable(
-                            com.android.car.media.common.R.drawable.ic_skip_next),
-                    mView.getContext().getDrawable(R.drawable.dark_circle_button_background),
-                    mView.getContext().getDrawable(R.drawable.dark_circle_button_background),
-                    /* reserveSkipSlots */ true, defaultDrawable);
+            updateSkipButtonsWithPlaybackState(playbackState, playbackController);
+            mPagerAdapter.notifyPlaybackStateChanged(playbackState,
+                    playbackController);
         } else {
-            mActions.get(0).setVisibility(View.GONE);
-            mActions.get(1).setVisibility(View.GONE);
+            mSkipPrevButton.setVisibility(View.GONE);
+            mSkipNextButton.setVisibility(View.GONE);
         }
-        for (ImageButton button: mActions) {
-            if (button.getDrawable() == defaultDrawable) {
-                button.setImageTintList(ColorStateList.valueOf(
-                        mViewResources.getColor(R.color.car_surface_variant, /* theme */ null)));
-            } else {
-                button.setImageTintList(ColorStateList.valueOf(
-                        mViewResources.getColor(R.color.car_on_surface, /* theme */ null)));
-            }
-        }
+
         if (mCardViewModel.getPanelExpanded()) {
-            mSkipPrevVisibility = mActions.get(0).getVisibility();
-            mSkipNextVisibility = mActions.get(1).getVisibility();
-            mActions.get(0).setVisibility(View.GONE);
-            mActions.get(1).setVisibility(View.GONE);
+            mSkipPrevVisibility = mSkipPrevButton.getVisibility();
+            mSkipNextVisibility = mSkipNextButton.getVisibility();
+            mSkipPrevButton.setVisibility(View.GONE);
+            mSkipNextButton.setVisibility(View.GONE);
         }
     }
 
@@ -382,6 +300,7 @@ public class MediaCardController extends PlaybackCardController {
     @Override
     protected void updateQueueState(boolean hasQueue, boolean isQueueVisible) {
         super.updateQueueState(hasQueue, isQueueVisible);
+        mPagerAdapter.setHasQueue(hasQueue);
         ViewUtils.setVisible(mQueueButton, hasQueue);
         if (mCardViewModel.getPanelExpanded()) {
             animateClosePanel();
@@ -412,32 +331,27 @@ public class MediaCardController extends PlaybackCardController {
         }
         if (!mCardViewModel.getPanelExpanded()) {
             if (stateSetThroughClick) {
-                handlePanelAndViewOpenAnimations(mOverflowActionsGrid);
-
+                saveViewVisibilityBeforeAnimation();
                 mCardViewModel.setPanelExpanded(true);
 
-                mActionOverflowButton.setSelected(true);
-                mCardViewModel.setOverflowExpanded(true);
+                mPager.setCurrentItem(getOverflowTabIndex());
 
-                mQueueButton.setSelected(false);
-                mHistoryButton.setSelected(false);
+                mHandler.post(() -> mMotionLayout.transitionToEnd());
+
+                selectOverflow(true);
             } else {
                 unselectPanel();
             }
         } else {
             // If the panel is already open and overflow is clicked again,
             // always switch to overflow tab
-            mCardViewModel.setOverflowExpanded(true);
-            mOverflowActionsGrid.setVisibility(View.VISIBLE);
-            mPanelHandlebar.setVisibility(View.VISIBLE);
-            mPanel.setSelected(true);
-            mActionOverflowButton.setSelected(true);
+            mPager.setCurrentItem(getOverflowTabIndex(), true);
+            mPanel.setEnabled(true);
 
-            //set queue panel to gone
-            hideQueue();
+            selectOverflow(true);
 
-            // also set history panel to gone
-            hideHistory();
+            selectQueue(false);
+            selectHistory(false);
         }
     }
 
@@ -447,32 +361,27 @@ public class MediaCardController extends PlaybackCardController {
         }
         if (!mCardViewModel.getPanelExpanded()) {
             if (stateSetThroughClick) {
-                handlePanelAndViewOpenAnimations(mQueueRecyclerView);
-
+                saveViewVisibilityBeforeAnimation();
                 mCardViewModel.setPanelExpanded(true);
+                mPager.setCurrentItem(getQueueTabIndex());
 
-                mQueueButton.setSelected(true);
-                mCardViewModel.setQueueVisible(true);
+                mHandler.post(() -> mMotionLayout.transitionToEnd());
 
-                mActionOverflowButton.setSelected(false);
-                mHistoryButton.setSelected(false);
+                selectQueue(true);
             } else {
                 unselectPanel();
             }
         } else {
             // If the panel is already open and queue is clicked again,
             // always switch to queue tab
-            mCardViewModel.setQueueVisible(true);
-            mQueueRecyclerView.setVisibility(View.VISIBLE);
-            mPanelHandlebar.setVisibility(View.VISIBLE);
-            mPanel.setSelected(true);
-            mQueueButton.setSelected(true);
+            mPager.setCurrentItem(getQueueTabIndex(), true);
 
-            //set overflow panel to gone
-            hideOverflow();
+            mPanel.setEnabled(true);
 
-            // also set history panel to gone
-            hideHistory();
+            selectQueue(true);
+
+            selectOverflow(false);
+            selectHistory(false);
         }
     }
 
@@ -480,152 +389,134 @@ public class MediaCardController extends PlaybackCardController {
         if (mHistoryButton == null) {
             return;
         }
+        int historyPos = getHistoryTabIndex();
         if (!mCardViewModel.getPanelExpanded()) {
             if (stateSetThroughClick) {
-                handlePanelAndViewOpenAnimations(mHistoryRecyclerView);
-
+                saveViewVisibilityBeforeAnimation();
                 mCardViewModel.setPanelExpanded(true);
+                mPager.setCurrentItem(historyPos);
 
-                mHistoryButton.setSelected(true);
-                mCardViewModel.setHistoryVisible(true);
+                mHandler.post(() -> mMotionLayout.transitionToEnd());
 
-                mActionOverflowButton.setSelected(false);
-                mQueueButton.setSelected(false);
+                selectHistory(true);
             } else {
                 unselectPanel();
             }
         } else {
             // If the panel is already open and history is clicked again,
             // always switch to history tab
-            mCardViewModel.setHistoryVisible(true);
-            mHistoryRecyclerView.setVisibility(View.VISIBLE);
-            mPanelHandlebar.setVisibility(View.VISIBLE);
-            mPanel.setSelected(true);
-            mHistoryButton.setSelected(true);
+            mPager.setCurrentItem(historyPos, true);
 
-            // set overflow panel to gone
-            hideOverflow();
+            mPanel.setEnabled(true);
 
-            // also set queue panel to gone
-            hideQueue();
+            selectHistory(true);
+
+            selectOverflow(false);
+            selectQueue(false);
         }
     }
 
     private void animateClosePanel() {
-        View transitionTarget = null;
-        if (mOverflowActionsGrid.getVisibility() == View.VISIBLE) {
-            transitionTarget = mOverflowActionsGrid;
-        } else if (mQueueRecyclerView.getVisibility() == View.VISIBLE) {
-            transitionTarget = mQueueRecyclerView;
-        } else if (mHistoryRecyclerView.getVisibility() == View.VISIBLE) {
-            transitionTarget = mHistoryRecyclerView;
-        }
-        if (transitionTarget != null) {
-            doPanelContentTransition(transitionTarget, View.GONE);
-        }
-
-        mPanelHandlebarAnimation.reverse();
-
-        mPanelAnimation.reverse();
-
         mCardViewModel.setPanelExpanded(false);
-
+        mMotionLayout.transitionToStart();
+        restoreExtraViewsWhenPanelClosed();
         unselectAllPanelButtons();
-    }
-
-    private void setPanelLayoutParams(float height, float horizontalMargin) {
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)
-                mPanel.getLayoutParams();
-        params.height = (int) Math.ceil(height);
-        params.setMarginEnd((int) Math.ceil(horizontalMargin));
-        params.setMarginStart((int) Math.ceil(horizontalMargin));
-        mPanel.setLayoutParams(params);
-    }
-
-    private void setPlayButtonLayoutParams(float width, float topMargin, float horizontalBias,
-            float verticalBias) {
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)
-                mPlayPauseButton.getLayoutParams();
-        params.width = (int) Math.ceil(width);
-        params.topMargin = (int) Math.ceil(topMargin);
-        params.horizontalBias = horizontalBias;
-        params.verticalBias = verticalBias;
-        mPlayPauseButton.setLayoutParams(params);
-    }
-
-    private void setSeekBarLayoutParams(float startMargin, int startToStartId, int startToEndId,
-            int bottomToBottomId, int topToBottomId) {
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)
-                mSeekBar.getLayoutParams();
-        params.setMarginStart((int) Math.ceil(startMargin));
-        params.startToStart = startToStartId;
-        params.startToEnd = startToEndId;
-        params.bottomToBottom = bottomToBottomId;
-        params.topToBottom = topToBottomId;
-        mSeekBar.setLayoutParams(params);
-    }
-
-    private void setTitleLayoutParams(float startMargin, int startToStartId, int startToEndId,
-            int topToTopId, int bottomToTopId) {
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)
-                mTitle.getLayoutParams();
-        params.setMarginStart((int) Math.ceil(startMargin));
-        params.startToStart = startToStartId;
-        params.startToEnd = startToEndId;
-        params.topToTop = topToTopId;
-        params.bottomToTop = bottomToTopId;
-        mTitle.setLayoutParams(params);
-    }
-
-    private void doPanelContentTransition(View content, int finalVisibility) {
-        Transition transition = new Slide(Gravity.BOTTOM);
-        transition.setDuration(mViewResources.getInteger(
-                R.integer.media_card_bottom_panel_open_duration));
-        transition.addTarget(content);
-        TransitionManager.beginDelayedTransition(mView, transition);
-        content.setVisibility(finalVisibility);
-    }
-
-    private void handlePanelAndViewOpenAnimations(View content) {
-        doPanelContentTransition(content, View.VISIBLE);
-
-        mPanelHandlebarAnimation.start();
-
-        mPanelAnimation.start();
     }
 
     private void unselectPanel() {
-        mPanel.setSelected(false);
-
+        mPanel.setEnabled(false);
         unselectAllPanelButtons();
     }
 
-    private void hideQueue() {
-        mQueueRecyclerView.setVisibility(View.GONE);
-        mCardViewModel.setQueueVisible(false);
-        mQueueButton.setSelected(false);
+    private void selectQueue(boolean shouldSelect) {
+        mCardViewModel.setQueueVisible(shouldSelect);
+        mQueueButton.setSelected(shouldSelect);
     }
 
-    private void hideOverflow() {
-        mOverflowActionsGrid.setVisibility(View.GONE);
-        mCardViewModel.setOverflowExpanded(false);
-        mActionOverflowButton.setSelected(false);
+    private void selectOverflow(boolean shouldSelect) {
+        mCardViewModel.setOverflowExpanded(shouldSelect);
+        mActionOverflowButton.setSelected(shouldSelect);
     }
 
-    private void hideHistory() {
-        mHistoryRecyclerView.setVisibility(View.GONE);
-        mCardViewModel.setHistoryVisible(false);
-        mHistoryButton.setSelected(false);
+    private void selectHistory(boolean shouldSelect) {
+        mCardViewModel.setHistoryVisible(shouldSelect);
+        mHistoryButton.setSelected(shouldSelect);
     }
 
     private void unselectAllPanelButtons() {
-        mCardViewModel.setOverflowExpanded(false);
-        mActionOverflowButton.setSelected(false);
+        selectOverflow(false);
+        selectQueue(false);
+        selectHistory(false);
+    }
 
-        mCardViewModel.setQueueVisible(false);
-        mQueueButton.setSelected(false);
+    private void saveViewVisibilityBeforeAnimation() {
+        mSubtitleVisibility = mSubtitle.getVisibility();
+        mLogoVisibility = mLogo.getVisibility();
+        mSkipPrevVisibility = mSkipPrevButton.getVisibility();
+        mSkipNextVisibility = mSkipNextButton.getVisibility();
+        mAlbumCoverVisibility = mAlbumCover.getVisibility();
+    }
 
-        mCardViewModel.setHistoryVisible(false);
-        mHistoryButton.setSelected(false);
+    private void restoreExtraViewsWhenPanelClosed() {
+        mAlbumCover.setVisibility(mAlbumCoverVisibility);
+        mAppIcon.setVisibility(View.VISIBLE);
+        mSkipPrevButton.setVisibility(mSkipPrevVisibility);
+        mSkipNextButton.setVisibility(mSkipNextVisibility);
+        mSubtitle.setVisibility(mSubtitleVisibility);
+        mLogo.setVisibility(mLogoVisibility);
+    }
+
+    private void updateSkipButtonsWithPlaybackState(PlaybackStateWrapper playbackState,
+            PlaybackController playbackController) {
+        boolean isSkipPrevEnabled = playbackState.isSkipPreviousEnabled();
+        boolean isSkipPrevReserved = playbackState.iSkipPreviousReserved();
+        boolean isSkipNextEnabled = playbackState.isSkipNextEnabled();
+        boolean isSkipNextReserved = playbackState.isSkipNextReserved();
+        if ((isSkipNextEnabled || isSkipNextReserved)) {
+            mSkipNextButton.setImageDrawable(mView.getContext().getDrawable(
+                    com.android.car.media.common.R.drawable.ic_skip_next));
+            mSkipNextButton.setBackground(mView.getContext().getDrawable(
+                    R.drawable.dark_circle_button_background));
+            ViewUtils.setVisible(mSkipNextButton, true);
+            mSkipNextButton.setEnabled(isSkipNextEnabled);
+            mSkipNextButton.setOnClickListener(v -> {
+                if (playbackController != null) {
+                    playbackController.skipToNext();
+                }
+            });
+        } else {
+            mSkipNextButton.setBackground(null);
+            mSkipNextButton.setImageDrawable(null);
+            ViewUtils.setVisible(mSkipNextButton, false);
+        }
+        if ((isSkipPrevEnabled || isSkipPrevReserved)) {
+            mSkipPrevButton.setImageDrawable(mView.getContext().getDrawable(
+                    com.android.car.media.common.R.drawable.ic_skip_previous));
+            mSkipPrevButton.setBackground(mView.getContext().getDrawable(
+                    R.drawable.dark_circle_button_background));
+            ViewUtils.setVisible(mSkipPrevButton, true);
+            mSkipPrevButton.setEnabled(isSkipNextEnabled);
+            mSkipPrevButton.setOnClickListener(v -> {
+                if (playbackController != null) {
+                    playbackController.skipToPrevious();
+                }
+            });
+        } else {
+            mSkipPrevButton.setBackground(null);
+            mSkipPrevButton.setImageDrawable(null);
+            ViewUtils.setVisible(mSkipPrevButton, false);
+        }
+    }
+
+    private int getOverflowTabIndex() {
+        return 0;
+    }
+
+    private int getQueueTabIndex() {
+        return getMediaHasQueue() ? 1 : -1;
+    }
+
+    private int getHistoryTabIndex() {
+        return getMediaHasQueue() ? 2 : 1;
     }
 }

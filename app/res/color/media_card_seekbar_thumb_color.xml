@@ -14,8 +14,9 @@
   ~ limitations under the License.
   -->
 
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <corners android:radius="112dp" />
-    <solid android:color="@color/media_card_panel_button_background_tint_state_list"/>
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@android:color/transparent"
+        android:state_selected="true"/>
+    <item android:color="@color/car_on_surface"
+        android:state_selected="false"/>
+</selector>
