@@ -51,8 +51,6 @@ public class MediaCardController extends PlaybackCardController implements
 
     private static final int SWIPE_MAX_OFF_PATH = 75;
     private static final int SWIPE_THRESHOLD_VELOCITY = 200;
-    private static final float UNSELECT_PANEL_MOTION_LAYOUT_PROGRESS = 0.4f;
-    private static final float SELECT_PANEL_MOTION_LAYOUT_PROGRESS = 0.3f;
 
     private final MediaIntentRouter mMediaIntentRouter = MediaIntentRouter.getInstance();
     private Resources mViewResources;
@@ -73,13 +71,6 @@ public class MediaCardController extends PlaybackCardController implements
     private ViewPager2 mPager;
     private MediaCardPanelViewPagerAdapter mPagerAdapter;
     private Handler mHandler;
-    private PanelButton mTarget;
-
-    enum PanelButton {
-        OVERFLOW,
-        QUEUE,
-        HISTORY
-    }
 
     @Override
     public void createQueueController(ViewGroup queueContainer) {
@@ -156,27 +147,6 @@ public class MediaCardController extends PlaybackCardController implements
 
             @Override
             public void onTransitionChange(MotionLayout motionLayout, int i, int i1, float v) {
-                if ((float) Math.round(v * 10) / 10 == UNSELECT_PANEL_MOTION_LAYOUT_PROGRESS
-                        && !mCardViewModel.getPanelExpanded()) {
-                    mPanel.setSelected(false);
-                    mSeekBar.getThumb().mutate().setAlpha(255);
-                }
-                if ((float) Math.round(v * 10) / 10 == SELECT_PANEL_MOTION_LAYOUT_PROGRESS
-                        && mCardViewModel.getPanelExpanded()) {
-                    mPanel.setSelected(true);
-                    if (mTarget == PanelButton.OVERFLOW) {
-                        selectQueue(false);
-                        selectHistory(false);
-                    } else if (mTarget == PanelButton.QUEUE) {
-                        selectOverflow(false);
-                        selectHistory(false);
-                    } else if (mTarget == PanelButton.HISTORY) {
-                        selectOverflow(false);
-                        selectQueue(false);
-                    }
-
-                    mSeekBar.getThumb().mutate().setAlpha(0);
-                }
             }
 
             @Override
@@ -366,8 +336,6 @@ public class MediaCardController extends PlaybackCardController implements
 
                 mPager.setCurrentItem(getOverflowTabIndex());
 
-                mTarget = PanelButton.OVERFLOW;
-
                 mHandler.post(() -> mMotionLayout.transitionToEnd());
 
                 selectOverflow(true);
@@ -378,7 +346,7 @@ public class MediaCardController extends PlaybackCardController implements
             // If the panel is already open and overflow is clicked again,
             // always switch to overflow tab
             mPager.setCurrentItem(getOverflowTabIndex(), true);
-            mPanel.setSelected(true);
+            mPanel.setEnabled(true);
 
             selectOverflow(true);
 
@@ -397,8 +365,6 @@ public class MediaCardController extends PlaybackCardController implements
                 mCardViewModel.setPanelExpanded(true);
                 mPager.setCurrentItem(getQueueTabIndex());
 
-                mTarget = PanelButton.QUEUE;
-
                 mHandler.post(() -> mMotionLayout.transitionToEnd());
 
                 selectQueue(true);
@@ -410,7 +376,7 @@ public class MediaCardController extends PlaybackCardController implements
             // always switch to queue tab
             mPager.setCurrentItem(getQueueTabIndex(), true);
 
-            mPanel.setSelected(true);
+            mPanel.setEnabled(true);
 
             selectQueue(true);
 
@@ -430,8 +396,6 @@ public class MediaCardController extends PlaybackCardController implements
                 mCardViewModel.setPanelExpanded(true);
                 mPager.setCurrentItem(historyPos);
 
-                mTarget = PanelButton.HISTORY;
-
                 mHandler.post(() -> mMotionLayout.transitionToEnd());
 
                 selectHistory(true);
@@ -443,7 +407,7 @@ public class MediaCardController extends PlaybackCardController implements
             // always switch to history tab
             mPager.setCurrentItem(historyPos, true);
 
-            mPanel.setSelected(true);
+            mPanel.setEnabled(true);
 
             selectHistory(true);
 
@@ -460,7 +424,7 @@ public class MediaCardController extends PlaybackCardController implements
     }
 
     private void unselectPanel() {
-        mPanel.setSelected(false);
+        mPanel.setEnabled(false);
         unselectAllPanelButtons();
     }
 

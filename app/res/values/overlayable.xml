@@ -51,6 +51,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="color" name="launcher_home_icon_color"/>
       <item type="color" name="media_card_panel_button_background_tint_state_list"/>
       <item type="color" name="media_card_panel_button_tint_state_list"/>
+      <item type="color" name="media_card_seekbar_thumb_color"/>
       <item type="color" name="media_card_subtitle_color"/>
       <item type="color" name="recents_background_color"/>
       <item type="color" name="seek_bar_color"/>
@@ -110,6 +111,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="media_card_play_button_horizontal_margin"/>
       <item type="dimen" name="media_card_queue_header_app_icon_size"/>
       <item type="dimen" name="media_card_queue_item_thumbnail_size"/>
+      <item type="dimen" name="media_card_recycler_view_fading_edge_length"/>
       <item type="dimen" name="media_card_small_button_size"/>
       <item type="dimen" name="media_card_title_animated_line_height"/>
       <item type="dimen" name="media_card_title_animated_text_size"/>
@@ -301,6 +303,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="string" name="failure_opening_recent_task_message"/>
       <item type="string" name="fake_weather_footer_text"/>
       <item type="string" name="fake_weather_main_text"/>
+      <item type="string" name="media_card_history_header_title"/>
       <item type="string" name="media_card_queue_header_title"/>
       <item type="string" name="ongoing_call_duration_text_separator"/>
       <item type="string" name="ongoing_call_text"/>

@@ -27,7 +27,7 @@
             />
         <path
             android:pathData="M4 4V28H8V4"
-            android:fillColor="@android:color/white"
+            android:fillColor="@color/media_card_seekbar_thumb_color"
             />
     </group>
     <group>
