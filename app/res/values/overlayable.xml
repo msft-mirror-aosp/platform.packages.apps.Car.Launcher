@@ -38,9 +38,9 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="config_calmMode_showTemperature"/>
       <item type="bool" name="config_enableCalmMode"/>
       <item type="bool" name="config_homecard_single_line_secondary_descriptive_text"/>
+      <item type="bool" name="config_launch_most_recent_task_on_recents_dismiss"/>
       <item type="bool" name="show_seek_bar"/>
       <item type="bool" name="use_media_source_color_for_seek_bar"/>
-      <item type="bool" name="config_launch_most_recent_task_on_recents_dismiss"/>
       <item type="color" name="car_on_surface_40"/>
       <item type="color" name="card_background_scrim"/>
       <item type="color" name="clear_all_recents_text_color"/>
@@ -87,6 +87,8 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="horizontal_border_size"/>
       <item type="dimen" name="launcher_card_corner_radius"/>
       <item type="dimen" name="main_screen_widget_margin"/>
+      <item type="dimen" name="media_card_album_art_drawable_corner_ratio"/>
+      <item type="dimen" name="media_card_album_art_end_margin"/>
       <item type="dimen" name="media_card_album_art_size"/>
       <item type="dimen" name="media_card_app_icon_size"/>
       <item type="dimen" name="media_card_artist_top_margin"/>
@@ -118,6 +120,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="media_card_queue_item_thumbnail_size"/>
       <item type="dimen" name="media_card_recycler_view_fading_edge_length"/>
       <item type="dimen" name="media_card_small_button_size"/>
+      <item type="dimen" name="media_card_text_view_guideline_start"/>
       <item type="dimen" name="media_card_title_animated_line_height"/>
       <item type="dimen" name="media_card_title_animated_text_size"/>
       <item type="dimen" name="media_card_title_default_line_height"/>
@@ -199,6 +202,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="empty_state"/>
       <item type="id" name="end_edge"/>
       <item type="id" name="fragment_container_view"/>
+      <item type="id" name="guideline"/>
       <item type="id" name="header_app_icon"/>
       <item type="id" name="history_button"/>
       <item type="id" name="history_card_album_art"/>
