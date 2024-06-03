@@ -42,10 +42,12 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
     enum class PayloadType {
         CHANGE_ITEM_TYPE,
         CHANGE_UX_RESTRICTION_STATE,
+        CHANGE_ACTIVE_MEDIA_SESSION,
     }
 
     private val positionToCallbackMap = HashMap<Int, Runnable>()
     private var isUxRestrictionEnabled = false
+    private var activeMediaSessions: List<String> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DockItemViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(
@@ -53,7 +55,12 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
                 parent,
                 false // attachToRoot
         )
-        return DockItemViewHolder(dockController, view, userContext, carMediaManager)
+        return DockItemViewHolder(
+            dockController,
+            view,
+            userContext,
+            carMediaManager
+        )
     }
 
     override fun onBindViewHolder(
@@ -74,7 +81,13 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
                 }
                 PayloadType.CHANGE_UX_RESTRICTION_STATE -> {
                     if (DEBUG) Log.d(TAG, "UX restriction changed for position $position")
-                    viewHolder.setUxRestrictions(isUxRestrictionEnabled)
+                    viewHolder.setUxRestrictions(currentList[position], isUxRestrictionEnabled)
+                }
+                PayloadType.CHANGE_ACTIVE_MEDIA_SESSION -> {
+                    if (DEBUG) Log.d(TAG, "Active MediaSession changed for position $position")
+                    viewHolder.setHasActiveMediaSession(
+                        activeMediaSessions.contains(currentList[position].component.packageName)
+                    )
                 }
             }
         }
@@ -88,7 +101,12 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
         )
         if (DEBUG) Log.d(TAG, "Is callback set for $position: ${cleanupCallback != null}")
         positionToCallbackMap.remove(position)
-        viewHolder.bind(currentList[position], isUxRestrictionEnabled, cleanupCallback)
+        viewHolder.bind(
+            currentList[position],
+            isUxRestrictionEnabled,
+            cleanupCallback,
+            activeMediaSessions.contains(currentList[position].component.packageName)
+        )
     }
 
     /** Used to set a callback for the [position] to be passed to the ViewHolder on the next bind. */
@@ -97,7 +115,7 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
     }
 
     /**
-     * Setter for carMediaManager
+     * Setter for CarMediaManager
      */
     fun setCarMediaManager(carMediaManager: CarMediaManager) {
         this.carMediaManager = carMediaManager
@@ -108,6 +126,14 @@ class DockAdapter(private val dockController: DockInterface, private val userCon
         if (this.isUxRestrictionEnabled != isUxRestrictionEnabled) {
             this.isUxRestrictionEnabled = isUxRestrictionEnabled
             notifyItemRangeChanged(0, itemCount, PayloadType.CHANGE_UX_RESTRICTION_STATE)
+        }
+    }
+
+    /** Be notified that active media sessions have been changed */
+    fun onMediaSessionChange(activeMediaSessions: List<String>) {
+        if (this.activeMediaSessions != activeMediaSessions) {
+            this.activeMediaSessions = activeMediaSessions
+            notifyItemRangeChanged(0, itemCount, PayloadType.CHANGE_ACTIVE_MEDIA_SESSION)
         }
     }
 }

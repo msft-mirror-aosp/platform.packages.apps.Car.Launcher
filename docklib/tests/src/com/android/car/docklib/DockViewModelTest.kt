@@ -31,6 +31,7 @@ import android.graphics.drawable.Drawable
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.car.docklib.data.DockAppItem
+import com.android.car.docklib.data.DockProtoDataController
 import com.android.launcher3.icons.IconFactory
 import com.google.common.truth.Truth.assertThat
 import java.util.UUID
@@ -77,9 +78,12 @@ class DockViewModelTest {
     private var iconFactoryMock = mock<IconFactory> {
         on { createScaledBitmap(any<Drawable>(), anyInt()) } doReturn bitmapMock
     }
+    private val dataController = mock<DockProtoDataController>()
 
     @Before
     fun setUp() {
+        // explicitly use default items unless saved items are set
+        whenever(dataController.loadFromFile()).thenReturn(null)
         model = createSpyDockViewModel()
         doNothing().whenever(model).showToast(any())
     }
@@ -96,6 +100,42 @@ class DockViewModelTest {
         assertThat(items[1].component).isEqualTo(defaultPinnedItems[1])
         assertThat(items[2].component).isEqualTo(defaultPinnedItems[2])
         assertThat(items[3].component).isEqualTo(defaultPinnedItems[3])
+    }
+
+    @Test
+    fun init_savedPinnedItems_noItemAddedToDock() {
+        val defaultPinnedItems =
+            createTestComponentList(pkgPrefix = "DEFAULT_PKG", classPrefix = "DEFAULT_CLASS")
+        val savedPinnedItems = mapOf<Int, ComponentName>()
+        whenever(dataController.loadFromFile()).thenReturn(savedPinnedItems)
+
+        model = createSpyDockViewModel(defaultPinnedItems = defaultPinnedItems)
+
+        assertThat(items.size).isEqualTo(MAX_ITEMS)
+        assertThat(items[0].type).isEqualTo(DockAppItem.Type.DYNAMIC)
+        assertThat(items[1].type).isEqualTo(DockAppItem.Type.DYNAMIC)
+        assertThat(items[2].type).isEqualTo(DockAppItem.Type.DYNAMIC)
+        assertThat(items[3].type).isEqualTo(DockAppItem.Type.DYNAMIC)
+    }
+
+    @Test
+    fun init_savedPinnedItems_onlySavedItemsAddedToDock() {
+        val defaultPinnedItems =
+            createTestComponentList(pkgPrefix = "DEFAULT_PKG", classPrefix = "DEFAULT_CLASS")
+        val savedPinnedItems =
+            mapOf(
+                0 to createNewComponent(pkg = "SAVED_PKG_0", clazz = "SAVED_CLASS_0", false),
+                2 to createNewComponent(pkg = "SAVED_PKG_2", clazz = "SAVED_CLASS_2", false),
+            )
+        whenever(dataController.loadFromFile()).thenReturn(savedPinnedItems)
+
+        model = createSpyDockViewModel(defaultPinnedItems = defaultPinnedItems)
+
+        assertThat(items.size).isEqualTo(MAX_ITEMS)
+        assertThat(items[0].component).isEqualTo(savedPinnedItems[0])
+        assertThat(items[1].type).isEqualTo(DockAppItem.Type.DYNAMIC)
+        assertThat(items[2].component).isEqualTo(savedPinnedItems[2])
+        assertThat(items[3].type).isEqualTo(DockAppItem.Type.DYNAMIC)
     }
 
     @Test
@@ -553,9 +593,10 @@ class DockViewModelTest {
                 userId = CURRENT_USER_ID,
                 launcherActivities,
                 defaultPinnedItems,
-                excludedComponents,
-                setOf(),
+                isPackageExcluded = { false },
+                isComponentExcluded = { excludedComponents.contains(it) },
                 iconFactory = iconFactoryMock,
+                dockProtoDataController = dataController,
                 observer = { items = it },
         ))
     }

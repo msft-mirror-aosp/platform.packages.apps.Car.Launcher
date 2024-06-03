@@ -38,6 +38,7 @@ android_library {
 aconfig_declarations {
     name: "dock_flags",
     package: "com.android.car.dockutil",
+    container: "system",
     srcs: ["dock_flags.aconfig"],
 }
 

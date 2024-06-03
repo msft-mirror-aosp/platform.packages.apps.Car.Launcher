@@ -36,6 +36,7 @@ import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
@@ -202,6 +203,7 @@ public class CarLauncher extends FragmentActivity {
                 .get(CarLauncherViewModel.class);
 
         getLifecycle().addObserver(mCarLauncherViewModel);
+        addOnNewIntentListener(mCarLauncherViewModel.getNewIntentListener());
 
         mCarLauncherViewModel.getRemoteCarTaskView().observe(this, taskView -> {
             if (taskView == null || taskView.getParent() == parent) {
@@ -272,6 +274,11 @@ public class CarLauncher extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
+                    if (Flags.mediaCardFullscreen()) {
+                        if (cardModule.getCardResId() == R.id.top_card) {
+                            findViewById(R.id.top_card).setVisibility(View.GONE);
+                        }
+                    }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);
                     if (DEBUG) {

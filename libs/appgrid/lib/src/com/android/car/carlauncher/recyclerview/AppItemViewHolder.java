@@ -153,8 +153,7 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder {
      *
      * @param app AppMetaData to be displayed. Pass {@code null} will empty out the viewHolder.
      */
-    public void bind(@Nullable AppMetaData app, @NonNull BindInfo bindInfo,
-            boolean ignoreUxRestriction) {
+    public void bind(@Nullable AppMetaData app, @NonNull BindInfo bindInfo) {
         resetViewHolder();
         if (app == null) {
             return;
@@ -184,7 +183,7 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder {
         setStateSelected(mComponentName.equals(mDragCallback.mSelectedComponent));
 
         boolean isLaunchableDistractionOptimized = !isDistractionOptimizationRequired
-                || app.getIsDistractionOptimized() || ignoreUxRestriction;
+                || app.getIsDistractionOptimized();
         boolean isDisabledByTos = app.getIsDisabledByTos();
         boolean isLaunchable = isLaunchableDistractionOptimized || isDisabledByTos;
 
@@ -239,7 +238,7 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder {
                                 mActionDownX,
                                 mActionDownY,
                                 mode)) {
-                            startDragAndDrop(app.getComponentName(), event.getX(), event.getY());
+                            startDragAndDrop(app, event.getX(), event.getY());
                             mCanStartDragAction = false;
                         } else if (action == MotionEvent.ACTION_UP
                                 || action == MotionEvent.ACTION_CANCEL) {
@@ -391,18 +390,21 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder {
                 && isDistancePastThreshold;
     }
 
-    private void startDragAndDrop(ComponentName componentName, float eventX, float eventY) {
+    private void startDragAndDrop(AppMetaData app, float eventX, float eventY) {
         ClipData clipData = ClipData.newPlainText(/* label= */ APP_ITEM_DRAG_TAG,
-                /* text= */ componentName.flattenToString());
+                /* text= */ app.getComponentName().flattenToString());
 
         // since the app icon is scaled, the touch point that users should be holding when drag
         // shadow is deployed should also be scaled
         Point dragPoint = new Point(/* x */ (int) (eventX / mIconSize * mIconScaledSize),
                 /* y */ (int) (eventY / mIconSize * mIconScaledSize));
 
-        AppItemDragShadowBuilder dragShadowBuilder = new AppItemDragShadowBuilder(mAppIcon,
+        Drawable appIcon = app.getIcon();
+        if (appIcon.getConstantState() == null) return;
+        AppItemDragShadowBuilder dragShadowBuilder = new AppItemDragShadowBuilder(
+                appIcon.getConstantState().newDrawable().mutate(),
                 /* touchPointX */ dragPoint.x, /* touchPointX */ dragPoint.y,
-                /* size */ mIconSize, /* scaledSize */ mIconScaledSize);
+                /* scaledSize */ mIconScaledSize);
         mAppIcon.startDragAndDrop(clipData, /* dragShadowBuilder */ dragShadowBuilder,
                 /* myLocalState */ null, /* flags */ DRAG_FLAG_OPAQUE | DRAG_FLAG_GLOBAL
                         | DRAG_FLAG_REQUEST_SURFACE_FOR_RETURN_ANIMATION);
