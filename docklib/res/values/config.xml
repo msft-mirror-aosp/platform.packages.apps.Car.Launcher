@@ -38,6 +38,7 @@
         <item>com.google.android.carassistant/com.google.android.libraries.assistant.auto.tng.assistant.ui.activity.AutoAssistantActivity</item>
         <item>com.android.car.media/com.android.car.media.MediaDispatcherActivity</item>
         <item>com.android.car.media/com.android.car.media.MediaBlockingActivity</item>
+        <item>com.android.systemui/com.android.systemui.car.wm.activity.LaunchOnPrivateDisplayRouterActivity</item>
     </string-array>
 
     <!--
