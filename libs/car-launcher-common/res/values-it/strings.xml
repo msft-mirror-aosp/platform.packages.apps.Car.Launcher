@@ -18,7 +18,7 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="dock_pin_shortcut_label" msgid="7319916279393348946">"Fissa app"</string>
-    <string name="dock_unpin_shortcut_label" msgid="1657441916649851101">"Stacca app"</string>
+    <string name="dock_unpin_shortcut_label" msgid="1657441916649851101">"Sblocca app"</string>
     <string name="stop_app_shortcut_label" msgid="5893149773635675147">"Interrompi l\'app"</string>
     <string name="app_info_shortcut_label" msgid="6724408677044314793">"Informazioni app"</string>
     <string name="stop_app_dialog_title" msgid="7027389231920405129">"Interrompere l\'app?"</string>
