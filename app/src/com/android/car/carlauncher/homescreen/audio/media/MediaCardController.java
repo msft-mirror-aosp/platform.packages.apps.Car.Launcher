@@ -18,8 +18,9 @@ package com.android.car.carlauncher.homescreen.audio.media;
 
 import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.updatePlayButtonWithPlaybackState;
 
+import static java.lang.Math.max;
+
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -44,7 +45,6 @@ import com.android.car.media.common.playback.PlaybackViewModel;
 import com.android.car.media.common.playback.PlaybackViewModel.PlaybackController;
 import com.android.car.media.common.playback.PlaybackViewModel.PlaybackStateWrapper;
 import com.android.car.media.common.source.MediaSource;
-import com.android.car.media.common.source.MediaSourceColors;
 import com.android.car.media.common.ui.PlaybackCardController;
 import com.android.car.media.common.ui.PlaybackHistoryController;
 import com.android.car.media.common.ui.PlaybackQueueController;
@@ -267,26 +267,19 @@ public class MediaCardController extends PlaybackCardController implements
     }
 
     @Override
-    protected void updateViewsWithMediaSourceColors(MediaSourceColors colors) {
-        int defaultColor = mViewResources.getColor(R.color.car_on_surface, /* theme */ null);
-        ColorStateList accentColor = colors != null ? ColorStateList.valueOf(
-                colors.getAccentColor(defaultColor)) :
-                ColorStateList.valueOf(defaultColor);
-
-        if (mPlayPauseButton != null) {
-            mPlayPauseButton.setBackgroundTintList(accentColor);
-        }
-        if (mSeekBar != null) {
-            mSeekBar.setProgressTintList(accentColor);
-        }
-    }
-
-    @Override
     protected void updatePlaybackState(PlaybackViewModel.PlaybackStateWrapper playbackState) {
         PlaybackController playbackController = mDataModel.getPlaybackController().getValue();
         if (playbackState != null) {
             updatePlayButtonWithPlaybackState(mPlayPauseButton, playbackState, playbackController);
             updateSkipButtonsWithPlaybackState(playbackState, playbackController);
+
+            boolean hasCustomActions = playbackState.getCustomActions().size() != 0;
+            boolean isPreviouslyVisible = ViewUtils.isVisible(mActionOverflowButton);
+            ViewUtils.setVisible(mActionOverflowButton, hasCustomActions);
+            mPagerAdapter.setHasOverflow(hasCustomActions);
+            if (mCardViewModel.getPanelExpanded() && isPreviouslyVisible != hasCustomActions) {
+                animateClosePanel();
+            }
             mPagerAdapter.notifyPlaybackStateChanged(playbackState,
                     playbackController);
         } else {
@@ -325,7 +318,7 @@ public class MediaCardController extends PlaybackCardController implements
         super.updateQueueState(hasQueue, isQueueVisible);
         mPagerAdapter.setHasQueue(hasQueue);
         ViewUtils.setVisible(mQueueButton, hasQueue);
-        if (mCardViewModel.getPanelExpanded()) {
+        if (mCardViewModel.getPanelExpanded() && !hasQueue) {
             animateClosePanel();
         }
     }
@@ -532,14 +525,20 @@ public class MediaCardController extends PlaybackCardController implements
     }
 
     private int getOverflowTabIndex() {
-        return 0;
+        return hasOverflow() ? 0 : -1;
     }
 
     private int getQueueTabIndex() {
-        return getMediaHasQueue() ? 1 : -1;
+        if (!getMediaHasQueue()) return -1;
+        return getOverflowTabIndex() + 1;
     }
 
     private int getHistoryTabIndex() {
-        return getMediaHasQueue() ? 2 : 1;
+        return max(getOverflowTabIndex(), getQueueTabIndex()) + 1;
+    }
+
+    private boolean hasOverflow() {
+        PlaybackStateWrapper playbackState = mDataModel.getPlaybackStateWrapper().getValue();
+        return playbackState != null && playbackState.getCustomActions().size() != 0;
     }
 }
