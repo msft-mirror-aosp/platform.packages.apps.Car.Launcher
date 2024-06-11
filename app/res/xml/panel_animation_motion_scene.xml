@@ -16,7 +16,8 @@
 
 <MotionScene
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:motion="http://schemas.android.com/apk/res-auto">
+    xmlns:motion="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- layoutDuringTransition respects queue RecyclerView scroll animations -->
     <Transition
@@ -42,6 +43,42 @@
                 android:alpha="0"
                 motion:framePosition="60"
                 motion:motionTarget="@id/playback_action_id2" />
+            <KeyAttribute
+                android:alpha="0"
+                motion:framePosition="40"
+                motion:motionTarget="@id/button_panel_background" />
+            <KeyAttribute
+                android:alpha="0"
+                motion:framePosition="60"
+                motion:motionTarget="@id/button_panel_background" />
+            <KeyTrigger
+                motion:framePosition="30"
+                motion:motionTarget="@id/button_panel_background"
+                motion:onPositiveCross="."
+                tools:ignore="MotionSceneFileValidationError">
+                <CustomMethod motion:methodName="setEnabled" motion:customBoolean="true"/>
+            </KeyTrigger>
+            <KeyTrigger
+                motion:framePosition="40"
+                motion:motionTarget="@id/button_panel_background"
+                motion:onNegativeCross="."
+                tools:ignore="MotionSceneFileValidationError">
+                <CustomMethod motion:methodName="setEnabled" motion:customBoolean="false"/>
+            </KeyTrigger>
+            <KeyTrigger
+                motion:framePosition="30"
+                motion:motionTarget="@id/playback_seek_bar"
+                motion:onPositiveCross="."
+                tools:ignore="MotionSceneFileValidationError">
+                <CustomMethod motion:methodName="setSelected" motion:customBoolean="true"/>
+            </KeyTrigger>
+            <KeyTrigger
+                motion:framePosition="40"
+                motion:motionTarget="@id/playback_seek_bar"
+                motion:onNegativeCross="."
+                tools:ignore="MotionSceneFileValidationError">
+                <CustomMethod motion:methodName="setSelected" motion:customBoolean="false"/>
+            </KeyTrigger>
         </KeyFrameSet>
     </Transition>
 
