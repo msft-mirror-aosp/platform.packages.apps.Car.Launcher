@@ -46,6 +46,7 @@ public class MediaCardPanelViewPagerAdapter extends
     private final Context mContext;
     private boolean mHasQueue;
     private ViewPagerQueueCreator mQueueCreator;
+    private ViewPagerHistoryCreator mHistoryCreator;
     private PlaybackStateWrapper mPlaybackState;
     private PlaybackController mPlaybackController;
 
@@ -82,6 +83,7 @@ public class MediaCardPanelViewPagerAdapter extends
                     break;
                 }
                 case 2: {
+                    mHistoryCreator.createHistoryController(history);
                     history.setVisibility(View.VISIBLE);
                     overflowGrid.setVisibility(View.GONE);
                     queue.setVisibility(View.GONE);
@@ -98,6 +100,7 @@ public class MediaCardPanelViewPagerAdapter extends
                     break;
                 }
                 case 1: {
+                    mHistoryCreator.createHistoryController(history);
                     history.setVisibility(View.VISIBLE);
                     overflowGrid.setVisibility(View.GONE);
                     queue.setVisibility(View.GONE);
@@ -120,6 +123,10 @@ public class MediaCardPanelViewPagerAdapter extends
 
     public void setQueueControllerProvider(ViewPagerQueueCreator queueCreator) {
         mQueueCreator = queueCreator;
+    }
+
+    public void setHistoryControllerProvider(ViewPagerHistoryCreator historyCreator) {
+        mHistoryCreator = historyCreator;
     }
 
     /** Notify a change in playback state so ViewHolder binds with latest update */
@@ -186,5 +193,9 @@ public class MediaCardPanelViewPagerAdapter extends
 
     interface ViewPagerQueueCreator {
         void createQueueController(ViewGroup queueContainer);
+    }
+
+    interface ViewPagerHistoryCreator {
+        void createHistoryController(ViewGroup historyContainer);
     }
 }
