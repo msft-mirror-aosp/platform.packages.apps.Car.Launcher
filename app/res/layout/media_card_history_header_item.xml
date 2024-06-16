@@ -20,17 +20,19 @@
     android:paddingBottom="@dimen/media_card_view_separation_margin">
 
     <ImageView
-        android:id="@+id/header_app_icon"
-        android:layout_width="@dimen/media_card_queue_header_app_icon_size"
-        android:layout_height="@dimen/media_card_queue_header_app_icon_size"
-        android:layout_marginEnd="@dimen/media_card_view_separation_margin" />
+        android:id="@+id/history_card_header_icon"
+        android:layout_width="@dimen/media_card_view_header_icon_size"
+        android:layout_height="@dimen/media_card_view_header_icon_size"
+        android:layout_marginStart="@dimen/media_card_horizontal_margin"
+        android:layout_marginEnd="@dimen/media_card_view_separation_margin"
+        android:src="@drawable/ic_history"/>
 
     <TextView
-        android:id="@+id/media_card_queue_header_title_view"
+        android:id="@+id/history_card_history_header_title_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:includeFontPadding="false"
-        android:text="@string/media_card_queue_header_title"
+        android:text="@string/media_card_history_header_title"
         android:textAppearance="@style/TextAppearance.Car.Body.Small"
         android:textColor="@color/car_on_surface"/>
 </LinearLayout>
