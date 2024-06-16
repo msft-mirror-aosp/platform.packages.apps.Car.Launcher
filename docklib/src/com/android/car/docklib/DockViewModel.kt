@@ -259,11 +259,13 @@ open class DockViewModel(
     fun setCarPackageManager(carPackageManager: CarPackageManager) {
         this.carPackageManager = carPackageManager
         internalItems.forEach { mapEntry ->
-            internalItems[mapEntry.key] = mapEntry.value.copy(
-                    isDistractionOptimized = carPackageManager.isActivityDistractionOptimized(
-                            mapEntry.value.component.packageName,
-                            mapEntry.value.component.className
-                    )
+            val item = mapEntry.value
+            internalItems[mapEntry.key] = item.copy(
+                    isDistractionOptimized = item.isMediaApp ||
+                            carPackageManager.isActivityDistractionOptimized(
+                                    item.component.packageName,
+                                    item.component.className
+                            )
             )
         }
         currentItems.value = createDockList()

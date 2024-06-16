@@ -113,6 +113,7 @@
             android:id="@+id/history_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            app:enableDivider="true"
             android:requiresFadingEdge="vertical"
             android:fadingEdgeLength="@dimen/media_card_recycler_view_fading_edge_length"/>
     </FrameLayout>
