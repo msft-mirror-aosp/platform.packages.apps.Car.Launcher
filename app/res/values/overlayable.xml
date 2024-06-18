@@ -40,6 +40,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="config_homecard_single_line_secondary_descriptive_text"/>
       <item type="bool" name="show_seek_bar"/>
       <item type="bool" name="use_media_source_color_for_seek_bar"/>
+      <item type="bool" name="config_launch_most_recent_task_on_recents_dismiss"/>
       <item type="color" name="car_on_surface_40"/>
       <item type="color" name="card_background_scrim"/>
       <item type="color" name="clear_all_recents_text_color"/>
@@ -51,6 +52,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="color" name="launcher_home_icon_color"/>
       <item type="color" name="media_card_panel_button_background_tint_state_list"/>
       <item type="color" name="media_card_panel_button_tint_state_list"/>
+      <item type="color" name="media_card_seekbar_thumb_color"/>
       <item type="color" name="media_card_subtitle_color"/>
       <item type="color" name="recents_background_color"/>
       <item type="color" name="seek_bar_color"/>
@@ -95,6 +97,10 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="media_card_bottom_panel_height"/>
       <item type="dimen" name="media_card_bottom_panel_margin_top"/>
       <item type="dimen" name="media_card_card_radius"/>
+      <item type="dimen" name="media_card_history_item_height"/>
+      <item type="dimen" name="media_card_history_item_icon_size"/>
+      <item type="dimen" name="media_card_history_item_thumbnail_size"/>
+      <item type="dimen" name="media_card_history_item_vertical_margin"/>
       <item type="dimen" name="media_card_horizontal_margin"/>
       <item type="dimen" name="media_card_large_button_icon_padding"/>
       <item type="dimen" name="media_card_large_button_size"/>
@@ -110,11 +116,13 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="media_card_play_button_horizontal_margin"/>
       <item type="dimen" name="media_card_queue_header_app_icon_size"/>
       <item type="dimen" name="media_card_queue_item_thumbnail_size"/>
+      <item type="dimen" name="media_card_recycler_view_fading_edge_length"/>
       <item type="dimen" name="media_card_small_button_size"/>
       <item type="dimen" name="media_card_title_animated_line_height"/>
       <item type="dimen" name="media_card_title_animated_text_size"/>
       <item type="dimen" name="media_card_title_default_line_height"/>
       <item type="dimen" name="media_card_title_default_text_size"/>
+      <item type="dimen" name="media_card_view_header_icon_size"/>
       <item type="dimen" name="media_card_view_separation_margin"/>
       <item type="dimen" name="media_top_margin"/>
       <item type="dimen" name="playback_controls_margin"/>
@@ -192,14 +200,24 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="end_edge"/>
       <item type="id" name="fragment_container_view"/>
       <item type="id" name="header_app_icon"/>
-      <item type="id" name="header_title"/>
       <item type="id" name="history_button"/>
+      <item type="id" name="history_card_album_art"/>
+      <item type="id" name="history_card_app_thumbnail"/>
+      <item type="id" name="history_card_app_title_inactive"/>
+      <item type="id" name="history_card_container_active"/>
+      <item type="id" name="history_card_container_inactive"/>
+      <item type="id" name="history_card_header_icon"/>
+      <item type="id" name="history_card_history_header_title_view"/>
+      <item type="id" name="history_card_subtitle_active"/>
+      <item type="id" name="history_card_title_active"/>
+      <item type="id" name="history_item_app_icon_inactive"/>
       <item type="id" name="history_list"/>
       <item type="id" name="history_list_container"/>
       <item type="id" name="in_call_fragment_container"/>
       <item type="id" name="maps_card"/>
       <item type="id" name="media_card_panel_content_container"/>
       <item type="id" name="media_card_panel_handlebar"/>
+      <item type="id" name="media_card_queue_header_title_view"/>
       <item type="id" name="media_descriptive_text"/>
       <item type="id" name="media_fragment_container"/>
       <item type="id" name="media_layout"/>
@@ -278,6 +296,8 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="layout" name="control_bar_container"/>
       <item type="layout" name="descriptive_text"/>
       <item type="layout" name="media_card_fullscreen"/>
+      <item type="layout" name="media_card_history_header_item"/>
+      <item type="layout" name="media_card_history_item"/>
       <item type="layout" name="media_card_panel_content_item"/>
       <item type="layout" name="media_card_queue_header_item"/>
       <item type="layout" name="media_card_queue_item"/>
@@ -301,6 +321,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="string" name="failure_opening_recent_task_message"/>
       <item type="string" name="fake_weather_footer_text"/>
       <item type="string" name="fake_weather_main_text"/>
+      <item type="string" name="media_card_history_header_title"/>
       <item type="string" name="media_card_queue_header_title"/>
       <item type="string" name="ongoing_call_duration_text_separator"/>
       <item type="string" name="ongoing_call_text"/>
