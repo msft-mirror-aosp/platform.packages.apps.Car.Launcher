@@ -25,7 +25,6 @@ import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
@@ -178,17 +177,9 @@ public class InCallModel implements HomeCardInterface.Model, InCallServiceImpl.I
     public void onClick(View view) {
         Intent intent = null;
         if (isSelfManagedCall() && mSelfManagedCallUtil.canShowCalInCallView()) {
-            Bundle extras = mCurrentCall.getDetails().getExtras();
-            ComponentName componentName = extras == null ? null : extras.getParcelable(
-                    Intent.EXTRA_COMPONENT_NAME, ComponentName.class);
-            if (componentName != null) {
-                intent = new Intent();
-                intent.setComponent(componentName);
-            } else {
-                String callingAppPackageName = getCallingAppPackageName();
-                if (!TextUtils.isEmpty(callingAppPackageName)) {
-                    intent = mPackageManager.getLaunchIntentForPackage(callingAppPackageName);
-                }
+            String callingAppPackageName = getCallingAppPackageName();
+            if (!TextUtils.isEmpty(callingAppPackageName)) {
+                intent = mPackageManager.getLaunchIntentForPackage(callingAppPackageName);
             }
         } else {
             intent = mPackageManager.getLaunchIntentForPackage(
