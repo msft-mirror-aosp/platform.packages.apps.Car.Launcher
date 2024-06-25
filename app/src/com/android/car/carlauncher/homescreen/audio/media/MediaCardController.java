@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.GestureDetector;
@@ -34,6 +35,7 @@ import android.widget.LinearLayout;
 import androidx.constraintlayout.motion.widget.MotionLayout;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.android.car.apps.common.RoundedDrawable;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.carlauncher.R;
 import com.android.car.media.common.MediaItemMetadata;
@@ -166,6 +168,7 @@ public class MediaCardController extends PlaybackCardController implements
                 if (mCardViewModel.getPanelExpanded()) {
                     mSkipPrevButton.setVisibility(View.GONE);
                     mSkipNextButton.setVisibility(View.GONE);
+                    mLogo.setVisibility(View.GONE);
                 }
             }
 
@@ -222,7 +225,10 @@ public class MediaCardController extends PlaybackCardController implements
 
     @Override
     protected void updateAlbumCoverWithDrawable(Drawable drawable) {
-        super.updateAlbumCoverWithDrawable(drawable);
+        RoundedDrawable roundedDrawable = new RoundedDrawable(drawable, mView.getResources()
+                .getFloat(R.dimen.media_card_album_art_drawable_corner_ratio));
+        super.updateAlbumCoverWithDrawable(roundedDrawable);
+
         if (mCardViewModel.getPanelExpanded()) {
             mAlbumCoverVisibility = mAlbumCover.getVisibility();
             mAlbumCover.setVisibility(View.INVISIBLE);
@@ -249,9 +255,14 @@ public class MediaCardController extends PlaybackCardController implements
     @Override
     protected void updateProgress(PlaybackProgress progress) {
         super.updateProgress(progress);
+        ViewUtils.setVisible(mSeekBar, progress != null && progress.hasTime());
         if (progress == null || !progress.hasTime()) {
-            mSeekBar.setVisibility(View.GONE);
             mLogo.setVisibility(View.GONE);
+        } else if (mDataModel.getMetadata().getValue() != null) {
+            Uri logoUri = mLogo.prepareToDisplay(mDataModel.getMetadata().getValue());
+            if (logoUri != null && !mCardViewModel.getPanelExpanded()) {
+                mLogo.setVisibility(View.VISIBLE);
+            }
         }
     }
 
