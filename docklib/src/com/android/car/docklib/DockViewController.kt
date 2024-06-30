@@ -28,9 +28,9 @@ import android.content.Intent
 import android.content.pm.LauncherApps
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.os.Build
 import android.os.UserHandle
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.content.getSystemService
 import com.android.car.carlauncher.Flags
@@ -237,8 +237,7 @@ open class DockViewController(
     private fun handleMediaSessionChange(mediaControllers: List<MediaController>?) {
         val activeMediaSessions = mediaControllers?.filter {
             it.playbackState?.let { playbackState ->
-                (playbackState.isActive ||
-                        playbackState.actions and PlaybackStateCompat.ACTION_PLAY != 0L)
+                (playbackState.isActive || playbackState.state == PlaybackState.STATE_PAUSED)
             } ?: false
         }?.map { it.packageName } ?: emptyList()
 
