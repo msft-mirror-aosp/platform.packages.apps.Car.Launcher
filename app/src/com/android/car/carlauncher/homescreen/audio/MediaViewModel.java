@@ -187,9 +187,14 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
     @Override
     protected void onCleared() {
         super.onCleared();
-        mSourceViewModel.getPrimaryMediaSource().removeObserver(mMediaSourceObserver);
-        mPlaybackViewModel.getMetadata().removeObserver(mMetadataObserver);
-        mPlaybackViewModel.getPlaybackStateWrapper().removeObserver(mPlaybackStateWrapperObserver);
+        if (mSourceViewModel != null) {
+            mSourceViewModel.getPrimaryMediaSource().removeObserver(mMediaSourceObserver);
+        }
+        if (mPlaybackViewModel != null) {
+            mPlaybackViewModel.getMetadata().removeObserver(mMetadataObserver);
+            mPlaybackViewModel.getPlaybackStateWrapper().removeObserver(
+                    mPlaybackStateWrapperObserver);
+        }
     }
 
     @Override
