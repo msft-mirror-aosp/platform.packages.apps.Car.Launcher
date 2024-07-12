@@ -113,7 +113,6 @@ public class CarLauncher extends FragmentActivity {
         public void handleIntent(Intent intent) {
             if (intent != null) {
                 ActivityOptions options = ActivityOptions.makeBasic();
-                options.setLaunchDisplayId(getDisplay().getDisplayId());
                 startActivity(intent, options.toBundle());
             }
         }
