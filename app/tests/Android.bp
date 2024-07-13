@@ -54,6 +54,9 @@ android_test {
         "flag-junit",
     ],
 
+    // b/341652226: temporarily disable multi-dex until D8 is fixed
+    no_dex_container: true,
+
     platform_apis: true,
 
     certificate: "platform",
