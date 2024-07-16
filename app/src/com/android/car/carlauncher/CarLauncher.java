@@ -31,6 +31,7 @@ import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
@@ -186,6 +187,16 @@ public class CarLauncher extends FragmentActivity {
             }
             parent.removeAllViews(); // Just a defense against a dirty parent.
             parent.addView(taskView);
+
+            // TODO (bug:352136539): Temporary fix for MUMD passenger screens disappearing TASK.
+            if (isPassenger) {
+                Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(() -> {
+                    if (!isFinishing()) {
+                        startActivity(intent);
+                    }
+                }, 2000);
+            }
         });
     }
 
