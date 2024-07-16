@@ -26,12 +26,12 @@ import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.TaskStackListener;
 import android.car.Car;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
@@ -114,7 +114,6 @@ public class CarLauncher extends FragmentActivity {
         public void handleIntent(Intent intent) {
             if (intent != null) {
                 ActivityOptions options = ActivityOptions.makeBasic();
-                options.setLaunchDisplayId(getDisplay().getDisplayId());
                 startActivity(intent, options.toBundle());
             }
         }
@@ -127,43 +126,13 @@ public class CarLauncher extends FragmentActivity {
         if (DEBUG) {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
-        // Since MUMD is introduced, CarLauncher can be called in the main display of visible users.
-        // In ideal shape, CarLauncher should handle both driver and passengers together.
-        // But, in the mean time, we have separate launchers for driver and passengers, so
-        // CarLauncher needs to reroute the request to Passenger launcher if it is invoked from
-        // the main display of passengers (not driver).
-        // For MUPAND, PassengerLauncher should be the default launcher.
-        // For non-main displays, ATM will invoke SECONDARY_HOME Intent, so the secondary launcher
-        // should handle them.
+        // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
+        // visible background users.
+        // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
+        // there is no maps use-case for passengers.
         UserManager um = getSystemService(UserManager.class);
         boolean isPassengerDisplay = getDisplayId() != Display.DEFAULT_DISPLAY
                 || um.isVisibleBackgroundUsersOnDefaultDisplaySupported();
-        if (isPassengerDisplay) {
-            String passengerLauncherName = getString(R.string.config_passengerLauncherComponent);
-            Intent passengerHomeIntent;
-            if (!passengerLauncherName.isEmpty()) {
-                ComponentName component = ComponentName.unflattenFromString(passengerLauncherName);
-                if (component == null) {
-                    throw new IllegalStateException(
-                            "Invalid passengerLauncher name=" + passengerLauncherName);
-                }
-                passengerHomeIntent = new Intent(Intent.ACTION_MAIN)
-                        // passenger launcher should be launched in home task in order to
-                        // fix TaskView layering issue
-                        .addCategory(Intent.CATEGORY_HOME)
-                        .setComponent(component);
-            } else {
-                // No passenger launcher is specified, then use AppsGrid as a fallback.
-                passengerHomeIntent = CarLauncherUtils.getAppsGridIntent();
-            }
-            ActivityOptions options = ActivityOptions
-                    // No animation for the trampoline.
-                    .makeCustomAnimation(this, /* enterResId=*/ 0, /* exitResId= */ 0)
-                    .setLaunchDisplayId(getDisplayId());
-            startActivity(passengerHomeIntent, options.toBundle());
-            finish();
-            return;
-        }
 
         mUseSmallCanvasOptimizedMap =
                 CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(this);
@@ -188,7 +157,7 @@ public class CarLauncher extends FragmentActivity {
             if (!UserHelperLite.isHeadlessSystemUser(getUserId())) {
                 mMapsCard = findViewById(R.id.maps_card);
                 if (mMapsCard != null) {
-                    setupRemoteCarTaskView(mMapsCard);
+                    setupRemoteCarTaskView(mMapsCard, isPassengerDisplay);
                 }
             }
         }
@@ -197,9 +166,10 @@ public class CarLauncher extends FragmentActivity {
         setupContentObserversForTos();
     }
 
-    private void setupRemoteCarTaskView(ViewGroup parent) {
+    private void setupRemoteCarTaskView(ViewGroup parent, Boolean isPassenger) {
+        Intent intent = isPassenger ? CarLauncherUtils.getAppsGridIntent() : getMapsIntent();
         mCarLauncherViewModel = new ViewModelProvider(this,
-                new CarLauncherViewModelFactory(this, getMapsIntent()))
+                new CarLauncherViewModelFactory(this, intent))
                 .get(CarLauncherViewModel.class);
 
         getLifecycle().addObserver(mCarLauncherViewModel);
@@ -217,6 +187,16 @@ public class CarLauncher extends FragmentActivity {
             }
             parent.removeAllViews(); // Just a defense against a dirty parent.
             parent.addView(taskView);
+
+            // TODO (bug:352136539): Temporary fix for MUMD passenger screens disappearing TASK.
+            if (isPassenger) {
+                Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(() -> {
+                    if (!isFinishing()) {
+                        startActivity(intent);
+                    }
+                }, 2000);
+            }
         });
     }
 
