@@ -83,12 +83,14 @@ import com.android.car.ui.toolbar.MenuItem;
 import com.android.car.ui.toolbar.NavButtonMode;
 import com.android.car.ui.toolbar.ToolbarController;
 
+import kotlin.Unit;
+
+import kotlinx.coroutines.CoroutineDispatcher;
+import kotlinx.coroutines.Dispatchers;
+
 import java.lang.annotation.Retention;
 import java.util.Collections;
 
-import kotlin.Unit;
-import kotlinx.coroutines.CoroutineDispatcher;
-import kotlinx.coroutines.Dispatchers;
 
 /**
  * Launcher activity that shows a grid of apps.
@@ -435,7 +437,7 @@ public class AppGridActivity extends AppCompatActivity implements
         super.onResume();
         updateScrollState();
         mAdapter.setLayoutDirection(getResources().getConfiguration().getLayoutDirection());
-        mAppGridViewModel.updateMode(mMode);
+        mAppGridViewModel.updateMode(mMode, getDisplayId());
     }
 
     @Override
