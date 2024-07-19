@@ -19,8 +19,6 @@ package com.android.car.carlauncher
 import android.app.Application
 import android.os.Bundle
 import android.os.SystemClock
-import android.os.UserManager
-import android.view.Display
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -174,17 +172,10 @@ class AppGridViewModel(
 
     /**
      * Updates the current application display mode. This triggers UI updates in the app grid.
-     * * Note: [Mode] switching is not supported in Passenger Screens for MUMD.
      * @param mode The new Mode to set for the application grid.
-     * @param displayId The displayId where the activity is rendered.
      */
-    fun updateMode(mode: Mode, displayId: Int) {
-        val userManager = application.getSystemService(UserManager::class.java)
-        val isPassengerDisplay = (displayId != Display.DEFAULT_DISPLAY ||
-                userManager.isVisibleBackgroundUsersOnDefaultDisplaySupported)
-        if (!isPassengerDisplay) {
-            appMode.value = mode
-        }
+    fun updateMode(mode: Mode) {
+        appMode.value = mode
     }
 
     companion object {

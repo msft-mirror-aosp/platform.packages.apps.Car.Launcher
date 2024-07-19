@@ -430,7 +430,7 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
      */
     fun updateMode(mode: Mode) {
         this.mode = mode
-        appGridViewModel.updateMode(mode, requireContext().deviceId)
+        appGridViewModel.updateMode(mode)
     }
 
     private inner class AppGridOnScrollListener : RecyclerView.OnScrollListener() {
