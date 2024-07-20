@@ -288,7 +288,8 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
 
     /** Returns whether the playback state is ready to be played */
     private boolean isActivePlaybackState(PlaybackState playbackState) {
-        return playbackState != null && playbackState.isActive();
+        return playbackState != null && (playbackState.isActive()
+                || playbackState.getState() == PlaybackState.STATE_PAUSED);
     }
 
     private void initializeLauncherModel() {
