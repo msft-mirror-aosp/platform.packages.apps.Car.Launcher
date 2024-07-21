@@ -118,13 +118,10 @@ public class MediaCardController extends PlaybackCardController implements
         mViewResources = mView.getContext().getResources();
 
         mView.setOnClickListener(view -> {
-            if (mCardViewModel.getPanelExpanded()) {
-                animateClosePanel();
-            } else {
-                MediaSource mediaSource = mDataModel.getMediaSource().getValue();
-                Intent intent = mediaSource != null ? mediaSource.getIntent() : null;
-                mMediaIntentRouter.handleMediaIntent(intent);
-            }
+            launchMediaAppOrClosePanel();
+        });
+        mView.findViewById(R.id.empty_panel).setOnClickListener(view -> {
+            launchMediaAppOrClosePanel();
         });
 
         mPager = mView.findViewById(R.id.view_pager);
@@ -429,6 +426,16 @@ public class MediaCardController extends PlaybackCardController implements
 
             selectOverflow(false);
             selectQueue(false);
+        }
+    }
+
+    private void launchMediaAppOrClosePanel() {
+        if (mCardViewModel.getPanelExpanded()) {
+            animateClosePanel();
+        } else {
+            MediaSource mediaSource = mDataModel.getMediaSource().getValue();
+            Intent intent = mediaSource != null ? mediaSource.getIntent() : null;
+            mMediaIntentRouter.handleMediaIntent(intent);
         }
     }
 
