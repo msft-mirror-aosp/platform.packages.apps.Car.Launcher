@@ -32,7 +32,8 @@
         <LinearLayout
             android:id="@+id/media_card_panel_content_container"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/media_card_panel_content_height"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/media_card_panel_content_margin_top"
             android:background="@color/car_surface_container_highest"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent">

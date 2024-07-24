@@ -127,7 +127,7 @@
     <dimen name="media_card_panel_handlebar_horizontal_padding">164dp</dimen>
     <dimen name="media_card_queue_header_app_icon_size">26dp</dimen>
     <dimen name="media_card_queue_item_thumbnail_size">80dp</dimen>
-    <dimen name="media_card_panel_content_height">416dp</dimen>
+    <dimen name="media_card_panel_content_margin_top">216dp</dimen>
     <dimen name="media_card_title_animated_line_height">36dp</dimen>
     <dimen name="media_card_title_default_line_height">40dp</dimen>
     <dimen name="media_card_title_animated_text_size">28sp</dimen>

@@ -109,7 +109,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="media_card_logo_size"/>
       <item type="dimen" name="media_card_margin_panel_open"/>
       <item type="dimen" name="media_card_panel_button_icon_padding"/>
-      <item type="dimen" name="media_card_panel_content_height"/>
+      <item type="dimen" name="media_card_panel_content_margin_top"/>
       <item type="dimen" name="media_card_panel_handlebar_height"/>
       <item type="dimen" name="media_card_panel_handlebar_horizontal_padding"/>
       <item type="dimen" name="media_card_panel_handlebar_offscreen_start_position"/>
