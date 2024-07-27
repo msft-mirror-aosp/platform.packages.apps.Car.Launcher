@@ -29,7 +29,7 @@ import android.widget.LinearLayout;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.car.carlauncher.AppGridActivity.Mode;
+import com.android.car.carlauncher.AppGridFragment.Mode;
 import com.android.car.carlauncher.AppGridPageSnapper;
 import com.android.car.carlauncher.AppItem;
 import com.android.car.carlauncher.LauncherItem;

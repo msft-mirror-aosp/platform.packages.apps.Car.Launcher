@@ -20,6 +20,7 @@ import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
+import static com.android.car.carlauncher.AppGridFragment.Mode.ALL_APPS;
 import static com.android.car.carlauncher.CarLauncherViewModel.CarLauncherViewModelFactory;
 
 import android.app.ActivityManager;
@@ -31,7 +32,6 @@ import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
@@ -134,18 +134,6 @@ public class CarLauncher extends FragmentActivity {
         boolean isPassengerDisplay = getDisplayId() != Display.DEFAULT_DISPLAY
                 || um.isVisibleBackgroundUsersOnDefaultDisplaySupported();
 
-        mUseSmallCanvasOptimizedMap =
-                CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(this);
-
-        mActivityManager = getSystemService(ActivityManager.class);
-        mCarLauncherTaskId = getTaskId();
-        TaskStackChangeListeners.getInstance().registerTaskStackListener(mTaskStackListener);
-
-        // Setting as trusted overlay to let touches pass through.
-        getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
-        // To pass touches to the underneath task.
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
-
         // Don't show the maps panel in multi window mode.
         // NOTE: CTS tests for split screen are not compatible with activity views on the default
         // activity of the launcher
@@ -153,23 +141,45 @@ public class CarLauncher extends FragmentActivity {
             setContentView(R.layout.car_launcher_multiwindow);
         } else {
             setContentView(R.layout.car_launcher);
-            // We don't want to show Map card unnecessarily for the headless user 0.
-            if (!UserHelperLite.isHeadlessSystemUser(getUserId())) {
-                mMapsCard = findViewById(R.id.maps_card);
-                if (mMapsCard != null) {
-                    setupRemoteCarTaskView(mMapsCard, isPassengerDisplay);
+            // Passenger displays do not require TaskView Embedding
+            if (!isPassengerDisplay) {
+                mUseSmallCanvasOptimizedMap =
+                        CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(this);
+
+                mActivityManager = getSystemService(ActivityManager.class);
+                mCarLauncherTaskId = getTaskId();
+                TaskStackChangeListeners.getInstance().registerTaskStackListener(
+                        mTaskStackListener);
+
+                // Setting as trusted overlay to let touches pass through.
+                getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
+                // To pass touches to the underneath task.
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                // We don't want to show Map card unnecessarily for the headless user 0
+                if (!UserHelperLite.isHeadlessSystemUser(getUserId())) {
+                    mMapsCard = findViewById(R.id.maps_card);
+                    if (mMapsCard != null) {
+                        setupRemoteCarTaskView(mMapsCard);
+                    }
                 }
+            } else {
+                // For Passenger display show the AppGridFragment in place of the Maps view.
+                // Also we can skip initializing all the TaskView related objects as they are not
+                // used in this case.
+                getSupportFragmentManager().beginTransaction().replace(R.id.maps_card,
+                        AppGridFragment.newInstance(ALL_APPS)).commit();
+
             }
         }
+
         MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
         initializeCards();
         setupContentObserversForTos();
     }
 
-    private void setupRemoteCarTaskView(ViewGroup parent, Boolean isPassenger) {
-        Intent intent = isPassenger ? CarLauncherUtils.getAppsGridIntent() : getMapsIntent();
+    private void setupRemoteCarTaskView(ViewGroup parent) {
         mCarLauncherViewModel = new ViewModelProvider(this,
-                new CarLauncherViewModelFactory(this, intent))
+                new CarLauncherViewModelFactory(this, getMapsIntent()))
                 .get(CarLauncherViewModel.class);
 
         getLifecycle().addObserver(mCarLauncherViewModel);
@@ -187,16 +197,6 @@ public class CarLauncher extends FragmentActivity {
             }
             parent.removeAllViews(); // Just a defense against a dirty parent.
             parent.addView(taskView);
-
-            // TODO (bug:352136539): Temporary fix for MUMD passenger screens disappearing TASK.
-            if (isPassenger) {
-                Handler handler = new Handler(Looper.getMainLooper());
-                handler.postDelayed(() -> {
-                    if (!isFinishing()) {
-                        startActivity(intent);
-                    }
-                }, 2000);
-            }
         });
     }
 

@@ -19,8 +19,6 @@ package com.android.car.carlauncher
 import android.app.Application
 import android.os.Bundle
 import android.os.SystemClock
-import android.os.UserManager
-import android.view.Display
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -28,8 +26,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import androidx.savedstate.SavedStateRegistryOwner
-import com.android.car.carlauncher.AppGridActivity.APP_TYPE_LAUNCHABLES
-import com.android.car.carlauncher.AppGridActivity.Mode
+import com.android.car.carlauncher.AppGridFragment.AppTypes.Companion.APP_TYPE_LAUNCHABLES
+import com.android.car.carlauncher.AppGridFragment.Mode
 import com.android.car.carlauncher.repositories.AppGridRepository
 import java.time.Clock
 import java.util.concurrent.TimeUnit
@@ -83,7 +81,7 @@ class AppGridViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getAppList(): Flow<List<AppItem>> {
         return appMode.transformLatest {
-            val sourceList = if (it.mAppTypes and APP_TYPE_LAUNCHABLES == 1) {
+            val sourceList = if (it.appTypes and APP_TYPE_LAUNCHABLES == 1) {
                 allAppsItemList
             } else {
                 mediaOnlyList
@@ -174,17 +172,10 @@ class AppGridViewModel(
 
     /**
      * Updates the current application display mode. This triggers UI updates in the app grid.
-     * * Note: [Mode] switching is not supported in Passenger Screens for MUMD.
      * @param mode The new Mode to set for the application grid.
-     * @param displayId The displayId where the activity is rendered.
      */
-    fun updateMode(mode: Mode, displayId: Int) {
-        val userManager = application.getSystemService(UserManager::class.java)
-        val isPassengerDisplay = (displayId != Display.DEFAULT_DISPLAY ||
-                userManager.isVisibleBackgroundUsersOnDefaultDisplaySupported)
-        if (!isPassengerDisplay) {
-            appMode.value = mode
-        }
+    fun updateMode(mode: Mode) {
+        appMode.value = mode
     }
 
     companion object {
