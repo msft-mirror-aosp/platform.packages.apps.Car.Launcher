@@ -20,11 +20,13 @@ import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.RootMatchers.hasWindowLayoutParams;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 
 import static com.android.dx.mockito.inline.extended.ExtendedMockito.doReturn;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,29 +34,30 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 
 import android.car.test.mocks.AbstractExtendedMockitoTestCase;
-import android.car.user.CarUserManager;
 import android.content.Intent;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.testing.TestableContext;
 import android.util.ArraySet;
+import android.view.WindowManager;
 
 import androidx.lifecycle.Lifecycle;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.filters.Suppress;
 
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 
 import java.net.URISyntaxException;
 import java.util.Set;
 
-@Suppress // To be ignored until b/224978827 is fixed
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
@@ -63,8 +66,9 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     public TestableContext mContext = new TestableContext(InstrumentationRegistry.getContext());
     private ActivityScenario<CarLauncher> mActivityScenario;
 
-    @Mock
-    private CarUserManager mMockCarUserManager;
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TOS_MAP_INTENT = "intent:#Intent;"
             + "component=com.android.car.carlauncher/"
@@ -93,26 +97,40 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
 
     @Test
     public void onResume_mapsCard_isVisible() {
-        mActivityScenario = ActivityScenario.launch(CarLauncher.class);
-        mActivityScenario.moveToState(Lifecycle.State.RESUMED);
+        setUpActivityScenario();
 
-        onView(withId(R.id.maps_card)).check(matches(isDisplayed()));
+        onView(withId(R.id.maps_card))
+                .inRoot(hasWindowLayoutParams())
+                .check(matches(isDisplayed()));
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_MEDIA_CARD_FULLSCREEN)
     public void onResume_assistiveCard_isVisible() {
-        mActivityScenario = ActivityScenario.launch(CarLauncher.class);
-        mActivityScenario.moveToState(Lifecycle.State.RESUMED);
+        setUpActivityScenario();
 
-        onView(withId(R.id.top_card)).check(matches(isDisplayed()));
+        onView(withId(R.id.top_card))
+                .inRoot(hasWindowLayoutParams())
+                .check(matches(isDisplayed()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_CARD_FULLSCREEN)
+    public void onResume_fullscreenMediaCard_assistiveCard_isGone() {
+        setUpActivityScenario();
+
+        onView(withId(R.id.top_card))
+                .inRoot(hasWindowLayoutParams())
+                .check(matches(not(isDisplayed())));
     }
 
     @Test
     public void onResume_audioCard_isVisible() {
-        mActivityScenario = ActivityScenario.launch(CarLauncher.class);
-        mActivityScenario.moveToState(Lifecycle.State.RESUMED);
+        setUpActivityScenario();
 
-        onView(withId(R.id.bottom_card)).check(matches(isDisplayed()));
+        onView(withId(R.id.bottom_card))
+                .inRoot(hasWindowLayoutParams())
+                .check(matches(isDisplayed()));
     }
 
     @Test
@@ -271,5 +289,17 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         packages.add("com.android.car.maps");
         packages.add("com.android.car.assistant");
         return packages;
+    }
+
+    private void setUpActivityScenario() {
+        mActivityScenario = ActivityScenario.launch(CarLauncher.class);
+        mActivityScenario.moveToState(Lifecycle.State.RESUMED);
+        mActivityScenario.onActivity(activity -> {
+            activity.runOnUiThread(new Runnable() {
+                public void run() {
+                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+                }
+            });
+        });
     }
 }
