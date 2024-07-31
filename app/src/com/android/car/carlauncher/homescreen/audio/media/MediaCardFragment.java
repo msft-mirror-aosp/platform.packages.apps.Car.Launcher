@@ -140,7 +140,7 @@ public class MediaCardFragment extends HomeCardFragment {
         } else {
             mViewModel = new ViewModelProvider(requireActivity()).get(MediaCardViewModel.class);
             if (mViewModel.needsInitialization()) {
-                MediaModels models = new MediaModels(getActivity());
+                MediaModels models = new MediaModels(getActivity().getApplicationContext());
                 mViewModel.init(models);
             }
         }
