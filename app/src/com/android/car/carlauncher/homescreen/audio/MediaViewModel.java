@@ -137,7 +137,7 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
     public void onCreate(@NonNull Context context) {
         // Initialize media data with media session sources or mbt sources
         if (Flags.mediaSessionCard()) {
-            MediaModels mediaModels = new MediaModels(context);
+            MediaModels mediaModels = new MediaModels(context.getApplicationContext());
             if (mSourceViewModel == null) {
                 mSourceViewModel = mediaModels.getMediaSourceViewModel();
             }
