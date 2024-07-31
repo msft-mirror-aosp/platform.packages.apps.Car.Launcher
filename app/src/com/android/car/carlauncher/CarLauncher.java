@@ -20,13 +20,13 @@ import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
+import static com.android.car.carlauncher.AppGridFragment.Mode.ALL_APPS;
 import static com.android.car.carlauncher.CarLauncherViewModel.CarLauncherViewModelFactory;
 
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.TaskStackListener;
 import android.car.Car;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
@@ -114,7 +114,6 @@ public class CarLauncher extends FragmentActivity {
         public void handleIntent(Intent intent) {
             if (intent != null) {
                 ActivityOptions options = ActivityOptions.makeBasic();
-                options.setLaunchDisplayId(getDisplay().getDisplayId());
                 startActivity(intent, options.toBundle());
             }
         }
@@ -127,55 +126,13 @@ public class CarLauncher extends FragmentActivity {
         if (DEBUG) {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
-        // Since MUMD is introduced, CarLauncher can be called in the main display of visible users.
-        // In ideal shape, CarLauncher should handle both driver and passengers together.
-        // But, in the mean time, we have separate launchers for driver and passengers, so
-        // CarLauncher needs to reroute the request to Passenger launcher if it is invoked from
-        // the main display of passengers (not driver).
-        // For MUPAND, PassengerLauncher should be the default launcher.
-        // For non-main displays, ATM will invoke SECONDARY_HOME Intent, so the secondary launcher
-        // should handle them.
+        // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
+        // visible background users.
+        // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
+        // there is no maps use-case for passengers.
         UserManager um = getSystemService(UserManager.class);
         boolean isPassengerDisplay = getDisplayId() != Display.DEFAULT_DISPLAY
                 || um.isVisibleBackgroundUsersOnDefaultDisplaySupported();
-        if (isPassengerDisplay) {
-            String passengerLauncherName = getString(R.string.config_passengerLauncherComponent);
-            Intent passengerHomeIntent;
-            if (!passengerLauncherName.isEmpty()) {
-                ComponentName component = ComponentName.unflattenFromString(passengerLauncherName);
-                if (component == null) {
-                    throw new IllegalStateException(
-                            "Invalid passengerLauncher name=" + passengerLauncherName);
-                }
-                passengerHomeIntent = new Intent(Intent.ACTION_MAIN)
-                        // passenger launcher should be launched in home task in order to
-                        // fix TaskView layering issue
-                        .addCategory(Intent.CATEGORY_HOME)
-                        .setComponent(component);
-            } else {
-                // No passenger launcher is specified, then use AppsGrid as a fallback.
-                passengerHomeIntent = CarLauncherUtils.getAppsGridIntent();
-            }
-            ActivityOptions options = ActivityOptions
-                    // No animation for the trampoline.
-                    .makeCustomAnimation(this, /* enterResId=*/ 0, /* exitResId= */ 0)
-                    .setLaunchDisplayId(getDisplayId());
-            startActivity(passengerHomeIntent, options.toBundle());
-            finish();
-            return;
-        }
-
-        mUseSmallCanvasOptimizedMap =
-                CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(this);
-
-        mActivityManager = getSystemService(ActivityManager.class);
-        mCarLauncherTaskId = getTaskId();
-        TaskStackChangeListeners.getInstance().registerTaskStackListener(mTaskStackListener);
-
-        // Setting as trusted overlay to let touches pass through.
-        getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
-        // To pass touches to the underneath task.
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
 
         // Don't show the maps panel in multi window mode.
         // NOTE: CTS tests for split screen are not compatible with activity views on the default
@@ -184,14 +141,37 @@ public class CarLauncher extends FragmentActivity {
             setContentView(R.layout.car_launcher_multiwindow);
         } else {
             setContentView(R.layout.car_launcher);
-            // We don't want to show Map card unnecessarily for the headless user 0.
-            if (!UserHelperLite.isHeadlessSystemUser(getUserId())) {
-                mMapsCard = findViewById(R.id.maps_card);
-                if (mMapsCard != null) {
-                    setupRemoteCarTaskView(mMapsCard);
+            // Passenger displays do not require TaskView Embedding
+            if (!isPassengerDisplay) {
+                mUseSmallCanvasOptimizedMap =
+                        CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(this);
+
+                mActivityManager = getSystemService(ActivityManager.class);
+                mCarLauncherTaskId = getTaskId();
+                TaskStackChangeListeners.getInstance().registerTaskStackListener(
+                        mTaskStackListener);
+
+                // Setting as trusted overlay to let touches pass through.
+                getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
+                // To pass touches to the underneath task.
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                // We don't want to show Map card unnecessarily for the headless user 0
+                if (!UserHelperLite.isHeadlessSystemUser(getUserId())) {
+                    mMapsCard = findViewById(R.id.maps_card);
+                    if (mMapsCard != null) {
+                        setupRemoteCarTaskView(mMapsCard);
+                    }
                 }
+            } else {
+                // For Passenger display show the AppGridFragment in place of the Maps view.
+                // Also we can skip initializing all the TaskView related objects as they are not
+                // used in this case.
+                getSupportFragmentManager().beginTransaction().replace(R.id.maps_card,
+                        AppGridFragment.newInstance(ALL_APPS)).commit();
+
             }
         }
+
         MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
         initializeCards();
         setupContentObserversForTos();
