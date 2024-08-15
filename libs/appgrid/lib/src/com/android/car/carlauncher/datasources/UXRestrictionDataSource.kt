@@ -23,6 +23,7 @@ import android.content.res.Resources
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
+import android.media.session.PlaybackState
 import android.util.Log
 import com.android.car.carlauncher.Flags
 import com.android.car.carlauncher.R
@@ -64,7 +65,7 @@ class UXRestrictionDataSourceImpl(
     private val carPackageManager: CarPackageManager,
     private val mediaSessionManager: MediaSessionManager,
     private val resources: Resources,
-    private val bgDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val bgDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : UXRestrictionDataSource {
 
     /**
@@ -122,7 +123,7 @@ class UXRestrictionDataSourceImpl(
             val filterActiveMediaPackages: (List<MediaController>) -> List<String> =
                 { mediaControllers ->
                     mediaControllers.filter {
-                        it.playbackState?.isActive ?: false
+                        isActiveOrPaused(it.playbackState)
                     }.map { it.packageName }
                 }
             // Emits the initial list of filtered packages upon subscription
@@ -142,6 +143,11 @@ class UXRestrictionDataSourceImpl(
             // Note this flow runs on the Main dispatcher, as the MediaSessionsChangedListener
             // expects to dispatch updates on the Main looper.
         }.flowOn(Dispatchers.Main).conflate()
+    }
+
+    private fun isActiveOrPaused(playbackState: PlaybackState?): Boolean {
+        return playbackState?.isActive ?: false ||
+            playbackState?.state == PlaybackState.STATE_PAUSED
     }
 
     companion object {
