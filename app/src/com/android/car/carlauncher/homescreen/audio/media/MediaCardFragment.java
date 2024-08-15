@@ -138,9 +138,9 @@ public class MediaCardFragment extends HomeCardFragment {
                     getContext().getDrawable(R.drawable.control_bar_image_background));
             mShowSeekBar = getResources().getBoolean(R.bool.show_seek_bar);
         } else {
-            mViewModel = new ViewModelProvider(this).get(MediaCardViewModel.class);
+            mViewModel = new ViewModelProvider(requireActivity()).get(MediaCardViewModel.class);
             if (mViewModel.needsInitialization()) {
-                MediaModels models = new MediaModels(getActivity());
+                MediaModels models = new MediaModels(getActivity().getApplicationContext());
                 mViewModel.init(models);
             }
         }
