@@ -31,6 +31,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper.getMainLooper
 import android.os.Process
+import android.os.UserManager
 import android.util.Log
 import android.view.DragEvent
 import android.view.LayoutInflater
@@ -339,7 +340,7 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
             launcherActivities, mediaTemplateApps,
             disabledApps, tosApps, controlCenterMirroringDataSource, uxRestrictionDataSource,
             appOrderDataSource, packageManager, launchProviderFactory, appShortcutsFactory,
-            bgDispatcher
+            requireContext().getSystemService(UserManager::class.java), bgDispatcher
         )
 
         appGridViewModel = ViewModelProvider(
