@@ -17,7 +17,7 @@
 package com.android.car.carlauncher.recents;
 
 import static com.android.car.carlauncher.recents.CarRecentsActivity.OPEN_RECENT_TASK_ACTION;
-import static com.android.wm.shell.sysui.ShellSharedConstants.KEY_EXTRA_SHELL_RECENT_TASKS;
+import static com.android.wm.shell.shared.ShellSharedConstants.KEY_EXTRA_SHELL_RECENT_TASKS;
 
 import android.app.ActivityManager;
 import android.app.Service;
