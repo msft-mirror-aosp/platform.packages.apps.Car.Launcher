@@ -163,6 +163,16 @@
                 android:name="com.android.settings.category"
                 android:value="com.android.settings.category.ia.display"/>
         </activity>
+        <activity android:name="com.android.car.carlauncher.homescreen.MapTosActivity"
+            android:taskAffinity=""
+            android:launchMode="singleTask"
+            android:allowEmbedded="true"
+            android:alwaysRetainTaskState="true"
+            android:screenOrientation="user"
+            android:resizeableActivity="true"
+            android:exported="true">
+            <meta-data android:name="distractionOptimized" android:value="true"/>
+        </activity>
 
         <provider android:name=".calmmode.CalmModeQCProvider"
                   android:authorities="com.android.car.carlauncher.calmmode"
