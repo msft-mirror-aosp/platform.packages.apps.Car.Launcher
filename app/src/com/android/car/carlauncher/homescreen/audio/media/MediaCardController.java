@@ -16,9 +16,12 @@
 
 package com.android.car.carlauncher.homescreen.audio.media;
 
+import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.getFirstCustomActionInSet;
+import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.skipBackStandardActions;
+import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.skipForwardStandardActions;
 import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.updatePlayButtonWithPlaybackState;
 
-import static java.lang.Math.max;
+import static java.lang.Integer.max;
 
 import android.content.Intent;
 import android.content.res.Resources;
@@ -39,6 +42,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.android.car.apps.common.RoundedDrawable;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.carlauncher.R;
+import com.android.car.media.common.CustomPlaybackAction;
 import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.playback.PlaybackProgress;
 import com.android.car.media.common.playback.PlaybackViewModel;
@@ -48,6 +52,9 @@ import com.android.car.media.common.source.MediaSource;
 import com.android.car.media.common.ui.PlaybackCardController;
 import com.android.car.media.common.ui.PlaybackHistoryController;
 import com.android.car.media.common.ui.PlaybackQueueController;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MediaCardController extends PlaybackCardController implements
         MediaCardPanelViewPagerAdapter.ViewPagerQueueCreator,
@@ -268,7 +275,9 @@ public class MediaCardController extends PlaybackCardController implements
         PlaybackController playbackController = mDataModel.getPlaybackController().getValue();
         if (playbackState != null) {
             updatePlayButtonWithPlaybackState(mPlayPauseButton, playbackState, playbackController);
-            updateSkipButtonsWithPlaybackState(playbackState, playbackController);
+            List<PlaybackViewModel.RawCustomPlaybackAction> usedCustomActions =
+                    updateSkipButtonsAndReturnUsedStandardCustomActions(
+                            playbackState, playbackController);
 
             boolean hasCustomActions = playbackState.getCustomActions().size() != 0;
             boolean isPreviouslyVisible = ViewUtils.isVisible(mActionOverflowButton);
@@ -278,7 +287,7 @@ public class MediaCardController extends PlaybackCardController implements
                 animateClosePanel();
             }
             mPagerAdapter.notifyPlaybackStateChanged(playbackState,
-                    playbackController);
+                    playbackController, usedCustomActions);
         } else {
             mSkipPrevButton.setVisibility(View.GONE);
             mSkipNextButton.setVisibility(View.GONE);
@@ -489,45 +498,112 @@ public class MediaCardController extends PlaybackCardController implements
         mLogo.setVisibility(mLogoVisibility);
     }
 
-    private void updateSkipButtonsWithPlaybackState(PlaybackStateWrapper playbackState,
+    /**
+     * Set the mSkipNextButton and mSkipPrevButton with a skip action Drawable if sent by the
+     * playbackState, otherwise with a skipForwardStandardAction and skipBackStandardAction
+     * respectively. If none exist, hide the button.
+     */
+    private List<PlaybackViewModel.RawCustomPlaybackAction>
+            updateSkipButtonsAndReturnUsedStandardCustomActions(PlaybackStateWrapper playbackState,
             PlaybackController playbackController) {
-        boolean isSkipPrevEnabled = playbackState.isSkipPreviousEnabled();
-        boolean isSkipPrevReserved = playbackState.iSkipPreviousReserved();
+        List<PlaybackViewModel.RawCustomPlaybackAction> usedCustomActions =
+                new ArrayList<PlaybackViewModel.RawCustomPlaybackAction>();
+        updateSkipNextButtonWithSkipOrStandardAction(playbackState, playbackController,
+                usedCustomActions);
+        updateSkipPrevButtonWithSkipOrStandardAction(playbackState, playbackController,
+                usedCustomActions);
+        return usedCustomActions;
+    }
+
+    private void updateSkipNextButtonWithSkipOrStandardAction(
+            PlaybackStateWrapper playbackState, PlaybackController playbackController,
+            List<PlaybackViewModel.RawCustomPlaybackAction> usedCustomActions) {
         boolean isSkipNextEnabled = playbackState.isSkipNextEnabled();
         boolean isSkipNextReserved = playbackState.isSkipNextReserved();
         if ((isSkipNextEnabled || isSkipNextReserved)) {
-            mSkipNextButton.setImageDrawable(mView.getContext().getDrawable(
-                    com.android.car.media.common.R.drawable.ic_skip_next));
-            mSkipNextButton.setBackground(mView.getContext().getDrawable(
-                    R.drawable.dark_circle_button_background));
-            ViewUtils.setVisible(mSkipNextButton, true);
-            mSkipNextButton.setEnabled(isSkipNextEnabled);
-            mSkipNextButton.setOnClickListener(v -> {
+            updateButton(mSkipNextButton, mView.getContext().getDrawable(
+                    com.android.car.media.common.R.drawable.ic_skip_next),
+                    mView.getContext().getDrawable(R.drawable.circle_button_background),
+                    true, isSkipNextEnabled, (v) -> {
                 if (playbackController != null) {
                     playbackController.skipToNext();
                 }
             });
         } else {
-            mSkipNextButton.setBackground(null);
-            mSkipNextButton.setImageDrawable(null);
-            ViewUtils.setVisible(mSkipNextButton, false);
+            PlaybackViewModel.RawCustomPlaybackAction skipForwardCustomAction =
+                    getFirstCustomActionInSet(playbackState.getCustomActions(),
+                            skipForwardStandardActions);
+            if (skipForwardCustomAction != null) {
+                boolean isCustomActionUsed =
+                        updateButtonWithCustomAction(mSkipNextButton, skipForwardCustomAction,
+                                playbackController);
+                if (isCustomActionUsed) {
+                    usedCustomActions.add(skipForwardCustomAction);
+                }
+            } else {
+                updateButton(mSkipNextButton, null, null, false, false, null);
+            }
         }
+    }
+
+    private void updateSkipPrevButtonWithSkipOrStandardAction(
+            PlaybackStateWrapper playbackState, PlaybackController playbackController,
+            List<PlaybackViewModel.RawCustomPlaybackAction> usedCustomActions) {
+        boolean isSkipPrevEnabled = playbackState.isSkipPreviousEnabled();
+        boolean isSkipPrevReserved = playbackState.iSkipPreviousReserved();
         if ((isSkipPrevEnabled || isSkipPrevReserved)) {
-            mSkipPrevButton.setImageDrawable(mView.getContext().getDrawable(
-                    com.android.car.media.common.R.drawable.ic_skip_previous));
-            mSkipPrevButton.setBackground(mView.getContext().getDrawable(
-                    R.drawable.dark_circle_button_background));
-            ViewUtils.setVisible(mSkipPrevButton, true);
-            mSkipPrevButton.setEnabled(isSkipNextEnabled);
-            mSkipPrevButton.setOnClickListener(v -> {
+            updateButton(mSkipPrevButton, mView.getContext().getDrawable(
+                    com.android.car.media.common.R.drawable.ic_skip_previous),
+                    mView.getContext().getDrawable(R.drawable.circle_button_background),
+                    true, isSkipPrevEnabled, (v) -> {
+                    if (playbackController != null) {
+                        playbackController.skipToPrevious();
+                    }
+                });
+        } else {
+            PlaybackViewModel.RawCustomPlaybackAction skipBackCustomAction =
+                    getFirstCustomActionInSet(playbackState.getCustomActions(),
+                            skipBackStandardActions);
+            if (skipBackCustomAction != null) {
+                boolean isCustomActionUsed =
+                        updateButtonWithCustomAction(mSkipPrevButton, skipBackCustomAction,
+                                playbackController);
+                if (isCustomActionUsed) {
+                    usedCustomActions.add(skipBackCustomAction);
+                }
+            } else {
+                updateButton(mSkipPrevButton, null, null, false, false, null);
+            }
+        }
+    }
+
+    private void updateButton(ImageButton button, Drawable imageDrawable,
+            Drawable backgroundDrawable, boolean isVisible, boolean isEnabled,
+            View.OnClickListener listener) {
+        button.setImageDrawable(imageDrawable);
+        button.setBackground(backgroundDrawable);
+        ViewUtils.setVisible(button, isVisible);
+        button.setEnabled(isEnabled);
+        button.setOnClickListener(listener);
+    }
+
+    private boolean updateButtonWithCustomAction(ImageButton button,
+            PlaybackViewModel.RawCustomPlaybackAction rawCustomAction,
+            PlaybackController playbackController) {
+        CustomPlaybackAction customAction = rawCustomAction
+                .fetchDrawable(mView.getContext());
+        if (customAction != null) {
+            updateButton(button, customAction.mIcon, mView.getContext().getDrawable(
+                    R.drawable.circle_button_background), true, true, (v) -> {
                 if (playbackController != null) {
-                    playbackController.skipToPrevious();
+                        playbackController.doCustomAction(
+                                customAction.mAction, customAction.mExtras);
                 }
             });
+            return true;
         } else {
-            mSkipPrevButton.setBackground(null);
-            mSkipPrevButton.setImageDrawable(null);
-            ViewUtils.setVisible(mSkipPrevButton, false);
+            updateButton(button, null, null, false, false, null);
+            return false;
         }
     }
 
