@@ -143,9 +143,9 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="vertical_border_size"/>
       <item type="drawable" name="button_ripple"/>
       <item type="drawable" name="car_button_background"/>
+      <item type="drawable" name="circle_button_background"/>
       <item type="drawable" name="control_bar_contact_image_background"/>
       <item type="drawable" name="control_bar_image_background"/>
-      <item type="drawable" name="dark_circle_button_background"/>
       <item type="drawable" name="default_audio_background"/>
       <item type="drawable" name="dialer_button_active_state_circle"/>
       <item type="drawable" name="divider"/>
