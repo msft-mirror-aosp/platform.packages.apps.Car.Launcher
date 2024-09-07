@@ -55,6 +55,8 @@ public class MediaCardPanelViewPagerAdapter extends
     private boolean mHasOverflow;
     private PlaybackStateWrapper mPlaybackState;
     private PlaybackController mPlaybackController;
+    private List<PlaybackViewModel.RawCustomPlaybackAction> mCustomActionsToExclude =
+            new ArrayList<PlaybackViewModel.RawCustomPlaybackAction>();
 
     enum Tab { OverflowTab, QueueTab, HistoryTab };
 
@@ -124,9 +126,12 @@ public class MediaCardPanelViewPagerAdapter extends
 
     /** Notify a change in playback state so ViewHolder binds with latest update */
     public void notifyPlaybackStateChanged(PlaybackStateWrapper playbackState,
-            PlaybackController playbackController) {
+            PlaybackController playbackController,
+            List<PlaybackViewModel.RawCustomPlaybackAction> customActionsToExclude) {
         mPlaybackState = playbackState;
         mPlaybackController = playbackController;
+        mCustomActionsToExclude.clear();
+        mCustomActionsToExclude.addAll(customActionsToExclude);
         if (mHasOverflow) {
             notifyItemChanged(0);
         }
@@ -140,6 +145,7 @@ public class MediaCardPanelViewPagerAdapter extends
         List<PlaybackViewModel.RawCustomPlaybackAction> customActions = mPlaybackState == null
                 ? new ArrayList<PlaybackViewModel.RawCustomPlaybackAction>()
                 : mPlaybackState.getCustomActions();
+        customActions.removeAll(mCustomActionsToExclude);
         List<ImageButton> actionsToFill = new ArrayList<>();
         for (int i = 0; i < actions.size(); i++) {
             ImageButton button = actions.get(i);
