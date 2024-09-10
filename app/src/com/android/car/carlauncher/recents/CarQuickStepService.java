@@ -211,5 +211,10 @@ public class CarQuickStepService extends Service {
                 boolean animate) {
             // no-op
         }
+
+        @Override
+        public void appTransitionPending(boolean pending) {
+            // no-op
+        }
     }
 }
