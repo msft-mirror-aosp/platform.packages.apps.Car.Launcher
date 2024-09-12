@@ -19,13 +19,13 @@ package com.android.car.carlauncher.datasources
 import android.car.content.pm.CarPackageManager
 import android.car.drivingstate.CarUxRestrictionsManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.res.Resources
-import android.media.session.MediaController
 import android.media.session.MediaSessionManager
-import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
-import android.media.session.PlaybackState
 import android.util.Log
+import androidx.lifecycle.asFlow
 import com.android.car.carlauncher.Flags
+import com.android.car.carlauncher.MediaSessionUtils
 import com.android.car.carlauncher.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -61,6 +61,7 @@ interface UXRestrictionDataSource {
  * @property [bgDispatcher] Executes all the operations on this background coroutine dispatcher.
  */
 class UXRestrictionDataSourceImpl(
+    private val context: Context,
     private val uxRestrictionsManager: CarUxRestrictionsManager,
     private val carPackageManager: CarPackageManager,
     private val mediaSessionManager: MediaSessionManager,
@@ -119,35 +120,12 @@ class UXRestrictionDataSourceImpl(
     }
 
     private fun getActiveMediaPlaybackSessions(): Flow<List<String>> {
-        return callbackFlow {
-            val filterActiveMediaPackages: (List<MediaController>) -> List<String> =
-                { mediaControllers ->
-                    mediaControllers.filter {
-                        isActiveOrPaused(it.playbackState)
-                    }.map { it.packageName }
+        return MediaSessionUtils.getMediaSessionHelper(context).activeOrPausedMediaSources.asFlow()
+            .map { mediaSources ->
+                mediaSources.mapNotNull {
+                    it.packageName
                 }
-            // Emits the initial list of filtered packages upon subscription
-            trySend(
-                filterActiveMediaPackages(mediaSessionManager.getActiveSessions(null))
-            )
-            val sessionsChangedListener =
-                OnActiveSessionsChangedListener {
-                    if (it != null) {
-                        trySend(filterActiveMediaPackages(it))
-                    }
-                }
-            mediaSessionManager.addOnActiveSessionsChangedListener(sessionsChangedListener, null)
-            awaitClose {
-                mediaSessionManager.removeOnActiveSessionsChangedListener(sessionsChangedListener)
             }
-            // Note this flow runs on the Main dispatcher, as the MediaSessionsChangedListener
-            // expects to dispatch updates on the Main looper.
-        }.flowOn(Dispatchers.Main).conflate()
-    }
-
-    private fun isActiveOrPaused(playbackState: PlaybackState?): Boolean {
-        return playbackState?.isActive ?: false ||
-            playbackState?.state == PlaybackState.STATE_PAUSED
     }
 
     companion object {
