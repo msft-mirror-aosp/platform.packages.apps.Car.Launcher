@@ -306,6 +306,7 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
                 IO
             )
         val uxRestrictionDataSource: UXRestrictionDataSource = UXRestrictionDataSourceImpl(
+            requireContext(),
             requireNotNull(car.getCarManager(CarUxRestrictionsManager::class.java)),
             requireNotNull(car.getCarManager(CarPackageManager::class.java)),
             requireContext().getSystemService(MediaSessionManager::class.java),

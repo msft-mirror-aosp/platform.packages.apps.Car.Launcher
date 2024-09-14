@@ -36,5 +36,6 @@
     <string name="failure_opening_recent_task_message" msgid="963567570097465902">"App nicht verfügbar"</string>
     <string name="calm_mode_title" msgid="4364804976931157567">"Ruhemodus"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"Wiedergabeliste"</string>
-    <string name="media_card_history_header_title" msgid="6753954322481732596">"Fortsetzen"</string>
+    <!-- no translation found for media_card_history_header_title (8337396297165848931) -->
+    <skip />
 </resources>
