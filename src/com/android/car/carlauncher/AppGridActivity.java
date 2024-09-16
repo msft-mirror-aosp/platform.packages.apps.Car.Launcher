@@ -27,6 +27,8 @@ import static com.android.car.carlauncher.AppLauncherUtils.APP_TYPE_MEDIA_SERVIC
 
 import android.animation.ValueAnimator;
 import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.car.Car;
@@ -44,9 +46,7 @@ import android.content.ServiceConnection;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
-import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
-import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -57,6 +57,7 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -85,6 +86,8 @@ import com.android.car.carlauncher.recyclerview.AppGridAdapter;
 import com.android.car.carlauncher.recyclerview.AppGridItemAnimator;
 import com.android.car.carlauncher.recyclerview.AppGridLayoutManager;
 import com.android.car.carlauncher.recyclerview.AppItemViewHolder;
+import com.android.car.media.common.source.MediaSessionHelper;
+import com.android.car.media.common.source.MediaSource;
 import com.android.car.ui.AlertDialogBuilder;
 import com.android.car.ui.FocusArea;
 import com.android.car.ui.baselayout.Insets;
@@ -107,6 +110,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Launcher activity that shows a grid of apps.
@@ -172,6 +176,7 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
     @VisibleForTesting
     ContentObserver mTosDisabledAppsContentObserver;
     private BackgroundAnimationHelper mBackgroundAnimationHelper;
+    private MediaSessionHelper mMediaSessionHelper;
 
     /**
      * enum to define the state of display area possible.
@@ -272,24 +277,39 @@ public class AppGridActivity extends AppCompatActivity implements InsetsChangedL
         if (!(getResources().getBoolean(R.bool.config_enableMediaSessionAppsWhileDriving))) {
             return activeMediaSessions;
         }
-        List<MediaController> mediaSessions =
-                mMediaSessionManager.getActiveSessions(/* notificationListener= */ null);
 
-        // Active media sessions doesn't mean active playback state. Filter for those that are
-        // ready to play.
-        for (MediaController mediaController : mediaSessions) {
-            if (isActivePlaybackState(mediaController.getPlaybackState())) {
-                activeMediaSessions.add(mediaController.getPackageName());
-            }
+        if (mMediaSessionHelper == null) {
+            mMediaSessionHelper = new MediaSessionHelper(getApplicationContext(),
+                    new MediaSessionHelper.NotificationProvider() {
+                        @Override
+                        public StatusBarNotification[] getActiveNotifications() {
+                            try {
+                                return NotificationManager.getService()
+                                        .getActiveNotificationsWithAttribution(
+                                                getApplicationContext().getPackageName(),
+                                                /* callingAttributionTag= */ null);
+                            } catch (RemoteException e) {
+                                Log.e(TAG, "Exception trying to get active notifications " + e);
+                                return new StatusBarNotification[0];
+                            }
+                        }
+
+                        @Override
+                        public boolean isMediaNotification(Notification notification) {
+                            return notification.isMediaNotification();
+                        }
+                    });
+        }
+
+        List<MediaSource> mediaSources = mMediaSessionHelper.getActiveOrPausedMediaSources()
+                .getValue();
+
+        if (mediaSources != null) {
+            activeMediaSessions = mediaSources.stream().map(MediaSource::getPackageName).collect(
+                    Collectors.toList());
         }
 
         return activeMediaSessions;
-    }
-
-    /** Returns whether the playback state is ready to be played */
-    private boolean isActivePlaybackState(PlaybackState playbackState) {
-        return playbackState != null && (playbackState.isActive()
-                || playbackState.getState() == PlaybackState.STATE_PAUSED);
     }
 
     private void initializeLauncherModel() {
