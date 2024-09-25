@@ -43,6 +43,7 @@ import com.android.car.docklib.media.MediaUtils
 import com.android.car.docklib.task.DockTaskStackChangeListener
 import com.android.car.docklib.view.DockAdapter
 import com.android.car.docklib.view.DockView
+import com.android.car.dockutil.events.DockCompatUtils.isDockSupportedOnDisplay
 import com.android.launcher3.icons.IconFactory
 import com.android.systemui.shared.system.TaskStackChangeListeners
 import java.io.File
@@ -87,6 +88,10 @@ open class DockViewController(
 
     init {
         if (DEBUG) Log.d(TAG, "Init DockViewController for user ${userContext.userId}")
+        val displayId = dockView.context.displayId
+        if (!isDockSupportedOnDisplay(dockView.context, displayId)) {
+            throw IllegalStateException("Dock tried to init on unsupported display: $displayId")
+        }
         adapter = DockAdapter(this, userContext)
         dockView.setAdapter(adapter)
         dockViewWeakReference = WeakReference(dockView)
