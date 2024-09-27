@@ -156,7 +156,9 @@ open class DockViewController(
 
         mediaSessionManager =
             userContext.getSystemService(MediaSessionManager::class.java) as MediaSessionManager
-        if (Flags.mediaSessionCard()) {
+        if (Flags.mediaSessionCard() && userContext.resources.getBoolean(
+                com.android.car.carlaunchercommon.R.bool
+                .config_enableMediaSessionAppsWhileDriving)) {
             handleMediaSessionChange(mediaSessionManager.getActiveSessionsForUser(
                 /* notificationListener= */
                 null,
