@@ -26,7 +26,7 @@ import android.util.Log
 import androidx.lifecycle.asFlow
 import com.android.car.carlauncher.Flags
 import com.android.car.carlauncher.MediaSessionUtils
-import com.android.car.carlauncher.R
+import com.android.car.carlaunchercommon.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose

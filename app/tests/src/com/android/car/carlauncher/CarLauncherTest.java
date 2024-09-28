@@ -279,6 +279,15 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     }
 
     @Test
+    public void onCreate_whenTosIsNull_tosStateContentObserverIsNotNull() {
+        // Settings.Secure KEY_USER_TOS_ACCEPTED is null when not set explicitly.
+        mActivityScenario = ActivityScenario.launch(new Intent(mContext, CarLauncher.class));
+
+        // Content observer is not null after activity is created
+        mActivityScenario.onActivity(activity -> assertNotNull(activity.mTosContentObserver));
+    }
+
+    @Test
     public void recreate_afterTosIsInitialized_tosStateContentObserverIsNotNull() {
         TestableContext mContext = new TestableContext(InstrumentationRegistry.getContext());
         Settings.Secure.putInt(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, 0);

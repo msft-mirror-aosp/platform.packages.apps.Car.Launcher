@@ -123,6 +123,6 @@ public class AppLauncherUtils {
         String settingsValue = Settings.Secure.getString(
                 contentResolverForUser,
                 KEY_USER_TOS_ACCEPTED);
-        return Objects.equals(settingsValue, TOS_UNINITIALIZED);
+        return settingsValue == null || Objects.equals(settingsValue, TOS_UNINITIALIZED);
     }
 }

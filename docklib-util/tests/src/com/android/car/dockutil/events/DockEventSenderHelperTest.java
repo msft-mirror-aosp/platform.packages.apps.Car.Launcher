@@ -23,6 +23,7 @@ import static com.android.car.dockutil.events.DockEventSenderHelper.EXTRA_COMPON
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -66,17 +67,19 @@ public class DockEventSenderHelperTest {
     @Captor
     public ArgumentCaptor<Intent> mIntentCaptor;
     private DockEventSenderHelper mDockEventSenderHelper;
+    private final int[] mDockSupportedDisplayId = {DEFAULT_DISPLAY};
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
         when(mContext.getResources()).thenReturn(mResources);
+        when(mResources.getIntArray(anyInt())).thenReturn(mDockSupportedDisplayId);
         mSetFlagsRule.enableFlags(Flags.FLAG_DOCK_FEATURE);
         mDockEventSenderHelper = new DockEventSenderHelper(mContext);
     }
 
     @Test
-    public void sendEventBroadcast_nonDefaultDisplay_broadcastNotSent() {
+    public void sendEventBroadcast_nonSupportedDisplay_broadcastNotSent() {
         when(mRunningTaskInfo.getDisplayId()).thenReturn(DEFAULT_DISPLAY + 1);
 
         mDockEventSenderHelper.sendEventBroadcast(DockEvent.LAUNCH, mRunningTaskInfo);
