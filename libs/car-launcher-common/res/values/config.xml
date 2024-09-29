@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-  ~ Copyright (C) 2023 The Android Open Source Project
+  ~ Copyright (C) 2024 The Android Open Source Project
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
   -->
 
 <resources>
-    <!--list of all the display ids where dock feature is supported-->
-    <integer-array name="dock_supported_displays">
-        <item>0</item>
-    </integer-array>
+    <!--
+        Config for allowing NDO apps to be opened while driving if they contain an active media
+        session and media notification. These NDO apps will still be blocked by blocking UI, but may
+        be provided playback controls.
+    -->
+    <bool name="config_enableMediaSessionAppsWhileDriving">true</bool>
 </resources>
