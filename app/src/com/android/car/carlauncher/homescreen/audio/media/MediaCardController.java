@@ -487,6 +487,7 @@ public class MediaCardController extends PlaybackCardController implements
         mSkipPrevVisibility = mSkipPrevButton.getVisibility();
         mSkipNextVisibility = mSkipNextButton.getVisibility();
         mAlbumCoverVisibility = mAlbumCover.getVisibility();
+        mSeekBar.setEnabled(false);
     }
 
     private void restoreExtraViewsWhenPanelClosed() {
@@ -496,6 +497,7 @@ public class MediaCardController extends PlaybackCardController implements
         mSkipNextButton.setVisibility(mSkipNextVisibility);
         mSubtitle.setVisibility(mSubtitleVisibility);
         mLogo.setVisibility(mLogoVisibility);
+        mSeekBar.setEnabled(true);
     }
 
     /**
