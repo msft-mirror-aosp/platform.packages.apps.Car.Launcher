@@ -169,6 +169,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="drawable" name="ic_search_black"/>
       <item type="drawable" name="ic_temperature"/>
       <item type="drawable" name="media_card_button_panel_background"/>
+      <item type="drawable" name="media_card_default_album_art"/>
       <item type="drawable" name="media_card_panel_button_shape"/>
       <item type="drawable" name="media_card_panel_handlebar"/>
       <item type="drawable" name="media_card_seekbar_progress"/>
