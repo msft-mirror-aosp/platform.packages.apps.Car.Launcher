@@ -23,7 +23,6 @@
         android:id="@+id/history_card_header_icon"
         android:layout_width="@dimen/media_card_view_header_icon_size"
         android:layout_height="@dimen/media_card_view_header_icon_size"
-        android:layout_marginStart="@dimen/media_card_horizontal_margin"
         android:layout_marginEnd="@dimen/media_card_view_separation_margin"
         android:src="@drawable/ic_history"/>
 
