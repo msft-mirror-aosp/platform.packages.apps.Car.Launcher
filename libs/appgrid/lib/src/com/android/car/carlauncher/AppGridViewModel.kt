@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.transformLatest
@@ -127,6 +128,12 @@ class AppGridViewModel(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getShouldShowTosBanner(): Flow<Boolean> {
+        if (Flags.tosRestrictionsEnabled()) {
+            val enableBanner = application.resources.getBoolean(R.bool.config_enable_tos_banner)
+            if (!enableBanner) {
+                return flowOf(false)
+            }
+        }
         return appGridRepository.getTosState().mapLatest {
             if (!it.shouldBlockTosApps) {
                 return@mapLatest false
