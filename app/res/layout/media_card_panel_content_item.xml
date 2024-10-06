@@ -90,8 +90,7 @@
         android:id="@+id/queue_list_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingStart="@dimen/media_card_horizontal_margin"
-        android:paddingEnd="@dimen/media_card_horizontal_margin"
+        android:paddingHorizontal="@dimen/media_card_horizontal_margin"
         android:background="@color/car_surface_container_highest"
         android:visibility="gone">
         <com.android.car.apps.common.CarUiRecyclerViewNoScrollbar
@@ -107,6 +106,7 @@
         android:id="@+id/history_list_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingHorizontal="@dimen/media_card_horizontal_margin"
         android:background="@color/car_surface_container_highest"
         android:visibility="gone">
         <com.android.car.apps.common.CarUiRecyclerViewNoScrollbar
