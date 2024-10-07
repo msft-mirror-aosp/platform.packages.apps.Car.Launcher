@@ -29,7 +29,7 @@ android_test {
 
     libs: [
         "android.car",
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 
     optimize: {
