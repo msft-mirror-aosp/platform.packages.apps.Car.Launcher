@@ -33,6 +33,8 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
@@ -158,9 +160,15 @@ public class MediaCardController extends PlaybackCardController implements
         mSkipPrevButton = mView.findViewById(R.id.playback_action_id1);
         mSkipNextButton = mView.findViewById(R.id.playback_action_id2);
 
+        Animation handlebarFadeOut = AnimationUtils.loadAnimation(mView.getContext(),
+                R.anim.media_card_panel_handlebar_fade_out);
+        Animation handlebarFadeIn = AnimationUtils.loadAnimation(mView.getContext(),
+                R.anim.media_card_panel_handlebar_fade_in);
         mMotionLayout.addTransitionListener(new MotionLayout.TransitionListener() {
             @Override
             public void onTransitionStarted(MotionLayout motionLayout, int i, int i1) {
+                mPanelHandlebar.startAnimation(mCardViewModel.getPanelExpanded() ? handlebarFadeIn
+                        : handlebarFadeOut);
             }
 
             @Override
