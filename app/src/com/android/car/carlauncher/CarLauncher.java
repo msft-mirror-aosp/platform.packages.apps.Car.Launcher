@@ -315,18 +315,6 @@ public class CarLauncher extends FragmentActivity {
                 ? CarLauncherUtils.getSmallCanvasOptimizedMapIntent(this)
                 : CarLauncherUtils.getMapsIntent(this);
 
-        String packageName = mapIntent.getComponent() != null
-                ? mapIntent.getComponent().getPackageName()
-                : null;
-        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(this);
-
-        // Launch tos map intent when the user has not accepted tos and when the
-        // default maps package is not available to package manager, or it's disabled by tos
-        if (!AppLauncherUtils.tosAccepted(this)
-                && (packageName == null || tosDisabledPackages.contains(packageName))) {
-            mapIntent = CarLauncherUtils.getTosMapIntent(this);
-            Log.i(TAG, "Launching tos activity in task view");
-        }
         // Don't want to show this Activity in Recents.
         mapIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         return mapIntent;
