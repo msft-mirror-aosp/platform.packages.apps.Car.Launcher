@@ -267,6 +267,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="recent_tasks_list"/>
       <item type="id" name="recent_tasks_list_focus_area"/>
       <item type="id" name="recents_clear_all_button"/>
+      <item type="id" name="review_button"/>
       <item type="id" name="secondary_text"/>
       <item type="id" name="start_edge"/>
       <item type="id" name="subtitle"/>
@@ -305,6 +306,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="layout" name="card_fragment_audio_card"/>
       <item type="layout" name="control_bar_container"/>
       <item type="layout" name="descriptive_text"/>
+      <item type="layout" name="map_tos_activity"/>
       <item type="layout" name="media_card_fullscreen"/>
       <item type="layout" name="media_card_history_header_item"/>
       <item type="layout" name="media_card_history_item"/>
@@ -330,6 +332,8 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="string" name="failure_opening_recent_task_message"/>
       <item type="string" name="fake_weather_footer_text"/>
       <item type="string" name="fake_weather_main_text"/>
+      <item type="string" name="map_tos_review_button_distraction_optimized_text"/>
+      <item type="string" name="map_tos_review_button_text"/>
       <item type="string" name="media_card_history_header_title"/>
       <item type="string" name="media_card_queue_header_title"/>
       <item type="string" name="ongoing_call_duration_text_separator"/>
