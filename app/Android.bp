@@ -27,6 +27,7 @@ genrule {
 
 carlauncher_srcs = [
     "src/**/*.java",
+    "src/**/*.kt",
     ":statslog-carlauncher-java-gen",
 ]
 
