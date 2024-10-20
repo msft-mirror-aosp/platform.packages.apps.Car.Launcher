@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 
 /**
@@ -130,7 +132,7 @@ class AppOrderProtoDataSourceImpl(
      * __Handling Unavailable Apps:__
      * The client can choose to exclude apps that are unavailable (e.g., uninstalled or disabled)
      * from the sorted list.
-    */
+     */
     override fun getSavedAppOrder(): Flow<List<AppOrderInfo>> = flow {
         withContext(bgDispatcher) {
             val appOrderFromFiles = launcherItemListSource.readFromFile()?.launcherItemMessageList
@@ -143,7 +145,21 @@ class AppOrderProtoDataSourceImpl(
             }
         }
         emitAll(appOrderFlow)
-    }.flowOn(bgDispatcher)
+    }.flowOn(bgDispatcher).onStart {
+        /**
+         * Ideally, the client of this flow should use [clearAppOrder] to
+         * delete/reset the app order. However, if the file gets deleted
+         * externally (e.g., by another API or process), we need to observe
+         * the deletion event and update the flow accordingly.
+         */
+        launcherItemListSource.attachFileDeletionObserver {
+            // When the file is deleted, reset the appOrderFlow to an empty list.
+            appOrderFlow.value = emptyList()
+        }
+    }.onCompletion {
+        // Detach the observer to prevent leaks and unnecessary callbacks.
+        launcherItemListSource.detachFileDeletionObserver()
+    }
 
     /**
      * Provides a Flow of comparators to sort a list of apps.
@@ -157,7 +173,7 @@ class AppOrderProtoDataSourceImpl(
      */
     override fun getSavedAppOrderComparator(): Flow<Comparator<AppOrderInfo>> {
         return getSavedAppOrder().map { appOrderInfoList ->
-            val appOrderMap = appOrderInfoList.withIndex().associateBy({it.value}, {it.index})
+            val appOrderMap = appOrderInfoList.withIndex().associateBy({ it.value }, { it.index })
             Comparator<AppOrderInfo> { app1, app2 ->
                 when {
                     // Both present in predefined list.
