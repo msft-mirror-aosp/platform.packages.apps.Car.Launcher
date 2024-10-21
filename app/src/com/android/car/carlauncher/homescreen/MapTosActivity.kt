@@ -18,11 +18,17 @@ package com.android.car.carlauncher.homescreen
 
 import android.car.Car
 import android.car.drivingstate.CarUxRestrictionsManager
+import android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLED_APPS
+import android.database.ContentObserver
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.android.car.carlauncher.AppLauncherUtils
+import com.android.car.carlauncher.Flags
 import com.android.car.carlauncher.R
 import com.android.car.ui.utils.CarUiUtils
 import com.android.car.ui.uxr.DrawableStateTextView
@@ -41,6 +47,7 @@ class MapTosActivity : AppCompatActivity() {
     private val bgDispatcher: CoroutineDispatcher = Dispatchers.Default
     @VisibleForTesting lateinit var reviewButton: DrawableStateTextView
     private var car: Car? = null
+    @VisibleForTesting var tosContentObserver: ContentObserver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,11 +62,19 @@ class MapTosActivity : AppCompatActivity() {
 
         setupCarUxRestrictionsListener()
         handleReviewButtonDistractionOptimized(requiresDistractionOptimization = false)
+
+        if (Flags.tosRestrictionsEnabled()) {
+            setupContentObserverForTos()
+        }
     }
 
     override fun onDestroy() {
         car?.getCarManager(CarUxRestrictionsManager::class.java)?.unregisterListener()
         car?.disconnect()
+
+        if (Flags.tosRestrictionsEnabled()) {
+            unregisterContentObserverForTos()
+        }
 
         super.onDestroy()
     }
@@ -90,6 +105,29 @@ class MapTosActivity : AppCompatActivity() {
             true -> reviewButton.setText(R.string.map_tos_review_button_distraction_optimized_text)
             false -> reviewButton.setText(R.string.map_tos_review_button_text)
         }
+    }
+
+    private fun setupContentObserverForTos() {
+        tosContentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                val tosAccepted = AppLauncherUtils.tosAccepted(applicationContext)
+                log("TOS state updated:$tosAccepted")
+                if (tosAccepted) {
+                    finish()
+                }
+            }
+        }.also {
+            contentResolver.registerContentObserver(
+                Settings.Secure.getUriFor(KEY_UNACCEPTED_TOS_DISABLED_APPS),
+                false, // notifyForDescendants
+                it
+            )
+        }
+    }
+
+    private fun unregisterContentObserverForTos() {
+        tosContentObserver?.let { contentResolver.unregisterContentObserver(it) }
+        tosContentObserver = null
     }
 
     private companion object {
