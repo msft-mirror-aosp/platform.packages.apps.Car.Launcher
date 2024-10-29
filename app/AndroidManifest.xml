@@ -168,7 +168,6 @@
             android:launchMode="singleTask"
             android:allowEmbedded="true"
             android:alwaysRetainTaskState="true"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|fontScale|uiMode|colorMode|mcc|mnc"
             android:screenOrientation="user"
             android:resizeableActivity="true"
             android:exported="true">
