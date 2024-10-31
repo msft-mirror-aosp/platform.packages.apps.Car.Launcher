@@ -116,13 +116,13 @@ public class AppLauncherUtils {
      * @param context The application context
      * @return true if tos is uninitialized, false otherwise
      */
-    static boolean tosStatusUninitialized(Context context) {
+    public static boolean tosStatusUninitialized(Context context) {
         ContentResolver contentResolverForUser = context.createContextAsUser(
                         UserHandle.getUserHandleForUid(Process.myUid()), /* flags= */ 0)
                 .getContentResolver();
         String settingsValue = Settings.Secure.getString(
                 contentResolverForUser,
                 KEY_USER_TOS_ACCEPTED);
-        return Objects.equals(settingsValue, TOS_UNINITIALIZED);
+        return settingsValue == null || Objects.equals(settingsValue, TOS_UNINITIALIZED);
     }
 }
