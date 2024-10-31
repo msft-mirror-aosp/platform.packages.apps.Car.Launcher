@@ -18,6 +18,7 @@ package com.android.car.docklib
 
 import android.annotation.CallSuper
 import android.app.ActivityOptions
+import android.app.NotificationManager
 import android.car.Car
 import android.car.content.pm.CarPackageManager
 import android.car.drivingstate.CarUxRestrictionsManager
@@ -30,6 +31,7 @@ import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Build
+import android.os.RemoteException
 import android.os.UserHandle
 import android.util.Log
 import androidx.core.content.getSystemService
@@ -41,12 +43,12 @@ import com.android.car.docklib.media.MediaUtils
 import com.android.car.docklib.task.DockTaskStackChangeListener
 import com.android.car.docklib.view.DockAdapter
 import com.android.car.docklib.view.DockView
+import com.android.car.dockutil.events.DockCompatUtils.isDockSupportedOnDisplay
 import com.android.launcher3.icons.IconFactory
 import com.android.systemui.shared.system.TaskStackChangeListeners
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.UUID
-import kotlin.collections.emptyList
 
 /**
  * Create a controller for DockView. It initializes the view with default and persisted icons. Upon
@@ -86,6 +88,10 @@ open class DockViewController(
 
     init {
         if (DEBUG) Log.d(TAG, "Init DockViewController for user ${userContext.userId}")
+        val displayId = dockView.context.displayId
+        if (!isDockSupportedOnDisplay(dockView.context, displayId)) {
+            throw IllegalStateException("Dock tried to init on unsupported display: $displayId")
+        }
         adapter = DockAdapter(this, userContext)
         dockView.setAdapter(adapter)
         dockViewWeakReference = WeakReference(dockView)
@@ -147,9 +153,12 @@ open class DockViewController(
                 }
             }
         }
+
         mediaSessionManager =
             userContext.getSystemService(MediaSessionManager::class.java) as MediaSessionManager
-        if (Flags.mediaSessionCard()) {
+        if (Flags.mediaSessionCard() && userContext.resources.getBoolean(
+                com.android.car.carlaunchercommon.R.bool
+                .config_enableMediaSessionAppsWhileDriving)) {
             handleMediaSessionChange(mediaSessionManager.getActiveSessionsForUser(
                 /* notificationListener= */
                 null,
@@ -235,12 +244,32 @@ open class DockViewController(
         dockViewModel.getMediaServiceComponents()
 
     private fun handleMediaSessionChange(mediaControllers: List<MediaController>?) {
+        val mediaNotificationPackages = getActiveMediaNotificationPackages()
         val activeMediaSessions = mediaControllers?.filter {
             it.playbackState?.let { playbackState ->
                 (playbackState.isActive || playbackState.state == PlaybackState.STATE_PAUSED)
             } ?: false
-        }?.map { it.packageName } ?: emptyList()
+        }?.map { it.packageName }?.filter { mediaNotificationPackages.contains(it) } ?: emptyList()
 
         adapter.onMediaSessionChange(activeMediaSessions)
+    }
+
+    private fun getActiveMediaNotificationPackages(): List<String> {
+        try {
+            // todo(b/312718542): hidden api(NotificationManager.getService()) usage
+            return NotificationManager.getService()
+                .getActiveNotificationsWithAttribution(
+                    userContext.packageName,
+                    null
+                ).toList().filter {
+                    it.notification.extras != null && it.notification.isMediaNotification
+                }.map { it.packageName }
+        } catch (e: RemoteException) {
+            Log.e(
+                TAG,
+                "Exception trying to get active notifications $e"
+            )
+            return listOf()
+        }
     }
 }
