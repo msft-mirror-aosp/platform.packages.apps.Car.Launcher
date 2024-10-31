@@ -75,6 +75,8 @@
     <uses-permission android:name="android.car.permission.CONTROL_CAR_CLIMATE"/>
     <!-- Permission to read navigation state -->
     <uses-permission android:name="android.car.permission.CAR_MONITOR_CLUSTER_NAVIGATION_STATE"/>
+    <!-- Permission to read notifications -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATIONS"/>
 
     <!-- To connect to media browser services in other apps, media browser clients
     that target Android 11 need to add the following in their manifest -->
@@ -160,6 +162,16 @@
             <meta-data
                 android:name="com.android.settings.category"
                 android:value="com.android.settings.category.ia.display"/>
+        </activity>
+        <activity android:name="com.android.car.carlauncher.homescreen.MapTosActivity"
+            android:taskAffinity=""
+            android:launchMode="singleTask"
+            android:allowEmbedded="true"
+            android:alwaysRetainTaskState="true"
+            android:screenOrientation="user"
+            android:resizeableActivity="true"
+            android:exported="true">
+            <meta-data android:name="distractionOptimized" android:value="true"/>
         </activity>
 
         <provider android:name=".calmmode.CalmModeQCProvider"
