@@ -22,7 +22,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.net.URISyntaxException;
+import java.util.Set;
 
 /**
  * Utils for CarLauncher package.
@@ -63,25 +66,10 @@ public class CarLauncherUtils {
             }
 
             if (preferredIntent.resolveActivityInfo(pm, /* flags= */ 0) != null) {
-                return preferredIntent;
+                return maybeReplaceWithTosMapIntent(context, preferredIntent);
             }
         }
-        return defaultIntent;
-    }
-
-    /**
-     * Return an intent used to launch the tos map activity
-     * @param context The application context
-     * @return Tos Intent, null if the config is incorrect
-     */
-    public static Intent getTosMapIntent(Context context) {
-        String intentString = context.getString(R.string.config_tosMapIntent);
-        try {
-            return Intent.parseUri(intentString, Intent.URI_ANDROID_APP_SCHEME);
-        } catch (URISyntaxException se) {
-            Log.w(TAG, "Invalid intent URI in config_tosMapIntent", se);
-            return null;
-        }
+        return maybeReplaceWithTosMapIntent(context, defaultIntent);
     }
 
     /**
@@ -114,11 +102,44 @@ public class CarLauncherUtils {
         try {
             Intent intent = Intent.parseUri(intentString, Intent.URI_INTENT_SCHEME);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            return intent;
+            return maybeReplaceWithTosMapIntent(context, intent);
         } catch (URISyntaxException e) {
             Log.w(TAG, "Invalid intent URI in config_smallCanvasOptimizedMapIntent: \""
                     + intentString + "\". Falling back to fullscreen map.");
-            return getMapsIntent(context);
+            return maybeReplaceWithTosMapIntent(context, getMapsIntent(context));
         }
     }
+
+    private static Intent maybeReplaceWithTosMapIntent(Context context, Intent mapIntent) {
+        String packageName = mapIntent.getComponent() != null
+                ? mapIntent.getComponent().getPackageName()
+                : null;
+        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(context);
+
+        // Launch tos map intent when the user has not accepted tos and when the
+        // default maps package is not available to package manager, or it's disabled by tos
+        if (!AppLauncherUtils.tosAccepted(context)
+                && (packageName == null || tosDisabledPackages.contains(packageName))) {
+            Log.i(TAG, "Replacing default maps intent with tos map intent");
+            mapIntent = getTosMapIntent(context);
+        }
+        return mapIntent;
+    }
+
+    /**
+     * Return an intent used to launch the tos map activity
+     * @param context The application context
+     * @return Tos Intent, null if the config is incorrect
+     */
+    @VisibleForTesting
+    public static Intent getTosMapIntent(Context context) {
+        String intentString = context.getString(R.string.config_tosMapIntent);
+        try {
+            return Intent.parseUri(intentString, Intent.URI_ANDROID_APP_SCHEME);
+        } catch (URISyntaxException se) {
+            Log.w(TAG, "Invalid intent URI in config_tosMapIntent", se);
+            return null;
+        }
+    }
+
 }
