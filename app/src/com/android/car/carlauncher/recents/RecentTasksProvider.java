@@ -18,12 +18,13 @@ package com.android.car.carlauncher.recents;
 
 import static android.app.ActivityManager.RECENT_IGNORE_UNAVAILABLE;
 
-import static com.android.wm.shell.shared.GroupedRecentTaskInfo.TYPE_FREEFORM;
-import static com.android.wm.shell.shared.GroupedRecentTaskInfo.TYPE_SINGLE;
-import static com.android.wm.shell.shared.GroupedRecentTaskInfo.TYPE_SPLIT;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FREEFORM;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FULLSCREEN;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_SPLIT;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.TaskInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -49,7 +50,7 @@ import com.android.systemui.shared.system.PackageManagerWrapper;
 import com.android.systemui.shared.system.TaskStackChangeListener;
 import com.android.systemui.shared.system.TaskStackChangeListeners;
 import com.android.wm.shell.recents.IRecentTasks;
-import com.android.wm.shell.shared.GroupedRecentTaskInfo;
+import com.android.wm.shell.shared.GroupedTaskInfo;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -152,7 +153,7 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
             return;
         }
         sRecentsModelExecutor.execute(() -> {
-            GroupedRecentTaskInfo[] groupedRecentTasks;
+            GroupedTaskInfo[] groupedRecentTasks;
             try {
                 // todo: b/271498799 use ActivityManagerWrapper.getInstance().getCurrentUserId()
                 //  or equivalent instead of hidden API mContext.getUserId()
@@ -171,12 +172,12 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
             mRecentTaskIds = new ArrayList<>(groupedRecentTasks.length);
             mRecentTaskIdToTaskMap = new HashMap<>(groupedRecentTasks.length);
             boolean areSplitOrFreeformTypeTasksPresent = false;
-            for (GroupedRecentTaskInfo groupedRecentTask : groupedRecentTasks) {
+            for (GroupedTaskInfo groupedRecentTask : groupedRecentTasks) {
                 switch (groupedRecentTask.getType()) {
-                    case TYPE_SINGLE:
+                    case TYPE_FULLSCREEN:
                         // Automotive doesn't have split screen functionality, only process tasks
-                        // of TYPE_SINGLE.
-                        ActivityManager.RecentTaskInfo taskInfo = groupedRecentTask.getTaskInfo1();
+                        // of TYPE_FULLSCREEN.
+                        TaskInfo taskInfo = groupedRecentTask.getTaskInfo1();
                         Task.TaskKey taskKey = new Task.TaskKey(taskInfo);
 
                         // isLocked is always set to false since this value is not required in
@@ -186,7 +187,6 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
                         // where this value is necessary to check if profile user associated with
                         // the task is unlocked.
                         Task task = Task.from(taskKey, taskInfo, /* isLocked= */ false);
-                        task.setLastSnapshotData(taskInfo);
                         mRecentTaskIds.add(task.key.id);
                         mRecentTaskIdToTaskMap.put(task.key.id, task);
                         getRecentTaskThumbnailAsync(task.key.id);
