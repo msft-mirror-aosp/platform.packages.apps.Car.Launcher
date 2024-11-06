@@ -16,7 +16,7 @@
 -->
 <resources>
     <style name="CardViewStyle">
-        <item name="cardCornerRadius">@dimen/launcher_card_corner_radius</item>
+        <item name="cardCornerRadius">?launcherCardCornerRadius</item>
         <item name="cardElevation">0dp</item>
     </style>
 
@@ -86,7 +86,7 @@
         <item name="cornerSize">8dp</item>
     </style>
 
-    <style name="CalmModeText" parent="TextAppearance.Car.Body.Small">
+    <style name="CalmModeText">
         <item name="android:textColor">@android:color/white</item>
     </style>
 
@@ -101,13 +101,13 @@
     </style>
 
     <style name="CalmModeText.Date">
-        <item name="android:textColor">@color/car_outline</item>
+        <item name="android:textColor">?oemColorOutline</item>
         <item name="android:format12Hour">EE, MMM dd</item>
         <item name="android:format24Hour">EE, MMM dd</item>
     </style>
 
     <style name="CalmModeText.MediaTitle">
-        <item name="android:textColor">@color/car_outline</item>
+        <item name="android:textColor">?oemColorOutline</item>
         <item name="android:ellipsize">end</item>
         <item name="android:maxWidth">1024dp</item>
         <item name="android:maxLines">2</item>
@@ -115,10 +115,10 @@
     </style>
 
     <style name="CalmModeText.Temperature">
-        <item name="android:textColor">@color/car_outline</item>
+        <item name="android:textColor">?oemColorOutline</item>
     </style>
 
-    <style name="CalmModeClock" parent="TextAppearance.Car.Display">
+    <style name="CalmModeClock">
         <item name="android:fontFamily">roboto-flex</item>
         <item name="android:textFontWeight">300</item>
         <item name="android:fontVariationSettings">"'wght' 300, 'wdth' 100, 'xtra' 468, 'xopq' 96, 'yopq' 79, 'ytuc' 712, 'ytas' 750, 'ytde' -203, 'ytfi' 738, 'opsz' 144"</item>
@@ -143,7 +143,7 @@
 
     <style name="MediaCardCustomActionButtonStyle">
         <item name="android:scaleType">fitCenter</item>
-        <item name="android:tint">@color/car_on_surface</item>
+        <item name="android:tint">?oemColorOnSurface</item>
         <item name="android:background">@android:color/transparent</item>
     </style>
 

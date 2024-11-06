@@ -154,8 +154,8 @@ public class MediaCardPanelViewPagerAdapter extends
                 button.setBackground(null);
                 button.setImageDrawable(defaultDrawable);
                 button.setImageTintList(ColorStateList.valueOf(
-                        mContext.getResources().getColor(
-                                R.color.car_surface_variant, /* theme */ null)));
+                        mContext.getResources().getColor(R.color.media_card_action_button_color,
+                            mContext.getTheme())));
                 ViewUtils.setVisible(button, true);
             }
         }
@@ -169,7 +169,8 @@ public class MediaCardPanelViewPagerAdapter extends
                     actionsToFill.get(i).setBackgroundColor(Color.TRANSPARENT);
                     actionsToFill.get(i).setImageTintList(ColorStateList.valueOf(
                             mContext.getResources().getColor(
-                                    R.color.car_on_surface, /* theme */ null)));
+                                R.color.media_card_custom_action_button_color,
+                                mContext.getTheme())));
                     ViewUtils.setVisible(actionsToFill.get(i), true);
                     actionsToFill.get(i).setOnClickListener(v -> {
                         if (mPlaybackController != null) {

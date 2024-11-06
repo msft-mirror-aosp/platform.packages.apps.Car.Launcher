@@ -237,7 +237,8 @@ public class MediaCardController extends PlaybackCardController implements
     @Override
     protected void updateAlbumCoverWithDrawable(Drawable drawable) {
         Drawable drawableToUse = drawable == null ? mView.getResources().getDrawable(
-                /* drawable */ R.drawable.media_card_default_album_art, /* theme */ null)
+                /* drawable */ R.drawable.media_card_default_album_art,
+                /* theme */ mView.getContext().getTheme())
                 : drawable;
         RoundedDrawable roundedDrawable = new RoundedDrawable(drawableToUse, mView.getResources()
                 .getFloat(R.dimen.media_card_album_art_drawable_corner_ratio));

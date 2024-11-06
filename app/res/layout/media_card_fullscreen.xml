@@ -19,8 +19,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:cardBackgroundColor="@color/car_surface_container_high"
-    app:cardCornerRadius="@dimen/media_card_card_radius"
+    app:cardBackgroundColor="?oemColorSurfaceContainerHigh"
+    app:cardCornerRadius="?mediaCardCardRadius"
     app:cardElevation="0dp">
 
     <androidx.constraintlayout.motion.widget.MotionLayout
@@ -34,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginTop="@dimen/media_card_panel_content_margin_top"
-            android:background="@color/car_surface_container_highest"
+            android:background="?oemColorSurfaceContainerHighest"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent">
             <FrameLayout
@@ -56,7 +56,7 @@
 
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/view_pager"
-                android:background="@color/car_surface_container_highest"
+                android:background="?oemColorSurfaceContainerHighest"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </LinearLayout>
@@ -65,7 +65,7 @@
             android:id="@+id/empty_panel"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/car_surface_container_high"
+            android:background="?oemColorSurfaceContainerHigh"
             app:layout_constraintTop_toTopOf="parent"/>
 
         <ImageView
@@ -108,7 +108,7 @@
             android:layout_height="wrap_content"
             android:layout_width="0dp"
             android:text="@string/metadata_default_title"
-            android:textColor="@color/car_text_primary"
+            android:textColor="?carTextPrimary"
             android:gravity="center_vertical"
             android:maxLines="1"
             android:ellipsize="end"
@@ -124,8 +124,8 @@
             android:id="@+id/subtitle"
             android:layout_height="wrap_content"
             android:layout_width="0dp"
-            style="@style/TextAppearance.Car.Body.Small"
-            android:textColor="@color/car_text_secondary"
+            android:textAppearance="?oemTextAppearanceBodyMedium"
+            android:textColor="?carTextSecondary"
             android:maxLines="1"
             android:ellipsize="end"
             android:layout_marginTop="@dimen/media_card_artist_top_margin"
@@ -140,12 +140,12 @@
             android:layout_height="wrap_content"
             android:paddingEnd="0dp"
             android:paddingStart="0dp"
-            android:progressBackgroundTint="@color/car_surface_container_highest"
+            android:progressBackgroundTint="?oemColorSurfaceContainerHighest"
             android:progressDrawable="@drawable/media_card_seekbar_progress"
-            android:progressTint="@color/car_primary"
+            android:progressTint="?oemColorPrimary"
             android:splitTrack="true"
             android:thumb="@drawable/media_card_seekbar_thumb"
-            android:thumbTint="@color/car_on_surface"
+            android:thumbTint="?oemColorOnSurface"
             android:thumbOffset="0px"
             android:layout_marginTop="@dimen/media_card_view_separation_margin"
             android:layout_marginStart="@dimen/media_card_horizontal_margin"
@@ -164,7 +164,7 @@
             android:layout_gravity="center_vertical"
             android:adjustViewBounds="true"
             android:scaleType="fitStart"
-            app:logoTint="@color/car_on_surface_variant"
+            app:logoTint="?oemColorOnSurfaceVariant"
             app:logoSize="small"
             android:layout_marginEnd="@dimen/media_card_horizontal_margin"
             app:layout_constraintStart_toEndOf="@id/playback_seek_bar"
@@ -178,9 +178,9 @@
             android:layout_height="@dimen/media_card_large_button_size"
             android:src="@drawable/ic_play_pause_selector"
             android:scaleType="center"
-            android:tint="@color/car_surface_container_high"
+            android:tint="?oemColorSurfaceContainerHigh"
             android:background="@drawable/pill_button_shape"
-            android:backgroundTint="@color/car_primary"
+            android:backgroundTint="?oemColorPrimary"
             android:layout_marginBottom="@dimen/media_card_play_button_bottom_margin"
             app:layout_goneMarginEnd="@dimen/media_card_horizontal_margin"
             app:layout_goneMarginStart="@dimen/media_card_horizontal_margin"
@@ -197,7 +197,7 @@
             android:scaleType="fitCenter"
             android:padding="@dimen/media_card_large_button_icon_padding"
             android:cropToPadding="true"
-            android:tint="@color/car_on_surface_variant"
+            android:tint="?oemColorOnSurfaceVariant"
             android:background="@drawable/circle_button_background"
             android:layout_marginStart="@dimen/media_card_horizontal_margin"
             android:layout_marginEnd="@dimen/media_card_play_button_horizontal_margin"
@@ -214,7 +214,7 @@
             android:scaleType="fitCenter"
             android:padding="@dimen/media_card_large_button_icon_padding"
             android:cropToPadding="true"
-            android:tint="@color/car_on_surface_variant"
+            android:tint="?oemColorOnSurfaceVariant"
             android:background="@drawable/circle_button_background"
             android:layout_marginEnd="@dimen/media_card_horizontal_margin"
             android:layout_marginStart="@dimen/media_card_play_button_horizontal_margin"
@@ -229,7 +229,7 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/media_card_bottom_panel_height"
             android:background="@drawable/media_card_button_panel_background"
-            android:backgroundTint="@color/car_surface_container_highest"
+            android:backgroundTint="?oemColorSurfaceContainerHighest"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
