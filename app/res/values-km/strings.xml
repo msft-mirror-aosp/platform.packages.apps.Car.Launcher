@@ -37,8 +37,6 @@
     <string name="calm_mode_title" msgid="4364804976931157567">"មុខងារស្ងាត់"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"ជួរ"</string>
     <string name="media_card_history_header_title" msgid="8337396297165848931">"ប្រភព​មេឌៀ"</string>
-    <!-- no translation found for map_tos_review_button_text (5609545803755287215) -->
-    <skip />
-    <!-- no translation found for map_tos_review_button_distraction_optimized_text (2126379934796527013) -->
-    <skip />
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"ផែនទីត្រូវបានបិទ។ លក្ខខណ្ឌ​ប្រើប្រាស់មិនត្រូវបានទទួលយក"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"ផែនទីត្រូវបានបិទ។ សូមពិនិត្យមើល បន្ទាប់ពីការបើកបររបស់អ្នក។"</string>
 </resources>
