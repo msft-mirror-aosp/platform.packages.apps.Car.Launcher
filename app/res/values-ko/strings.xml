@@ -37,8 +37,6 @@
     <string name="calm_mode_title" msgid="4364804976931157567">"고요 모드"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"현재 재생목록"</string>
     <string name="media_card_history_header_title" msgid="8337396297165848931">"미디어 소스"</string>
-    <!-- no translation found for map_tos_review_button_text (5609545803755287215) -->
-    <skip />
-    <!-- no translation found for map_tos_review_button_distraction_optimized_text (2126379934796527013) -->
-    <skip />
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"지도가 사용 중지되었습니다. 서비스 약관에 동의하지 않았습니다."</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"지도가 사용 중지되었습니다. 주행이 끝난 후 검토하세요."</string>
 </resources>
