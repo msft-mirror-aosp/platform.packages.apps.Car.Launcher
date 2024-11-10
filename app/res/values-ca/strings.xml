@@ -37,8 +37,6 @@
     <string name="calm_mode_title" msgid="4364804976931157567">"Mode de calma"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"Cua"</string>
     <string name="media_card_history_header_title" msgid="8337396297165848931">"Font del contingut multimèdia"</string>
-    <!-- no translation found for map_tos_review_button_text (5609545803755287215) -->
-    <skip />
-    <!-- no translation found for map_tos_review_button_distraction_optimized_text (2126379934796527013) -->
-    <skip />
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"Maps està desactivat. Condicions del servei no acceptades."</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"Maps està desactivat. Revisa després de conduir."</string>
 </resources>

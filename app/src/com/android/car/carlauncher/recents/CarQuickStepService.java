@@ -192,22 +192,22 @@ public class CarQuickStepService extends Service {
         }
 
         @Override
-        public void checkNavBarModes() {
+        public void checkNavBarModes(int displayId) {
             // no-op
         }
 
         @Override
-        public void finishBarAnimations() {
+        public void finishBarAnimations(int displayId) {
             // no-op
         }
 
         @Override
-        public void touchAutoDim(boolean reset) {
+        public void touchAutoDim(int displayid, boolean reset) {
             // no-op
         }
 
         @Override
-        public void transitionTo(@BarTransitions.TransitionMode int barMode,
+        public void transitionTo(int displayId, @BarTransitions.TransitionMode int barMode,
                 boolean animate) {
             // no-op
         }
