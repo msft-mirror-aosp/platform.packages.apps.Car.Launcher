@@ -97,11 +97,12 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = mock(Context.class);
-            RecyclerView rv = activity.requireViewById(R.id.list);
-            GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext, mRowNo,
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
+            GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext, 1,
                     GridLayoutManager.HORIZONTAL, false);
             rv.setLayoutManager(gridLayoutManager);
             rv.setAdapter(adapter);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             RecyclerViewIdlingResource.register(mActivityRule.getScenario());
         });
         // Check if first item on the first page is displayed
@@ -109,13 +110,12 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = (Context) spy(activity);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             mAppGridPageSnapCallback = mock(AppGridPageSnapper.AppGridPageSnapCallback.class);
             mPageSnapper = new AppGridPageSnapper(
                     testableContext,
-                    mColNo,
-                    mRowNo,
                     mAppGridPageSnapCallback);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             mPageSnapper.attachToRecyclerView(rv);
         });
         // Check if first item on the first page is displayed
@@ -145,13 +145,14 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = mock(Context.class);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext,
                     mRowNo,
                     GridLayoutManager.HORIZONTAL,
                     false);
             rv.setLayoutManager(gridLayoutManager);
             rv.setAdapter(adapter);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             RecyclerViewIdlingResource.register(mActivityRule.getScenario());
         });
 
@@ -159,13 +160,12 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = (Context) spy(activity);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             mAppGridPageSnapCallback = mock(AppGridPageSnapper.AppGridPageSnapCallback.class);
             mPageSnapper = new AppGridPageSnapper(
                     testableContext,
-                    mColNo,
-                    mRowNo,
                     mAppGridPageSnapCallback);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             mPageSnapper.attachToRecyclerView(rv);
         });
 
@@ -195,13 +195,14 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = mock(Context.class);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext,
                     mRowNo,
                     GridLayoutManager.HORIZONTAL,
                     false);
             rv.setLayoutManager(gridLayoutManager);
             rv.setAdapter(adapter);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             RecyclerViewIdlingResource.register(mActivityRule.getScenario());
         });
 
@@ -209,13 +210,12 @@ public class AppGridPageSnapperTest {
         onView(withText(getItemText(0, 0))).check(matches(isCompletelyDisplayed()));
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = (Context) spy(activity);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             mAppGridPageSnapCallback = mock(AppGridPageSnapper.AppGridPageSnapCallback.class);
             mPageSnapper = new AppGridPageSnapper(
                     testableContext,
-                    mColNo,
-                    mRowNo,
                     mAppGridPageSnapCallback);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             mPageSnapper.attachToRecyclerView(rv);
         });
 
@@ -269,11 +269,12 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = mock(Context.class);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext, mRowNo,
                     GridLayoutManager.HORIZONTAL, false);
             rv.setLayoutManager(gridLayoutManager);
             rv.setAdapter(adapter);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             RecyclerViewIdlingResource.register(mActivityRule.getScenario());
         });
 
@@ -281,13 +282,12 @@ public class AppGridPageSnapperTest {
         onView(withText(getItemText(0, 0))).check(matches(isCompletelyDisplayed()));
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = (Context) spy(activity);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             mAppGridPageSnapCallback = mock(AppGridPageSnapper.AppGridPageSnapCallback.class);
             mPageSnapper = new AppGridPageSnapper(
                     testableContext,
-                    mColNo,
-                    mRowNo,
                     mAppGridPageSnapCallback);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             mPageSnapper.attachToRecyclerView(rv);
         });
 
@@ -329,11 +329,12 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = mock(Context.class);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext, mRowNo,
                     GridLayoutManager.HORIZONTAL, false);
             rv.setLayoutManager(gridLayoutManager);
             rv.setAdapter(adapter);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             RecyclerViewIdlingResource.register(mActivityRule.getScenario());
 
         });
@@ -342,13 +343,12 @@ public class AppGridPageSnapperTest {
         onView(withText(getItemText(0, 0))).check(matches(isCompletelyDisplayed()));
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = (Context) spy(activity);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             mAppGridPageSnapCallback = mock(AppGridPageSnapper.AppGridPageSnapCallback.class);
             mPageSnapper = spy(new AppGridPageSnapper(
                     testableContext,
-                    mColNo,
-                    mRowNo,
                     mAppGridPageSnapCallback));
+            rv.forceAttachAdapter(mRowNo, mColNo);
             mPageSnapper.attachToRecyclerView(rv);
         });
 
@@ -372,11 +372,12 @@ public class AppGridPageSnapperTest {
 
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = mock(Context.class);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             GridLayoutManager gridLayoutManager = new GridLayoutManager(testableContext, mRowNo,
                     GridLayoutManager.HORIZONTAL, false);
             rv.setLayoutManager(gridLayoutManager);
             rv.setAdapter(adapter);
+            rv.forceAttachAdapter(mRowNo, mColNo);
             RecyclerViewIdlingResource.register(mActivityRule.getScenario());
 
         });
@@ -385,13 +386,12 @@ public class AppGridPageSnapperTest {
         onView(withText(getItemText(0, 0))).check(matches(isCompletelyDisplayed()));
         mActivityRule.getScenario().onActivity(activity -> {
             Context testableContext = (Context) spy(activity);
-            RecyclerView rv = activity.requireViewById(R.id.list);
+            AppGridRecyclerView rv = activity.requireViewById(R.id.list);
             mAppGridPageSnapCallback = mock(AppGridPageSnapper.AppGridPageSnapCallback.class);
             mPageSnapper = spy(new AppGridPageSnapper(
                     testableContext,
-                    mColNo,
-                    mRowNo,
                     mAppGridPageSnapCallback));
+            rv.forceAttachAdapter(mRowNo, mColNo);
             mPageSnapper.attachToRecyclerView(rv);
         });
 
