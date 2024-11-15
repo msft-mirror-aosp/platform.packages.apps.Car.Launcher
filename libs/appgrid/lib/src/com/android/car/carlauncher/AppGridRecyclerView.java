@@ -17,6 +17,7 @@
 package com.android.car.carlauncher;
 
 import static com.android.car.carlauncher.AppGridConstants.PageOrientation;
+import static com.android.car.carlauncher.AppGridConstants.isHorizontal;
 
 import android.content.Context;
 import android.graphics.Rect;
@@ -24,6 +25,8 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.VisibleForTesting;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.carlauncher.pagination.PageIndexingHelper;
@@ -39,17 +42,18 @@ import com.android.car.carlauncher.recyclerview.PageMarginDecoration;
 public class AppGridRecyclerView extends RecyclerView implements DimensionUpdateListener {
     // the previous rotary focus direction
     private int mPrevRotaryPageScrollDirection = View.FOCUS_FORWARD;
-    private final int mNumOfCols;
-    private final int mNumOfRows;
+    private int mNumOfCols;
+    private int mNumOfRows;
+
     @PageOrientation
     private final int mPageOrientation;
     private AppGridAdapter mAdapter;
     private PageMarginDecoration mPageMarginDecoration;
+    private PageIndexingHelper mPageIndexingHelper;
+    private static final String TAG = "AppGridRecyclerView";
 
     public AppGridRecyclerView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mNumOfCols = getResources().getInteger(R.integer.car_app_selector_column_number);
-        mNumOfRows = getResources().getInteger(R.integer.car_app_selector_row_number);
         mPageOrientation = getResources().getBoolean(R.bool.use_vertical_app_grid)
                 ? PageOrientation.VERTICAL : PageOrientation.HORIZONTAL;
     }
@@ -59,8 +63,10 @@ public class AppGridRecyclerView extends RecyclerView implements DimensionUpdate
         if (!(adapter instanceof AppGridAdapter)) {
             throw new IllegalStateException("Expected Adapter of type AppGridAdapter");
         }
+        // skip super.setAdapter() call. We create but do not attach the adapter to recyclerview
+        // until view tree layout is complete and the total size of the app grid is measurable.
+        // Check AppGridRecyclerView#onDimensionsUpdated
         mAdapter = (AppGridAdapter) adapter;
-        super.setAdapter(mAdapter);
     }
 
     /**
@@ -125,11 +131,46 @@ public class AppGridRecyclerView extends RecyclerView implements DimensionUpdate
         }
     }
 
+    public PageIndexingHelper getPageIndexingHelper() {
+        return mPageIndexingHelper;
+    }
+
+    public int getNumOfRows() {
+        return mNumOfRows;
+    }
+
+    public int getNumOfCols() {
+        return mNumOfCols;
+    }
+
+    /**
+     * Forces the adapter to be attached with the specified number of rows and columns.
+     *
+     * <p>This method is intended for testing purposes only.
+     */
+    @VisibleForTesting
+    protected void forceAttachAdapter(int numOfRows, int numOfCols) {
+        mNumOfRows = numOfRows;
+        mNumOfCols = numOfCols;
+        super.setAdapter(mAdapter);
+    }
+
     @Override
     public void onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens) {
         ViewGroup.LayoutParams layoutParams = getLayoutParams();
         layoutParams.width = pageDimens.recyclerViewWidthPx;
         layoutParams.height = pageDimens.recyclerViewHeightPx;
+        this.mNumOfRows = gridDimens.mNumOfRows;
+        this.mNumOfCols = gridDimens.mNumOfCols;
+        if (!(getLayoutManager() instanceof GridLayoutManager)) {
+            throw new IllegalStateException(
+                    "AppGridRecyclerView can only be used with GridLayoutManager.");
+        }
+        if (isHorizontal(mPageOrientation)) {
+            ((GridLayoutManager) getLayoutManager()).setSpanCount(mNumOfRows);
+        } else {
+            ((GridLayoutManager) getLayoutManager()).setSpanCount(mNumOfCols);
+        }
 
         Rect pageBounds = new Rect();
         getGlobalVisibleRect(pageBounds);
@@ -140,9 +181,11 @@ public class AppGridRecyclerView extends RecyclerView implements DimensionUpdate
         if (mPageMarginDecoration != null) {
             removeItemDecoration(mPageMarginDecoration);
         }
+        mPageIndexingHelper = new PageIndexingHelper(mNumOfCols, mNumOfRows, mPageOrientation);
         mPageMarginDecoration = new PageMarginDecoration(pageDimens.marginHorizontalPx,
-                pageDimens.marginVerticalPx, new PageIndexingHelper(mNumOfCols, mNumOfRows,
-                mPageOrientation));
+                pageDimens.marginVerticalPx, mPageIndexingHelper);
         addItemDecoration(mPageMarginDecoration);
+        // Now attach adapter to the recyclerView, after dimens are updated.
+        super.setAdapter(mAdapter);
     }
 }
