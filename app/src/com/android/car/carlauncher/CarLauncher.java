@@ -180,9 +180,8 @@ public class CarLauncher extends FragmentActivity {
 
     private void setupRemoteCarTaskView(ViewGroup parent) {
         mCarLauncherViewModel = new ViewModelProvider(this,
-                new CarLauncherViewModelFactory(this))
+                new CarLauncherViewModelFactory(this, getMapsIntent()))
                 .get(CarLauncherViewModel.class);
-        mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
 
         getLifecycle().addObserver(mCarLauncherViewModel);
         addOnNewIntentListener(mCarLauncherViewModel.getNewIntentListener());
@@ -344,9 +343,10 @@ public class CarLauncher extends FragmentActivity {
                 if (DEBUG) {
                     Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
                 }
-                if (mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
-                    mCarLauncherViewModel.getRemoteCarTaskView().getValue().release();
-                    setupRemoteCarTaskView(mMapsCard);
+                if (mCarLauncherViewModel != null
+                        && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                    // Reinitialize the remote car task view with the new maps intent
+                    mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
                 }
                 if (tosAccepted) {
                     unregisterTosContentObserver();

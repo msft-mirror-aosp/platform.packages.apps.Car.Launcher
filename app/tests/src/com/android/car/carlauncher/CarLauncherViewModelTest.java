@@ -95,8 +95,7 @@ public final class CarLauncherViewModelTest extends AbstractExtendedMockitoTestC
     }
 
     private CarLauncherViewModel createCarLauncherViewModel() {
-        CarLauncherViewModel carLauncherViewModel = new CarLauncherViewModel(mActivity);
-        carLauncherViewModel.initializeRemoteCarTaskView(mIntent);
+        CarLauncherViewModel carLauncherViewModel = new CarLauncherViewModel(mActivity, mIntent);
         runOnMain(() -> carLauncherViewModel.getRemoteCarTaskView().observeForever(
                 remoteCarTaskView -> mRemoteCarTaskView = remoteCarTaskView));
         mInstrumentation.waitForIdleSync();

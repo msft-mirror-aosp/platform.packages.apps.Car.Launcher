@@ -37,22 +37,17 @@ public class AppGridPageSnapper extends LinearSnapHelper {
 
     @NonNull
     private final Context mContext;
-    @Nullable
-    private RecyclerView mRecyclerView;
-    private int mBlockSize = 0;
+    private AppGridRecyclerView mRecyclerView;
     private int mPrevFirstVisiblePos = 0;
     private AppGridPageSnapCallback mSnapCallback;
 
     public AppGridPageSnapper(
             @NonNull Context context,
-            int numOfCol,
-            int numOfRow,
             AppGridPageSnapCallback snapCallback) {
         mSnapCallback = snapCallback;
         mContext = context;
         mPageSnapThreshold = context.getResources().getFloat(R.dimen.page_snap_threshold);
         mFlingThreshold = context.getResources().getFloat(R.dimen.fling_threshold);
-        mBlockSize = numOfCol * numOfRow;
     }
 
     // Orientation helpers are lazily created per LayoutManager.
@@ -85,6 +80,7 @@ public class AppGridPageSnapper extends LinearSnapHelper {
         View currentPosView = getFirstMostVisibleChild(orientationHelper);
         int adapterPos = findAdapterPosition(currentPosView);
         int posToReturn;
+        int blockSize = mRecyclerView.getNumOfRows() * mRecyclerView.getNumOfCols();
 
         // In the case of swiping left, the current adapter position is smaller than the previous
         // first visible position. In the case of swiping right, the current adapter position is
@@ -92,11 +88,11 @@ public class AppGridPageSnapper extends LinearSnapHelper {
         // by only 1 column, the page should remain the same since we want to demonstrate some
         // stickiness
         if (adapterPos <= mPrevFirstVisiblePos
-                || (float) adapterPos % mBlockSize / mBlockSize < mPageSnapThreshold) {
-            posToReturn = adapterPos - adapterPos % mBlockSize;
+                || (float) adapterPos % blockSize / blockSize < mPageSnapThreshold) {
+            posToReturn = adapterPos - adapterPos % blockSize;
         } else {
             // Snap to next page
-            posToReturn = (adapterPos / mBlockSize + 1) * mBlockSize + mBlockSize - 1;
+            posToReturn = (adapterPos / blockSize + 1) * blockSize + blockSize - 1;
         }
         handleScrollToPos(posToReturn, orientationHelper);
         return null;
@@ -109,16 +105,19 @@ public class AppGridPageSnapper extends LinearSnapHelper {
 
     @VisibleForTesting
     int findFirstItemOnNextPage(int adapterPos) {
-        return (adapterPos / mBlockSize + 1) * mBlockSize + mBlockSize - 1;
+        int blockSize = mRecyclerView.getNumOfRows() * mRecyclerView.getNumOfCols();
+        return (adapterPos / blockSize + 1) * blockSize + blockSize - 1;
     }
 
     @VisibleForTesting
     int findFirstItemOnPrevPage(int adapterPos) {
-        return adapterPos - (adapterPos - 1) % mBlockSize - 1;
+        int blockSize = mRecyclerView.getNumOfRows() * mRecyclerView.getNumOfCols();
+        return adapterPos - (adapterPos - 1) % blockSize - 1;
     }
 
     private void handleScrollToPos(int posToReturn, OrientationHelper orientationHelper) {
-        mPrevFirstVisiblePos = posToReturn / mBlockSize * mBlockSize;
+        int blockSize = mRecyclerView.getNumOfRows() * mRecyclerView.getNumOfCols();
+        mPrevFirstVisiblePos = posToReturn / blockSize * blockSize;
         mRecyclerView.smoothScrollToPosition(posToReturn);
         mSnapCallback.notifySnapToPosition(posToReturn);
 
@@ -225,11 +224,15 @@ public class AppGridPageSnapper extends LinearSnapHelper {
 
     @Override
     public void attachToRecyclerView(@Nullable RecyclerView recyclerView) {
-        super.attachToRecyclerView(recyclerView);
-        mRecyclerView = recyclerView;
-        if (mRecyclerView == null) {
+        if (recyclerView == null) {
             return;
         }
+        if (!(recyclerView instanceof AppGridRecyclerView)) {
+            throw new IllegalStateException(
+                    "AppGridPageSnapper can only be used with AppGridRecyclerView.");
+        }
+        super.attachToRecyclerView(recyclerView);
+        mRecyclerView = (AppGridRecyclerView) recyclerView;
 
         // When a fling happens, try to find the target snap view and go there.
         mOnFlingListener = new RecyclerView.OnFlingListener() {

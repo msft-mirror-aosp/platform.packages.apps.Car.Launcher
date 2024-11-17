@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <resources>
-    <!-- Columns -->
-    <integer name="car_app_selector_column_number">5</integer>
-    <integer name="car_app_selector_row_number">3</integer>
 
     <!-- Number of milliseconds users need to hover the app icon on the side of the app grid during
     drag and drop before the page is scrolled in the direction it was held.-->

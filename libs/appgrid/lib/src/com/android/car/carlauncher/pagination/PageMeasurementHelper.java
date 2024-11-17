@@ -27,8 +27,6 @@ import com.android.car.carlauncher.recyclerview.PageMarginDecoration;
  * Helper class for PaginationController that computes the measurements of app grid and app items.
  */
 public class PageMeasurementHelper {
-    private final int mNumOfCols;
-    private final int mNumOfRows;
     @PageOrientation
     private final int mPageOrientation;
     private final boolean mUseDefinedDimensions;
@@ -37,6 +35,8 @@ public class PageMeasurementHelper {
     private final int mDefinedMarginHorizontal;
     private final int mDefinedMarginVertical;
     private final int mDefinedPageIndicatorSize;
+    private final int mMinItemWidth;
+    private final int mMinItemHeight;
 
     private int mWindowWidth;
     private int mWindowHeight;
@@ -44,10 +44,6 @@ public class PageMeasurementHelper {
     private PageDimensions mPageDimensions;
 
     public PageMeasurementHelper(View windowBackground) {
-        mNumOfCols = windowBackground.getResources().getInteger(
-                R.integer.car_app_selector_column_number);
-        mNumOfRows = windowBackground.getResources().getInteger(
-                R.integer.car_app_selector_row_number);
         mPageOrientation = windowBackground.getResources().getBoolean(R.bool.use_vertical_app_grid)
                 ? PageOrientation.VERTICAL : PageOrientation.HORIZONTAL;
         mUseDefinedDimensions = windowBackground.getResources().getBoolean(
@@ -62,6 +58,10 @@ public class PageMeasurementHelper {
                 R.dimen.app_grid_margin_vertical);
         mDefinedPageIndicatorSize = windowBackground.getResources().getDimensionPixelSize(
                 R.dimen.page_indicator_height);
+        mMinItemWidth = windowBackground.getResources().getDimensionPixelSize(
+                R.dimen.car_app_selector_column_min_width);
+        mMinItemHeight = windowBackground.getResources().getDimensionPixelSize(
+                R.dimen.car_app_selector_column_min_height);
     }
 
     /**
@@ -109,11 +109,21 @@ public class PageMeasurementHelper {
                     - (isHorizontal() ? mDefinedPageIndicatorSize : 0);
 
             // Step 2: Round the measurements to ensure child view holder cells have an exact fit.
-            gridWidth = roundDownToModuloMultiple(gridWidth, mNumOfCols);
-            gridHeight = roundDownToModuloMultiple(gridHeight, mNumOfRows);
-            int cellWidth = gridWidth / mNumOfCols;
-            int cellHeight = gridHeight / mNumOfRows;
-            mGridDimensions = new GridDimensions(gridWidth, gridHeight, cellWidth, cellHeight);
+
+            // Calculate the maximum number of columns that can fit in the grid,
+            // ensuring each column has at least the minimum item width.
+            int numOfCols = gridWidth / mMinItemWidth;
+            gridWidth = roundDownToModuloMultiple(gridWidth, numOfCols);
+
+            // Calculate the maximum number of columns that can fit in the grid,
+            // ensuring each column has at least the minimum item width.
+            int numOfRows = gridHeight / mMinItemHeight;
+            gridHeight = roundDownToModuloMultiple(gridHeight, numOfRows);
+
+            int cellWidth = gridWidth / numOfCols;
+            int cellHeight = gridHeight / numOfRows;
+            mGridDimensions = new GridDimensions(gridWidth, gridHeight, cellWidth, cellHeight,
+                    numOfRows, numOfCols);
 
             // Step 3: Since the grid dimens are rounded, we need to recalculate the margins.
             int marginHorizontal = (windowWidth - gridWidth) / 2;
@@ -172,12 +182,17 @@ public class PageMeasurementHelper {
         public int gridHeightPx;
         public int cellWidthPx;
         public int cellHeightPx;
+        public int mNumOfRows;
+        public int mNumOfCols;
 
-        public GridDimensions(int gridWidth, int gridHeight, int cellWidth, int cellHeight) {
+        public GridDimensions(int gridWidth, int gridHeight, int cellWidth, int cellHeight,
+                int numOfRows, int numOfCols) {
             gridWidthPx = gridWidth;
             gridHeightPx = gridHeight;
             cellWidthPx = cellWidth;
             cellHeightPx = cellHeight;
+            mNumOfRows = numOfRows;
+            mNumOfCols = numOfCols;
         }
 
         @Override
@@ -187,6 +202,8 @@ public class PageMeasurementHelper {
                     + " gridHeightPx: %d".formatted(gridHeightPx)
                     + " cellWidthPx: %d".formatted(cellWidthPx)
                     + " cellHeightPx: %d".formatted(cellHeightPx)
+                    + " numOfRows: %d".formatted(mNumOfRows)
+                    + " numOfCols: %d".formatted(mNumOfCols)
                     + "}";
         }
     }
