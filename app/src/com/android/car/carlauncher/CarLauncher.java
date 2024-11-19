@@ -47,6 +47,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
 import com.android.car.carlauncher.homescreen.audio.IntentHandler;
+import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
@@ -110,7 +111,7 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
+    private final IntentHandler mIntentHandler = new IntentHandler() {
         @Override
         public void handleIntent(Intent intent) {
             if (intent != null) {
@@ -173,7 +174,8 @@ public class CarLauncher extends FragmentActivity {
             }
         }
 
-        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
+        MediaIntentRouter.getInstance().registerMediaIntentHandler(mIntentHandler);
+        InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
         initializeCards();
         setupContentObserversForTos();
     }
