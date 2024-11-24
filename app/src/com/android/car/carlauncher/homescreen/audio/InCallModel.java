@@ -19,7 +19,6 @@ package com.android.car.carlauncher.homescreen.audio;
 import static android.content.pm.PackageManager.GET_RESOLVED_FILTER;
 
 import android.Manifest;
-import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -32,7 +31,6 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -40,6 +38,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.android.car.carlauncher.R;
+import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.telecom.InCallServiceImpl;
 import com.android.car.carlauncher.homescreen.ui.CardContent;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
@@ -73,27 +72,29 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
     private static final boolean DEBUG = false;
     protected static InCallServiceManager sInCallServiceManager;
 
-    private Context mContext;
+    protected Context mContext;
     private TelecomManager mTelecomManager;
 
     private PackageManager mPackageManager;
     private final Clock mElapsedTimeClock;
 
-    private Call mCurrentCall;
+    protected Call mCurrentCall;
     private CompletableFuture<Void> mPhoneNumberInfoFuture;
 
-    private InCallServiceImpl mInCallService;
+    protected InCallServiceImpl mInCallService;
 
     private CardHeader mDefaultDialerCardHeader;
     private CardHeader mCardHeader;
     private CardContent mCardContent;
     private CharSequence mOngoingCallSubtitle;
     private CharSequence mDialingCallSubtitle;
-    private DescriptiveTextWithControlsView.Control mMuteButton;
-    private DescriptiveTextWithControlsView.Control mEndCallButton;
-    private DescriptiveTextWithControlsView.Control mDialpadButton;
+    protected DescriptiveTextWithControlsView.Control mMuteButton;
+    protected DescriptiveTextWithControlsView.Control mEndCallButton;
+    protected DescriptiveTextWithControlsView.Control mDialpadButton;
     private Drawable mContactImageBackground;
-    private OnModelUpdateListener mOnModelUpdateListener;
+    protected OnModelUpdateListener mOnModelUpdateListener;
+
+    protected final InCallIntentRouter mInCallIntentRouter = InCallIntentRouter.getInstance();
 
     private Call.Callback mCallback = new Call.Callback() {
         @Override
@@ -195,17 +196,17 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
     public void onClick(View view) {
         Intent intent = getIntent();
         if (intent != null) {
-            // Launch activity in the default app task container: the display area where
-            // applications are launched by default.
-            // If not set, activity launches in the calling TDA.
-            ActivityOptions options = ActivityOptions.makeBasic();
-            options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
-            mContext.startActivity(intent, options.toBundle());
+            mInCallIntentRouter.handleInCallIntent(intent);
         } else {
             if (DEBUG) {
                 Log.d(TAG, "No launch intent found to show in call ui for call : " + mCurrentCall);
             }
         }
+    }
+
+    /** Indicates whether there is an active call or not. */
+    public boolean hasActiveCall() {
+        return mCurrentCall != null;
     }
 
     /**
@@ -395,7 +396,7 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         }
     }
 
-    private void initializeAudioControls() {
+    protected void initializeAudioControls() {
         mMuteButton = new DescriptiveTextWithControlsView.Control(
                 mContext.getDrawable(R.drawable.ic_mute_activatable),
                 v -> {

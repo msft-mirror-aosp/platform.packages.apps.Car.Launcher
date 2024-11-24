@@ -16,10 +16,7 @@
 
 package com.android.car.carlauncher.homescreen.audio.dialer;
 
-import android.app.ActivityOptions;
-import android.content.Context;
 import android.content.Intent;
-import android.view.Display;
 
 import androidx.annotation.VisibleForTesting;
 
@@ -35,6 +32,8 @@ import java.util.List;
  * A presenter for the in-call controls.
  */
 public class DialerCardPresenter extends CardPresenter {
+
+    private final InCallIntentRouter mInCallIntentRouter = InCallIntentRouter.getInstance();
 
     /** A listener to notify when an in-call state changes. */
     public interface OnInCallStateChangeListener {
@@ -60,13 +59,8 @@ public class DialerCardPresenter extends CardPresenter {
             new OnViewClickListener() {
                 @Override
                 public void onViewClicked() {
-                    ActivityOptions options = ActivityOptions.makeBasic();
-                    options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
                     Intent intent = mViewModel.getIntent();
-                    Context context = mFragment.getContext();
-                    if (context != null) {
-                        context.startActivity(intent, options.toBundle());
-                    }
+                    mInCallIntentRouter.handleInCallIntent(intent);
                 }
             };
     @VisibleForTesting
@@ -74,7 +68,7 @@ public class DialerCardPresenter extends CardPresenter {
             new HomeCardInterface.Model.OnModelUpdateListener() {
                 @Override
                 public void onModelUpdate(HomeCardInterface.Model model) {
-                    DialerCardModel dialerCardModel = (DialerCardModel) model;
+                    InCallModel dialerCardModel = (InCallModel) model;
                     if (dialerCardModel.getCardHeader() != null) {
                         mFragment.updateHeaderView(dialerCardModel.getCardHeader());
                     }

@@ -16,6 +16,8 @@
 
 package com.android.car.carlauncher.homescreen.audio;
 
+import android.os.SystemClock;
+
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.R;
@@ -32,6 +34,7 @@ public class AudioCardModule implements HomeCardModule {
     protected AudioCardPresenter mAudioCardPresenter;
     protected HomeCardInterface.View mAudioCardView;
     protected ViewModelProvider mViewModelProvider;
+
     @Override
     public void setViewModelProvider(ViewModelProvider viewModelProvider) {
         if (mViewModelProvider != null) {
@@ -41,7 +44,10 @@ public class AudioCardModule implements HomeCardModule {
 
         mAudioCardPresenter = new AudioCardPresenter(
                 new DialerCardPresenter(), new MediaCardPresenter());
-        mAudioCardPresenter.setModel(new AudioCardModel(mViewModelProvider));
+        AudioCardModel audioCardModel = new AudioCardModel(
+                viewModelProvider.get(MediaViewModel.class),
+                new InCallModel(SystemClock.elapsedRealtimeClock()));
+        mAudioCardPresenter.setModel(audioCardModel);
         mAudioCardView = new AudioCardFragment();
         mAudioCardPresenter.setView(mAudioCardView);
     }
