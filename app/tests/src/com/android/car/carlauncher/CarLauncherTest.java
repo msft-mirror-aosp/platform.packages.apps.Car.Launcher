@@ -34,11 +34,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 
-import android.car.app.RemoteCarTaskView;
 import android.car.test.mocks.AbstractExtendedMockitoTestCase;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -55,6 +56,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -89,6 +91,11 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     protected void onSessionBuilder(CustomMockitoSessionBuilder session) {
         session.spyStatic(AppLauncherUtils.class);
         session.spyStatic(CarLauncherUtils.class);
+    }
+
+    @Before
+    public void setUp() {
+        assumeFalse(hasSplitscreenMultitaskingFeature());
     }
 
     @After
@@ -314,9 +321,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         mActivityScenario.onActivity(activity -> {
             assertNotNull(activity.mCarLauncherViewModel); // CarLauncherViewModel is setup
 
-            RemoteCarTaskView oldRemoteCarTaskView =
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue();
-            assertNotNull(oldRemoteCarTaskView);
+            Intent oldMapsIntent = activity.mCarLauncherViewModel.getMapsIntent();
+            assertNotNull(oldMapsIntent);
 
             // Initialize TOS
             Settings.Secure.putInt(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, 1);
@@ -324,9 +330,10 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                     KEY_UNACCEPTED_TOS_DISABLED_APPS, NON_EMPTY_TOS_DISABLED_APPS);
             activity.mTosContentObserver.onChange(true);
 
-            // Different instance of task view since TOS has gone from uninitialized to initialized
-            assertThat(oldRemoteCarTaskView).isNotSameInstanceAs(
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue());
+            // Different instance of maps intent since TOS has gone from uninitialized to
+            // initialized
+            assertThat(oldMapsIntent).isNotSameInstanceAs(
+                    activity.mCarLauncherViewModel.getMapsIntent());
         });
     }
 
@@ -342,9 +349,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         mActivityScenario.onActivity(activity -> {
             assertNotNull(activity.mCarLauncherViewModel); // CarLauncherViewModel is setup
 
-            RemoteCarTaskView oldRemoteCarTaskView =
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue();
-            assertNotNull(oldRemoteCarTaskView);
+            Intent oldMapsIntent = activity.mCarLauncherViewModel.getMapsIntent();
+            assertNotNull(oldMapsIntent);
 
             // Accept TOS
             Settings.Secure.putInt(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, 2);
@@ -352,9 +358,9 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                     KEY_UNACCEPTED_TOS_DISABLED_APPS, EMPTY_TOS_DISABLED_APPS);
             activity.mTosContentObserver.onChange(true);
 
-            // Different instance of task view since TOS has been accepted
-            assertThat(oldRemoteCarTaskView).isNotSameInstanceAs(
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue());
+            // Different instance of maps intent since TOS has been accepted
+            assertThat(oldMapsIntent).isNotSameInstanceAs(
+                    activity.mCarLauncherViewModel.getMapsIntent());
         });
     }
 
@@ -383,5 +389,13 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                 }
             });
         });
+    }
+
+    /**
+     * Checks whether the device has automotive split-screen multitasking feature enabled
+     */
+    private boolean hasSplitscreenMultitaskingFeature() {
+        return mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 }
