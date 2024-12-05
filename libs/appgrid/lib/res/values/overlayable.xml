@@ -58,6 +58,8 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="banner_button_maximum_width"/>
       <item type="dimen" name="banner_content_margin"/>
       <item type="dimen" name="banner_image_view_size"/>
+      <item type="dimen" name="car_app_selector_column_min_height"/>
+      <item type="dimen" name="car_app_selector_column_min_width"/>
       <item type="dimen" name="fling_threshold"/>
       <item type="dimen" name="icon_size"/>
       <item type="dimen" name="page_indicator_edge_corner_radius"/>
