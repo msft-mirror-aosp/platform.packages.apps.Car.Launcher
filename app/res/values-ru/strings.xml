@@ -36,5 +36,7 @@
     <string name="failure_opening_recent_task_message" msgid="963567570097465902">"Приложение недоступно"</string>
     <string name="calm_mode_title" msgid="4364804976931157567">"Режим покоя"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"Очередь"</string>
-    <string name="media_card_history_header_title" msgid="6753954322481732596">"Недавнее"</string>
+    <string name="media_card_history_header_title" msgid="8337396297165848931">"Источник мультимедиа"</string>
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"Карты отключены, поскольку не приняты Условия использования"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"Карты отключены, проверьте, в чем дело, после поездки"</string>
 </resources>

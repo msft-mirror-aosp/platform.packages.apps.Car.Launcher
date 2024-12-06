@@ -48,6 +48,8 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * A car launcher view model to manage the lifecycle of {@link RemoteCarTaskView}.
  */
@@ -58,19 +60,36 @@ public final class CarLauncherViewModel extends ViewModel implements DefaultLife
 
     private final CarActivityManager mCarActivityManager;
     private final Car mCar;
-    private final CarTaskViewControllerHostLifecycle mHostLifecycle;
     @SuppressLint("StaticFieldLeak") // We're not leaking this context as it is the window context.
     private final Context mWindowContext;
-    private final Intent mMapsIntent;
-    private final MutableLiveData<RemoteCarTaskView> mRemoteCarTaskView;
 
-    public CarLauncherViewModel(@UiContext Context context, @NonNull Intent mapsIntent) {
+    // Do not make this final because the maps intent can be changed based on the state of TOS.
+    private Intent mMapsIntent;
+    private CarTaskViewControllerHostLifecycle mHostLifecycle;
+    private MutableLiveData<RemoteCarTaskView> mRemoteCarTaskView;
+
+    public CarLauncherViewModel(@UiContext Context context, Intent mapsIntent) {
         mWindowContext = context.createWindowContext(TYPE_APPLICATION_STARTING, /* options */ null);
-        mMapsIntent = mapsIntent;
         mCar = Car.createCar(mWindowContext);
         mCarActivityManager = mCar.getCarManager(CarActivityManager.class);
+        initializeRemoteCarTaskView(mapsIntent);
+    }
+
+    /**
+     * Initialize the remote car task view with the maps intent.
+     */
+    public void initializeRemoteCarTaskView(@NonNull Intent mapsIntent) {
+        if (DEBUG) {
+            Log.d(TAG, "Maps intent in the task view = " + mapsIntent.getComponent());
+        }
+        mMapsIntent = mapsIntent;
+        if (mRemoteCarTaskView != null && mRemoteCarTaskView.getValue() != null) {
+            // Release the remote car task view instance if it exists since otherwise there could
+            // be a memory leak
+            mRemoteCarTaskView.getValue().release();
+        }
+        mRemoteCarTaskView = new MutableLiveData<>(/* value= */ null);
         mHostLifecycle = new CarTaskViewControllerHostLifecycle();
-        mRemoteCarTaskView = new MutableLiveData<>(null);
         ControlledRemoteCarTaskViewCallback controlledRemoteCarTaskViewCallback =
                 new ControlledRemoteCarTaskViewCallbackImpl(mRemoteCarTaskView);
 
@@ -83,6 +102,11 @@ public final class CarLauncherViewModel extends ViewModel implements DefaultLife
 
     LiveData<RemoteCarTaskView> getRemoteCarTaskView() {
         return mRemoteCarTaskView;
+    }
+
+    @VisibleForTesting
+    Intent getMapsIntent() {
+        return mMapsIntent;
     }
 
     /**
@@ -102,7 +126,7 @@ public final class CarLauncherViewModel extends ViewModel implements DefaultLife
     @Override
     public void onResume(@NonNull LifecycleOwner owner) {
         DefaultLifecycleObserver.super.onResume(owner);
-        // Do not trigger 'hostAppeared()'}' in onResume.
+        // Do not trigger 'hostAppeared()' in onResume.
         // If the host Activity was hidden by an Activity, the Activity is moved to the other
         // display, what the system expects would be the new moved Activity becomes the top one.
         // But, at the time, the host Activity became visible and 'onResume()' is triggered.
@@ -153,6 +177,9 @@ public final class CarLauncherViewModel extends ViewModel implements DefaultLife
 
         @Override
         public void onTaskViewCreated(@NonNull ControlledRemoteCarTaskView taskView) {
+            if (DEBUG) {
+                Log.d(TAG, "MapsTaskView: onTaskViewCreated");
+            }
             mRemoteCarTaskView.setValue(taskView);
         }
 
@@ -209,9 +236,6 @@ public final class CarLauncherViewModel extends ViewModel implements DefaultLife
 
         @Override
         public void onDisconnected(@NonNull CarTaskViewController carTaskViewController) {
-            if (DEBUG) {
-                Log.d(TAG, "onDisconnected");
-            }
             mRemoteCarTaskView.setValue(null);
         }
     }

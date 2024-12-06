@@ -17,7 +17,7 @@
 package com.android.car.carlauncher;
 
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
-import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
+import static android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLED_APPS;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
 import static com.android.car.carlauncher.AppGridFragment.Mode.ALL_APPS;
@@ -47,6 +47,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
 import com.android.car.carlauncher.homescreen.audio.IntentHandler;
+import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
@@ -82,8 +83,9 @@ public class CarLauncher extends FragmentActivity {
     private boolean mIsReadyLogged;
     private boolean mUseSmallCanvasOptimizedMap;
     private ViewGroup mMapsCard;
-    private CarLauncherViewModel mCarLauncherViewModel;
 
+    @VisibleForTesting
+    CarLauncherViewModel mCarLauncherViewModel;
     @VisibleForTesting
     ContentObserver mTosContentObserver;
 
@@ -109,7 +111,7 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
+    private final IntentHandler mIntentHandler = new IntentHandler() {
         @Override
         public void handleIntent(Intent intent) {
             if (intent != null) {
@@ -172,7 +174,8 @@ public class CarLauncher extends FragmentActivity {
             }
         }
 
-        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
+        MediaIntentRouter.getInstance().registerMediaIntentHandler(mIntentHandler);
+        InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
         initializeCards();
         setupContentObserversForTos();
     }
@@ -210,12 +213,16 @@ public class CarLauncher extends FragmentActivity {
     protected void onDestroy() {
         super.onDestroy();
         TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
+        unregisterTosContentObserver();
+        release();
+    }
+
+    private void unregisterTosContentObserver() {
         if (mTosContentObserver != null) {
             Log.i(TAG, "Unregister content observer for tos state");
             getContentResolver().unregisterContentObserver(mTosContentObserver);
             mTosContentObserver = null;
         }
-        release();
     }
 
     private int getTaskViewTaskId() {
@@ -309,18 +316,6 @@ public class CarLauncher extends FragmentActivity {
                 ? CarLauncherUtils.getSmallCanvasOptimizedMapIntent(this)
                 : CarLauncherUtils.getMapsIntent(this);
 
-        String packageName = mapIntent.getComponent() != null
-                ? mapIntent.getComponent().getPackageName()
-                : null;
-        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(this);
-
-        // Launch tos map intent when the user has not accepted tos and when the
-        // default maps package is not available to package manager, or it's disabled by tos
-        if (!AppLauncherUtils.tosAccepted(this)
-                && (packageName == null || tosDisabledPackages.contains(packageName))) {
-            mapIntent = CarLauncherUtils.getTosMapIntent(this);
-            Log.i(TAG, "Launching tos activity in task view");
-        }
         // Don't want to show this Activity in Recents.
         mapIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         return mapIntent;
@@ -331,21 +326,37 @@ public class CarLauncher extends FragmentActivity {
                 || !AppLauncherUtils.tosAccepted(/* context = */ this)) {
             Log.i(TAG, "TOS not accepted, setting up content observers for TOS state");
         } else {
-            Log.i(TAG, "TOS accepted, state will remain accepted, "
-                    + "don't need to observe this value");
+            Log.i(TAG,
+                    "TOS accepted, state will remain accepted, don't need to observe this value");
             return;
         }
         mTosContentObserver = new ContentObserver(new Handler()) {
             @Override
             public void onChange(boolean selfChange) {
                 super.onChange(selfChange);
-                // TODO (b/280077391): Release the remote task view and recreate the map activity
-                Log.i(TAG, "TOS state updated:" + AppLauncherUtils.tosAccepted(getBaseContext()));
-                recreate();
+                // Release the task view and re-initialize the remote car task view with the new
+                // maps intent whenever an onChange is received. This is because the TOS state
+                // can go from uninitialized to not accepted during which there could be a race
+                // condition in which the maps activity is from the uninitialized state.
+                Set<String> tosDisabledApps = AppLauncherUtils.getTosDisabledPackages(
+                        getBaseContext());
+                boolean tosAccepted = AppLauncherUtils.tosAccepted(getBaseContext());
+                Log.i(TAG, "TOS state updated:" + tosAccepted);
+                if (DEBUG) {
+                    Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
+                }
+                if (mCarLauncherViewModel != null
+                        && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                    // Reinitialize the remote car task view with the new maps intent
+                    mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
+                }
+                if (tosAccepted) {
+                    unregisterTosContentObserver();
+                }
             }
         };
         getContentResolver().registerContentObserver(
-                Settings.Secure.getUriFor(KEY_USER_TOS_ACCEPTED),
+                Settings.Secure.getUriFor(KEY_UNACCEPTED_TOS_DISABLED_APPS),
                 /* notifyForDescendants*/ false,
                 mTosContentObserver);
     }

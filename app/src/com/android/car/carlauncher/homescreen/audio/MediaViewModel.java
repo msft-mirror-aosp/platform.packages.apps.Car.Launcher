@@ -32,13 +32,14 @@ import androidx.lifecycle.Observer;
 
 import com.android.car.apps.common.imaging.ImageBinder;
 import com.android.car.carlauncher.Flags;
+import com.android.car.carlauncher.MediaSessionUtils;
+import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.CardContent;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
 import com.android.car.carlauncher.homescreen.ui.SeekBarViewModel;
 import com.android.car.media.common.MediaItemMetadata;
-import com.android.car.media.common.R;
 import com.android.car.media.common.playback.PlaybackProgress;
 import com.android.car.media.common.playback.PlaybackViewModel;
 import com.android.car.media.common.source.MediaModels;
@@ -137,7 +138,7 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
     public void onCreate(@NonNull Context context) {
         // Initialize media data with media session sources or mbt sources
         if (Flags.mediaSessionCard()) {
-            MediaModels mediaModels = new MediaModels(context.getApplicationContext());
+            MediaModels mediaModels = MediaSessionUtils.getMediaModels(context);
             if (mSourceViewModel == null) {
                 mSourceViewModel = mediaModels.getMediaSourceViewModel();
             }
@@ -157,7 +158,8 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
 
         mContext = context;
         Resources resources = mContext.getResources();
-        int max = resources.getInteger(R.integer.media_items_bitmap_max_size_px);
+        int max = resources.getInteger(
+                com.android.car.media.common.R.integer.media_items_bitmap_max_size_px);
         mMediaBackground = resources
                 .getDrawable(R.drawable.control_bar_image_background);
         Size maxArtSize = new Size(max, max);
@@ -173,12 +175,10 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
         mPlaybackViewModel.getPlaybackController().observeForever(mPlaybackControllerObserver);
         mPlaybackViewModel.getPlaybackStateWrapper().observeForever(mPlaybackStateWrapperObserver);
 
-        mSeekBarColor = mDefaultSeekBarColor = resources.getColor(
-                com.android.car.carlauncher.R.color.seek_bar_color, null);
-        mSeekBarMax = resources.getInteger(
-                com.android.car.carlauncher.R.integer.optional_seekbar_max);
+        mSeekBarColor = mDefaultSeekBarColor = resources.getColor(R.color.seek_bar_color, null);
+        mSeekBarMax = resources.getInteger(R.integer.optional_seekbar_max);
         mUseMediaSourceColor = resources.getBoolean(R.bool.use_media_source_color_for_seek_bar);
-        mTimesSeparator = resources.getString(com.android.car.carlauncher.R.string.times_separator);
+        mTimesSeparator = resources.getString(R.string.times_separator);
         mOnModelUpdateListener.onModelUpdate(/* model = */ this);
 
         updateModel(); // Make sure the name of the media source properly reflects the locale.

@@ -36,5 +36,7 @@
     <string name="failure_opening_recent_task_message" msgid="963567570097465902">"एप उपलब्ध छैन"</string>
     <string name="calm_mode_title" msgid="4364804976931157567">"शान्त मोड"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"लाइन"</string>
-    <string name="media_card_history_header_title" msgid="6753954322481732596">"Jump back in"</string>
+    <string name="media_card_history_header_title" msgid="8337396297165848931">"मिडियाको स्रोत"</string>
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"नक्सा अफ गरिएको छ। सेवाका सर्तहरू स्वीकार गरिएको छैन"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"नक्सा अफ गरिएको छ। सवारी चलाईसकेपछि समीक्षा गर्नुहोस्।"</string>
 </resources>
