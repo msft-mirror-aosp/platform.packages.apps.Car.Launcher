@@ -17,7 +17,6 @@
 package com.android.car.carlauncher.recents;
 
 import static com.android.car.carlauncher.recents.CarRecentsActivity.OPEN_RECENT_TASK_ACTION;
-import static com.android.wm.shell.shared.ShellSharedConstants.KEY_EXTRA_SHELL_RECENT_TASKS;
 
 import android.app.ActivityManager;
 import android.app.Service;
@@ -94,7 +93,7 @@ public class CarQuickStepService extends Service {
         @Override
         public void onInitialize(Bundle params) throws RemoteException {
             IRecentTasks recentTasks = IRecentTasks.Stub.asInterface(
-                    params.getBinder(KEY_EXTRA_SHELL_RECENT_TASKS));
+                    params.getBinder(IRecentTasks.DESCRIPTOR));
             mRecentTasksProvider.init(getApplicationContext(), recentTasks);
         }
 
