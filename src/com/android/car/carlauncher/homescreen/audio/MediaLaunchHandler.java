@@ -16,14 +16,16 @@
 
 package com.android.car.carlauncher.homescreen.audio;
 
-import android.content.Intent;
+import androidx.annotation.NonNull;
+
+import com.android.car.media.common.source.MediaSource;
 
 /**
- * Handles an {@link Intent}
+ * Handles launching a media app
  */
-public interface IntentHandler {
+public interface MediaLaunchHandler {
     /**
-     * Handle {@link Intent}.
+     * Handle launching a {@link MediaSource}.
      */
-    void handleIntent(Intent intent);
+    void handleLaunchMedia(@NonNull MediaSource mediaSource);
 }
