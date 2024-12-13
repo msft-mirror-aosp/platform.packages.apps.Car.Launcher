@@ -37,7 +37,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 
+import android.app.Activity;
 import android.car.test.mocks.AbstractExtendedMockitoTestCase;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -174,6 +177,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                 .when(() -> CarLauncherUtils.getTosMapIntent(any()));
         doReturn(tosDisabledPackages())
                 .when(() -> AppLauncherUtils.getTosDisabledPackages(any()));
+        // Enable the TestMapActivity
+        TestMapActivity.enableActivity(mContext, true);
 
         mActivityScenario = ActivityScenario.launch(CarLauncher.class);
 
@@ -187,13 +192,20 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                     createIntentFromString(TOS_MAP_INTENT).getComponent().getClassName(),
                     mapIntent.getComponent().getClassName());
         });
+
+        // Cleanup - Disable TestMapActivity
+        TestMapActivity.enableActivity(mContext, false);
     }
 
     @Test
     public void onCreate_tosAccepted_doesNotLaunchTosMapIntent() {
         doReturn(true).when(() -> AppLauncherUtils.tosAccepted(any()));
+        doReturn(false)
+                .when(() -> CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
         doReturn(createIntentFromString(TOS_MAP_INTENT))
                 .when(() -> CarLauncherUtils.getTosMapIntent(any()));
+        // Enable the TestMapActivity
+        TestMapActivity.enableActivity(mContext, true);
 
         mActivityScenario = ActivityScenario.launch(CarLauncher.class);
 
@@ -204,6 +216,9 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                     createIntentFromString(TOS_MAP_INTENT).getComponent().getClassName(),
                     mapIntent.getComponent().getClassName());
         });
+
+        // Cleanup - Disable TestMapActivity
+        TestMapActivity.enableActivity(mContext, false);
     }
 
     @Test
@@ -279,7 +294,7 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
 
     @Test
     public void onCreate_whenTosIsNull_tosStateContentObserverIsNotNull() {
-        // Settings.Secure KEY_USER_TOS_ACCEPTED is null when not set explicitly.
+        Settings.Secure.putString(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, null);
         mActivityScenario = ActivityScenario.launch(new Intent(mContext, CarLauncher.class));
 
         // Content observer is not null after activity is created
@@ -397,5 +412,20 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     private boolean hasSplitscreenMultitaskingFeature() {
         return mContext.getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING);
+    }
+
+    public static class TestMapActivity extends Activity {
+        static void enableActivity(Context context, boolean enable) {
+            PackageManager pm = context.getPackageManager();
+            // Enable the TestMapActivity
+            ComponentName componentName = new ComponentName(
+                    "com.android.car.carlauncher.test", // pkg
+                    "com.android.car.carlauncher.CarLauncherTest$TestMapActivity" // cls
+            );
+            int state = enable
+                    ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                    : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+            pm.setComponentEnabledSetting(componentName, state, PackageManager.DONT_KILL_APP);
+        }
     }
 }
