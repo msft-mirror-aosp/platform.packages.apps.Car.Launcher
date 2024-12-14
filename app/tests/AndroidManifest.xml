@@ -24,6 +24,16 @@
         tools:replace="android:label">
 
         <activity android:name="com.android.car.carlauncher.CarLauncherViewModelTest$TestActivity"/>
+        <activity
+            android:name="com.android.car.carlauncher.CarLauncherTest$TestMapActivity"
+            android:enabled="false"
+            android:exported="false">
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.APP_MAPS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <uses-library android:name="android.test.runner"/>
         <provider android:name="com.android.car.carlauncher.calmmode.CalmModeQCProvider"
                  tools:node="remove"/>
