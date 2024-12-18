@@ -36,5 +36,7 @@
     <string name="failure_opening_recent_task_message" msgid="963567570097465902">"I-app ayitholakali"</string>
     <string name="calm_mode_title" msgid="4364804976931157567">"Imodi ezolile"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"Ulayini"</string>
-    <string name="media_card_history_header_title" msgid="6753954322481732596">"Buyela phakathi"</string>
+    <string name="media_card_history_header_title" msgid="8337396297165848931">"Umthombo Wemidiya"</string>
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"IMaps ikhutshaziwe. Imigomo Yesevisi ayamukelwe"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"IMaps ikhutshaziwe. Buyekeza ngemva kokushayela kwakho."</string>
 </resources>

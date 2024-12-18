@@ -23,7 +23,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="car_app_show_recent_apps"/>
       <item type="bool" name="car_app_show_toolbar"/>
       <item type="bool" name="config_allow_reordering"/>
-      <item type="bool" name="config_enableMediaSessionAppsWhileDriving"/>
+      <item type="bool" name="config_enable_tos_banner"/>
       <item type="bool" name="use_defined_app_grid_dimensions"/>
       <item type="bool" name="use_vertical_app_grid"/>
       <item type="color" name="app_item_on_hover_background_color"/>
@@ -58,6 +58,8 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="banner_button_maximum_width"/>
       <item type="dimen" name="banner_content_margin"/>
       <item type="dimen" name="banner_image_view_size"/>
+      <item type="dimen" name="car_app_selector_column_min_height"/>
+      <item type="dimen" name="car_app_selector_column_min_width"/>
       <item type="dimen" name="fling_threshold"/>
       <item type="dimen" name="icon_size"/>
       <item type="dimen" name="page_indicator_edge_corner_radius"/>

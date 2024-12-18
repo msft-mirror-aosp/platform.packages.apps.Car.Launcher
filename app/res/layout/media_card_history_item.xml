@@ -21,8 +21,7 @@
     android:layout_width="match_parent"
     android:foreground="?android:attr/selectableItemBackground"
     app:cardBackgroundColor="@android:color/transparent"
-    app:contentPaddingLeft="@dimen/media_card_horizontal_margin"
-    app:contentPaddingRight="@dimen/media_card_horizontal_margin">
+    app:cardElevation="0dp">
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/history_card_container_active"
         android:layout_height="match_parent"

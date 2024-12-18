@@ -117,8 +117,6 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
     private var appGridWidth = 0
     private var appGridHeight = 0
     private var offPageHoverBeforeScrollMs = 0L
-    private var numOfCols = 0
-    private var numOfRows = 0
     private var nextScrollDestination = 0
     private var currentScrollOffset = 0
     private var currentScrollState = 0
@@ -147,8 +145,6 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
         snapCallback = AppGridPageSnapCallback(this)
         dragCallback = AppItemDragCallback(this)
 
-        numOfCols = resources.getInteger(R.integer.car_app_selector_column_number)
-        numOfRows = resources.getInteger(R.integer.car_app_selector_row_number)
         appGridDragController = AppGridDragController()
         offPageHoverBeforeScrollMs = resources.getInteger(
             R.integer.ms_off_page_hover_before_scroll
@@ -164,13 +160,11 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
         appGridRecyclerView = view.requireViewById(R.id.apps_grid)
         appGridRecyclerView.isFocusable = false
         layoutManager =
-            AppGridLayoutManager(requireContext(), numOfCols, numOfRows, pageOrientation)
+            AppGridLayoutManager(requireContext(), pageOrientation)
         appGridRecyclerView.layoutManager = layoutManager
 
         val pageSnapper = AppGridPageSnapper(
             requireContext(),
-            numOfCols,
-            numOfRows,
             snapCallback
         )
         pageSnapper.attachToRecyclerView(appGridRecyclerView)
@@ -194,10 +188,8 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
         appGridRecyclerView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         pageIndicatorContainer.layoutDirection = View.LAYOUT_DIRECTION_LTR
 
-        // we create but do not attach the adapter to recyclerview until view tree layout is
-        // complete and the total size of the app grid is measureable.
         adapter = AppGridAdapter(
-            requireContext(), numOfCols, numOfRows, dragCallback, snapCallback, this, mode
+            requireContext(), dragCallback, snapCallback, this, mode
         )
 
         adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
@@ -240,7 +232,8 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
         dimensionUpdateCallback.addListener(appGridRecyclerView)
         dimensionUpdateCallback.addListener(pageIndicator)
         dimensionUpdateCallback.addListener(this)
-        paginationController = PaginationController(windowBackground, dimensionUpdateCallback)
+        paginationController =
+            PaginationController(windowBackground, dimensionUpdateCallback)
 
         banner = view.requireViewById(R.id.tos_banner)
 
@@ -306,6 +299,7 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
                 IO
             )
         val uxRestrictionDataSource: UXRestrictionDataSource = UXRestrictionDataSourceImpl(
+            requireContext(),
             requireNotNull(car.getCarManager(CarUxRestrictionsManager::class.java)),
             requireNotNull(car.getCarManager(CarPackageManager::class.java)),
             requireContext().getSystemService(MediaSessionManager::class.java),
@@ -420,7 +414,10 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
             } else {
                 appGridHeight + 2 * appGridMarginVertical
             }
-        layoutManager.scrollToPositionWithOffset(offsetPageCount * numOfRows * numOfCols, 0)
+        layoutManager.scrollToPositionWithOffset(
+            offsetPageCount * appGridRecyclerView.numOfRows * appGridRecyclerView.numOfCols,
+            0
+        )
         pageIndicator.updateOffset(currentScrollOffset)
         pageIndicator.updatePageCount(adapter.pageCount)
     }

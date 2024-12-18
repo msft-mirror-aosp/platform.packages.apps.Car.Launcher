@@ -23,7 +23,6 @@ import static com.android.car.media.common.ui.PlaybackCardControllerUtilities.up
 
 import static java.lang.Integer.max;
 
-import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -33,6 +32,8 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
@@ -63,7 +64,7 @@ public class MediaCardController extends PlaybackCardController implements
     private static final int SWIPE_MAX_OFF_PATH = 75;
     private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 
-    private final MediaIntentRouter mMediaIntentRouter = MediaIntentRouter.getInstance();
+    private final MediaLaunchRouter mMediaLaunchRouter = MediaLaunchRouter.getInstance();
     private Resources mViewResources;
     private View mPanelHandlebar;
     private LinearLayout mPanel;
@@ -158,9 +159,15 @@ public class MediaCardController extends PlaybackCardController implements
         mSkipPrevButton = mView.findViewById(R.id.playback_action_id1);
         mSkipNextButton = mView.findViewById(R.id.playback_action_id2);
 
+        Animation handlebarFadeOut = AnimationUtils.loadAnimation(mView.getContext(),
+                R.anim.media_card_panel_handlebar_fade_out);
+        Animation handlebarFadeIn = AnimationUtils.loadAnimation(mView.getContext(),
+                R.anim.media_card_panel_handlebar_fade_in);
         mMotionLayout.addTransitionListener(new MotionLayout.TransitionListener() {
             @Override
             public void onTransitionStarted(MotionLayout motionLayout, int i, int i1) {
+                mPanelHandlebar.startAnimation(mCardViewModel.getPanelExpanded() ? handlebarFadeIn
+                        : handlebarFadeOut);
             }
 
             @Override
@@ -229,7 +236,10 @@ public class MediaCardController extends PlaybackCardController implements
 
     @Override
     protected void updateAlbumCoverWithDrawable(Drawable drawable) {
-        RoundedDrawable roundedDrawable = new RoundedDrawable(drawable, mView.getResources()
+        Drawable drawableToUse = drawable == null ? mView.getResources().getDrawable(
+                /* drawable */ R.drawable.media_card_default_album_art, /* theme */ null)
+                : drawable;
+        RoundedDrawable roundedDrawable = new RoundedDrawable(drawableToUse, mView.getResources()
                 .getFloat(R.dimen.media_card_album_art_drawable_corner_ratio));
         super.updateAlbumCoverWithDrawable(roundedDrawable);
 
@@ -442,9 +452,7 @@ public class MediaCardController extends PlaybackCardController implements
         if (mCardViewModel.getPanelExpanded()) {
             animateClosePanel();
         } else {
-            MediaSource mediaSource = mDataModel.getMediaSource().getValue();
-            Intent intent = mediaSource != null ? mediaSource.getIntent() : null;
-            mMediaIntentRouter.handleMediaIntent(intent);
+            mMediaLaunchRouter.handleLaunchMedia(mDataModel.getMediaSource().getValue());
         }
     }
 
@@ -487,6 +495,7 @@ public class MediaCardController extends PlaybackCardController implements
         mSkipPrevVisibility = mSkipPrevButton.getVisibility();
         mSkipNextVisibility = mSkipNextButton.getVisibility();
         mAlbumCoverVisibility = mAlbumCover.getVisibility();
+        mSeekBar.setEnabled(false);
     }
 
     private void restoreExtraViewsWhenPanelClosed() {
@@ -496,6 +505,7 @@ public class MediaCardController extends PlaybackCardController implements
         mSkipNextButton.setVisibility(mSkipNextVisibility);
         mSubtitle.setVisibility(mSubtitleVisibility);
         mLogo.setVisibility(mLogoVisibility);
+        mSeekBar.setEnabled(true);
     }
 
     /**
