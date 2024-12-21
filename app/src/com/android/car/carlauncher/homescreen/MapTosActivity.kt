@@ -51,7 +51,7 @@ class MapTosActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        theme.applyStyle(R.style.MapTosActivityThemeOverlay, true)
         setContentView(R.layout.map_tos_activity)
         reviewButton = findViewById(R.id.review_button)
         reviewButton.setOnClickListener {

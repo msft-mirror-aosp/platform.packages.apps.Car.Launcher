@@ -142,6 +142,7 @@ public class CarLauncher extends FragmentActivity {
         if (DEBUG) {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
+        getTheme().applyStyle(R.style.CarLauncherActivityThemeOverlay, true);
         // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
         // visible background users.
         // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently

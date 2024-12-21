@@ -50,7 +50,7 @@
                     android:pathData="M6 4C7.10457 4 8 4.89543 8 6V26C8 27.1046 7.10457 28 6 28C4.89543 28 4 27.1046 4 26V6C4 4.89543 4.89543 4 6 4Z" />
                 <path
                     android:pathData="M4 4V28H8V4"
-                    android:fillColor="@color/car_on_surface" />
+                    android:fillColor="?oemColorOnSurface" />
             </group>
             <group>
                 <clip-path

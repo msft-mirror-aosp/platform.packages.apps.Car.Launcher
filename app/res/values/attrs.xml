@@ -15,9 +15,6 @@
   -->
 
 <resources>
-    <!-- Corner radius for CardView. -->
-    <attr name="cardCornerRadius" format="dimension" />
-
     <!-- ShapeableImageView attributes -->
     <attr name="cornerFamily" format="enum" >
         <enum name="rounded" value="0"/>
@@ -27,4 +24,11 @@
     <attr name="shapeAppearanceOverlay" format="reference" />
     <attr name="strokeColor" format="color" />
     <attr name="strokeWidth" format="dimension" />
+
+    <attr name="launcherCardCornerRadius" format="reference|dimension"/>
+    <attr name="mediaCardCardRadius" format="reference|dimension"/>
+    <attr name="mediaCardPillRadius" format="reference|dimension"/>
+
+    <attr name="carTextPrimary" format="color|reference"/>
+    <attr name="carTextSecondary" format="color|reference"/>
 </resources>

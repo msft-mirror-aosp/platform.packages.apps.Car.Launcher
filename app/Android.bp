@@ -52,10 +52,15 @@ android_library {
         "CarAppGrid-lib",
         "SystemUISharedLib",
         "android.car.cluster.navigation",
-        "car-resource-common",
+        "oem-token-lib",
     ],
 
-    libs: ["android.car"],
+    libs: [
+        "android.car",
+        "token-shared-lib-prebuilt",
+    ],
+
+    enforce_uses_libs: false,
 
     manifest: "AndroidManifest.xml",
     // TODO(b/319708040): re-enable use_resource_processor
@@ -83,9 +88,17 @@ android_app {
         "Launcher3QuickStep",
     ],
 
-    static_libs: ["CarLauncher-core"],
+    static_libs: [
+        "CarLauncher-core",
+        "oem-token-lib",
+    ],
 
-    libs: ["android.car"],
+    libs: [
+        "android.car",
+        "token-shared-lib-prebuilt",
+    ],
+
+    enforce_uses_libs: false,
 
     optimize: {
         enabled: false,

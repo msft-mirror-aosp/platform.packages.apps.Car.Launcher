@@ -33,6 +33,7 @@ android_test {
         "android.car",
         "android.test.base.stubs.system",
         "android.car-system-stubs",
+        "token-shared-lib-prebuilt",
     ],
 
     optimize: {
@@ -58,6 +59,8 @@ android_test {
         "CarLauncher-core",
         "flag-junit",
     ],
+
+    enforce_uses_libs: false,
 
     // b/341652226: temporarily disable multi-dex until D8 is fixed
     no_dex_container: true,

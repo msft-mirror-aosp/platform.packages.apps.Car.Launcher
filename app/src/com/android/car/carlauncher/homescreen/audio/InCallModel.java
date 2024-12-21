@@ -116,7 +116,7 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         mOngoingCallSubtitle = context.getResources().getString(R.string.ongoing_call_text);
         mDialingCallSubtitle = context.getResources().getString(R.string.dialing_call_text);
         mContactImageBackground = context.getResources()
-                .getDrawable(R.drawable.control_bar_contact_image_background);
+                .getDrawable(R.drawable.control_bar_contact_image_background, context.getTheme());
         initializeAudioControls();
 
         mPackageManager = context.getPackageManager();

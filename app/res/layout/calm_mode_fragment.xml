@@ -33,6 +33,7 @@
     <TextClock
         android:id="@+id/date"
         style="@style/CalmModeText.Date"
+        android:textAppearance="?oemTextAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/calm_mode_padding_vertical"
@@ -45,6 +46,7 @@
     <TextView
         android:id="@+id/temperature_icon"
         style="@style/CalmModeText.Temperature"
+        android:textAppearance="?oemTextAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
@@ -56,6 +58,7 @@
     <TextView
         android:id="@+id/temperature"
         style="@style/CalmModeText.Temperature"
+        android:textAppearance="?oemTextAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
@@ -81,6 +84,7 @@
     <TextView
         android:id="@+id/nav_state"
         style="@style/CalmModeText"
+        android:textAppearance="?oemTextAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
@@ -95,6 +99,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        android:textAppearance="?oemTextAppearanceDisplayLarge"
         app:layout_constraintTop_toBottomOf="@id/date"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -103,6 +108,7 @@
     <TextView
         android:id="@+id/media_title"
         style="@style/CalmModeText.MediaTitle"
+        android:textAppearance="?oemTextAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"

@@ -90,7 +90,8 @@ public class CarRecentsActivity extends AppCompatActivity implements
                 /* windowInsets= */ windowMetrics.getWindowInsets()
                         .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()).toRect(),
                 /* defaultThumbnailColor= */
-                getResources().getColor(R.color.default_recents_thumbnail_color, /* theme= */null));
+                getResources().getColor(R.color.default_recents_thumbnail_color,
+                        /* theme= */ getTheme()));
 
         if (!(mRecentsRecyclerView.getLayoutManager() instanceof GridLayoutManager)) {
             throw new UnsupportedOperationException(
