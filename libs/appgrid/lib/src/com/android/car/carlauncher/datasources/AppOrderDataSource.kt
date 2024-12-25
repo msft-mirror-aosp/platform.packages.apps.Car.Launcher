@@ -142,6 +142,9 @@ class AppOrderProtoDataSourceImpl(
                 appOrderFlow.value =
                     appOrderFromFiles.sortedBy { it.relativePosition }
                         .map { AppOrderInfo(it.packageName, it.className, it.displayName) }
+            } else {
+                // Reset the appOrder to empty list
+                appOrderFlow.value = emptyList()
             }
         }
         emitAll(appOrderFlow)
