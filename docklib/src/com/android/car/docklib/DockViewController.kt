@@ -60,7 +60,7 @@ import java.util.UUID
  */
 open class DockViewController(
         dockView: DockView,
-        private val userContext: Context = dockView.context,
+        val userContext: Context = dockView.context,
         dataFile: File,
 ) : DockInterface {
     companion object {
