@@ -161,7 +161,7 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
         int max = resources.getInteger(
                 com.android.car.media.common.R.integer.media_items_bitmap_max_size_px);
         mMediaBackground = resources
-                .getDrawable(R.drawable.control_bar_image_background);
+                .getDrawable(R.drawable.control_bar_image_background, mContext.getTheme());
         Size maxArtSize = new Size(max, max);
         mAlbumArtBinder = new ImageBinder<>(ImageBinder.PlaceholderType.FOREGROUND, maxArtSize,
                 drawable -> {
@@ -175,7 +175,8 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
         mPlaybackViewModel.getPlaybackController().observeForever(mPlaybackControllerObserver);
         mPlaybackViewModel.getPlaybackStateWrapper().observeForever(mPlaybackStateWrapperObserver);
 
-        mSeekBarColor = mDefaultSeekBarColor = resources.getColor(R.color.seek_bar_color, null);
+        mSeekBarColor = mDefaultSeekBarColor = resources.getColor(R.color.seek_bar_color,
+                mContext.getTheme());
         mSeekBarMax = resources.getInteger(R.integer.optional_seekbar_max);
         mUseMediaSourceColor = resources.getBoolean(R.bool.use_media_source_color_for_seek_bar);
         mTimesSeparator = resources.getString(R.string.times_separator);
@@ -202,6 +203,10 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
         MediaSource mediaSource = getMediaSourceViewModel().getPrimaryMediaSource().getValue();
 
         return mediaSource != null ? mediaSource.getIntent() : null;
+    }
+
+    public MediaSource getMediaSource() {
+        return getMediaSourceViewModel().getPrimaryMediaSource().getValue();
     }
 
     @Override

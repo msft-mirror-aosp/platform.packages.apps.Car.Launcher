@@ -18,9 +18,9 @@ package com.android.car.carlauncher.recents;
 
 import static android.app.ActivityManager.RECENT_IGNORE_UNAVAILABLE;
 
-import static com.android.wm.shell.shared.GroupedRecentTaskInfo.TYPE_FREEFORM;
-import static com.android.wm.shell.shared.GroupedRecentTaskInfo.TYPE_SINGLE;
-import static com.android.wm.shell.shared.GroupedRecentTaskInfo.TYPE_SPLIT;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FREEFORM;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FULLSCREEN;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_SPLIT;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -37,6 +37,7 @@ import static org.mockito.Mockito.when;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
+import android.app.TaskInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -56,7 +57,7 @@ import com.android.systemui.shared.recents.model.Task;
 import com.android.systemui.shared.system.ActivityManagerWrapper;
 import com.android.systemui.shared.system.PackageManagerWrapper;
 import com.android.wm.shell.recents.IRecentTasks;
-import com.android.wm.shell.shared.GroupedRecentTaskInfo;
+import com.android.wm.shell.shared.GroupedTaskInfo;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -78,7 +79,7 @@ public class RecentTasksProviderTest {
     private static final int FREEFORM_RECENT_TASKS_LENGTH = 3;
 
     private RecentTasksProvider mRecentTasksProvider;
-    private GroupedRecentTaskInfo[] mGroupedRecentTaskInfo;
+    private GroupedTaskInfo[] mGroupedRecentTaskInfo;
 
     @Mock
     private IRecentTasks mRecentTaskProxy;
@@ -363,10 +364,10 @@ public class RecentTasksProviderTest {
     }
 
     private void initRecentTaskList(boolean addTypeSplit, boolean addTypeFreeform) {
-        List<GroupedRecentTaskInfo> groupedRecentTaskInfos = new ArrayList<>();
+        List<GroupedTaskInfo> groupedRecentTaskInfos = new ArrayList<>();
         for (int i = 0; i < RECENT_TASKS_LENGTH; i++) {
             groupedRecentTaskInfos.add(
-                    createGroupedRecentTaskInfo(createRecentTaskInfo(i), TYPE_SINGLE));
+                    createGroupedRecentTaskInfo(createRecentTaskInfo(i), TYPE_FULLSCREEN));
         }
         if (addTypeSplit) {
             for (int i = 0; i < SPLIT_RECENT_TASKS_LENGTH; i++) {
@@ -380,18 +381,18 @@ public class RecentTasksProviderTest {
                         createGroupedRecentTaskInfo(createRecentTaskInfo(i), TYPE_FREEFORM));
             }
         }
-        mGroupedRecentTaskInfo = groupedRecentTaskInfos.toArray(GroupedRecentTaskInfo[]::new);
+        mGroupedRecentTaskInfo = groupedRecentTaskInfos.toArray(GroupedTaskInfo[]::new);
     }
 
-    private GroupedRecentTaskInfo createGroupedRecentTaskInfo(ActivityManager.RecentTaskInfo info,
-            int type) {
-        GroupedRecentTaskInfo groupedRecentTaskInfo = mock(GroupedRecentTaskInfo.class);
+    private GroupedTaskInfo createGroupedRecentTaskInfo(TaskInfo info, int type) {
+        GroupedTaskInfo groupedRecentTaskInfo =
+                (GroupedTaskInfo) mock(GroupedTaskInfo.class);
         when(groupedRecentTaskInfo.getType()).thenReturn(type);
         when(groupedRecentTaskInfo.getTaskInfo1()).thenReturn(info);
         return groupedRecentTaskInfo;
     }
 
-    private ActivityManager.RecentTaskInfo createRecentTaskInfo(int taskId) {
+    private TaskInfo createRecentTaskInfo(int taskId) {
         when(mBaseIntent.getComponent()).thenReturn(mComponent);
         ActivityManager.RecentTaskInfo recentTaskInfo = new ActivityManager.RecentTaskInfo();
         recentTaskInfo.taskId = taskId;

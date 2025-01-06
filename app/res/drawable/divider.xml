@@ -16,6 +16,6 @@
 
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/car_on_background"/>
+    <solid android:color="?oemColorOnBackground"/>
     <size android:height="0.5dp"/>
 </shape>

@@ -40,6 +40,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -47,9 +48,12 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
 import com.android.car.carlauncher.homescreen.audio.IntentHandler;
-import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
+import com.android.car.carlauncher.homescreen.audio.MediaLaunchHandler;
+import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
+import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
+import com.android.car.media.common.source.MediaSource;
 import com.android.wm.shell.taskview.TaskView;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -110,13 +114,24 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
+    private final IntentHandler mIntentHandler = new IntentHandler() {
         @Override
         public void handleIntent(Intent intent) {
             if (intent != null) {
                 ActivityOptions options = ActivityOptions.makeBasic();
                 startActivity(intent, options.toBundle());
             }
+        }
+    };
+
+    // Used instead of IntentHandler because media apps may provide a PendingIntent instead
+    private final MediaLaunchHandler mMediaMediaLaunchHandler = new MediaLaunchHandler() {
+        @Override
+        public void handleLaunchMedia(@NonNull MediaSource mediaSource) {
+            if (DEBUG) {
+                Log.d(TAG, "Launching media source " + mediaSource);
+            }
+            mediaSource.launchActivity(CarLauncher.this, ActivityOptions.makeBasic());
         }
     };
 
@@ -127,6 +142,7 @@ public class CarLauncher extends FragmentActivity {
         if (DEBUG) {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
+        getTheme().applyStyle(R.style.CarLauncherActivityThemeOverlay, true);
         // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
         // visible background users.
         // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
@@ -173,16 +189,17 @@ public class CarLauncher extends FragmentActivity {
             }
         }
 
-        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
+        MediaLaunchRouter.getInstance().registerMediaLaunchHandler(mMediaMediaLaunchHandler);
+        InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
+
         initializeCards();
         setupContentObserversForTos();
     }
 
     private void setupRemoteCarTaskView(ViewGroup parent) {
         mCarLauncherViewModel = new ViewModelProvider(this,
-                new CarLauncherViewModelFactory(this))
+                new CarLauncherViewModelFactory(this, getMapsIntent()))
                 .get(CarLauncherViewModel.class);
-        mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
 
         getLifecycle().addObserver(mCarLauncherViewModel);
         addOnNewIntentListener(mCarLauncherViewModel.getNewIntentListener());
@@ -344,9 +361,10 @@ public class CarLauncher extends FragmentActivity {
                 if (DEBUG) {
                     Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
                 }
-                if (mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
-                    mCarLauncherViewModel.getRemoteCarTaskView().getValue().release();
-                    setupRemoteCarTaskView(mMapsCard);
+                if (mCarLauncherViewModel != null
+                        && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                    // Reinitialize the remote car task view with the new maps intent
+                    mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
                 }
                 if (tosAccepted) {
                     unregisterTosContentObserver();

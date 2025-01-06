@@ -31,6 +31,6 @@
         android:layout_height="wrap_content"
         android:includeFontPadding="false"
         android:text="@string/media_card_queue_header_title"
-        android:textAppearance="@style/TextAppearance.Car.Body.Small"
-        android:textColor="@color/car_text_primary"/>
+        android:textAppearance="?oemTextAppearanceBodySmall"
+        android:textColor="?carTextPrimary"/>
 </LinearLayout>

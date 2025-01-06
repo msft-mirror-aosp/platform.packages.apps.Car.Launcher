@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.android.car.carlauncher.homescreen.audio.media;
+package com.android.car.carlauncher.homescreen.audio.dialer;
 
 import android.content.Intent;
 
 import com.android.car.carlauncher.homescreen.audio.IntentHandler;
 
 /**
- * Routes media {@link Intent} to {@link IntentHandler}.
+ * Routes dialer {@link Intent} to {@link IntentHandler}.
  */
-public class MediaIntentRouter {
-    private static MediaIntentRouter sInstance;
+public class InCallIntentRouter {
+
+    private static InCallIntentRouter sInstance;
     private IntentHandler mIntentHandler;
 
     /**
-     * @return an instance of {@link MediaIntentRouter}.
+     * @return an instance of {@link InCallIntentRouter}.
      */
-    public static MediaIntentRouter getInstance() {
+    public static InCallIntentRouter getInstance() {
         if (sInstance == null) {
-            sInstance = new MediaIntentRouter();
+            sInstance = new InCallIntentRouter();
         }
         return sInstance;
     }
@@ -40,14 +40,14 @@ public class MediaIntentRouter {
     /**
      * Register a {@link IntentHandler}.
      */
-    public void registerMediaIntentHandler(IntentHandler intentHandler) {
+    public void registerInCallIntentHandler(IntentHandler intentHandler) {
         mIntentHandler = intentHandler;
     }
 
     /**
-     * Dispatch a media intent to {@link IntentHandler}
+     * Dispatch a dailer intent to {@link IntentHandler}
      */
-    public void handleMediaIntent(Intent intent) {
+    public void handleInCallIntent(Intent intent) {
         if (intent != null) {
             mIntentHandler.handleIntent(intent);
         }
