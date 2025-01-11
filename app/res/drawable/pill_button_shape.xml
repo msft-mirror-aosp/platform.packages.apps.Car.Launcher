@@ -18,7 +18,7 @@
     <item>
         <shape
             android:shape="rectangle">
-            <corners android:radius="?mediaCardCardRadius" />
+            <corners android:radius="?mediaCardPillRadius" />
             <solid android:color="?oemColorSurfaceContainerHighest" />
         </shape>
     </item>
