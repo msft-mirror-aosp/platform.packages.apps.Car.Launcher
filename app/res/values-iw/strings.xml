@@ -19,8 +19,8 @@
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_title" msgid="1056886619192068947">"מרכז האפליקציות ברכב"</string>
     <string name="default_media_song_title" msgid="7837564242036091946"></string>
-    <string name="tap_for_more_info_text" msgid="4240146824238692769">"יש להקיש על הכרטיס למידע נוסף"</string>
-    <string name="tap_to_launch_text" msgid="7150379866796152196">"יש להקיש על הכרטיס כדי להפעיל"</string>
+    <string name="tap_for_more_info_text" msgid="4240146824238692769">"יש ללחוץ על הכרטיס למידע נוסף"</string>
+    <string name="tap_to_launch_text" msgid="7150379866796152196">"יש ללחוץ על הכרטיס כדי להפעיל"</string>
     <string name="ongoing_call_duration_text_separator" msgid="2140398350095052096">" • "</string>
     <string name="ongoing_call_text" msgid="7160701768924041827">"שיחה פעילה"</string>
     <string name="dialing_call_text" msgid="3286036311692512894">"מתבצע חיוג…"</string>
