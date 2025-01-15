@@ -24,7 +24,6 @@
     <string name="app_launcher_stop_app_cant_stop_text" msgid="6513703446595313338">"యాప్‌ను ఆపడం సాధ్యం కాదు."</string>
     <string name="hide_debug_apps" msgid="7140064693464751647">"డీబగ్ యాప్‌లను దాచండి"</string>
     <string name="show_debug_apps" msgid="2748157232151197494">"డీబగ్ యాప్‌లను చూపించండి"</string>
-    <string name="user_tos_activity_intent" msgid="5323981034042569291">"intent:#Intent;action=com.android.car.SHOW_USER_TOS_ACTIVITY;B.show_value_prop=false;end"</string>
     <string name="banner_title_text" msgid="8827498256184464356">"డిజేబుల్ చేసిన యూజర్ TOS యాప్‌లను ఉపయోగించడానికి, యూజర్ TOSను అంగీకరించండి"</string>
     <string name="banner_review_button_text" msgid="369410598918950148">"రివ్యూ చేయండి"</string>
     <string name="banner_dismiss_button_text" msgid="5389352614429069562">"ఇప్పుడు కాదు"</string>

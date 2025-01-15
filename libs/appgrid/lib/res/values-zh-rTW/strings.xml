@@ -24,7 +24,6 @@
     <string name="app_launcher_stop_app_cant_stop_text" msgid="6513703446595313338">"無法停止應用程式。"</string>
     <string name="hide_debug_apps" msgid="7140064693464751647">"隱藏偵錯應用程式"</string>
     <string name="show_debug_apps" msgid="2748157232151197494">"顯示偵錯應用程式"</string>
-    <string name="user_tos_activity_intent" msgid="5323981034042569291">"intent:#Intent;action=com.android.car.SHOW_USER_TOS_ACTIVITY;B.show_value_prop=false;end"</string>
     <string name="banner_title_text" msgid="8827498256184464356">"如要使用因尚未同意使用者服務條款而停用的應用程式，請同意使用者服務條款"</string>
     <string name="banner_review_button_text" msgid="369410598918950148">"查看"</string>
     <string name="banner_dismiss_button_text" msgid="5389352614429069562">"暫時不要"</string>

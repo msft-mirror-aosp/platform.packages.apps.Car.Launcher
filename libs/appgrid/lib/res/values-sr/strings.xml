@@ -24,7 +24,6 @@
     <string name="app_launcher_stop_app_cant_stop_text" msgid="6513703446595313338">"Апликација не може да се заустави."</string>
     <string name="hide_debug_apps" msgid="7140064693464751647">"Сакриј апликације за отклањање грешака"</string>
     <string name="show_debug_apps" msgid="2748157232151197494">"Прикажи апликације за отклањање грешака"</string>
-    <string name="user_tos_activity_intent" msgid="5323981034042569291">"intent:#Intent;action=com.android.car.SHOW_USER_TOS_ACTIVITY;B.show_value_prop=false;end"</string>
     <string name="banner_title_text" msgid="8827498256184464356">"Да бисте користили апликације онемогућене у складу са условима коришћења услуге за корисника, прихватите услове коришћења услуге за корисника."</string>
     <string name="banner_review_button_text" msgid="369410598918950148">"Прегледај"</string>
     <string name="banner_dismiss_button_text" msgid="5389352614429069562">"Не сада"</string>

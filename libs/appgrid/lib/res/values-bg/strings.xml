@@ -24,7 +24,6 @@
     <string name="app_launcher_stop_app_cant_stop_text" msgid="6513703446595313338">"Приложението не може да бъде спряно."</string>
     <string name="hide_debug_apps" msgid="7140064693464751647">"Скриване на приложенията за отстраняване на грешки"</string>
     <string name="show_debug_apps" msgid="2748157232151197494">"Показване на приложенията за отстраняв. на грешки"</string>
-    <string name="user_tos_activity_intent" msgid="5323981034042569291">"intent:#Intent;action=com.android.car.SHOW_USER_TOS_ACTIVITY;B.show_value_prop=false;end"</string>
     <string name="banner_title_text" msgid="8827498256184464356">"За да използвате деактивираните от ОУ за потребителите приложения, приемете Общите условия за потребителите"</string>
     <string name="banner_review_button_text" msgid="369410598918950148">"Преглед"</string>
     <string name="banner_dismiss_button_text" msgid="5389352614429069562">"Не сега"</string>
