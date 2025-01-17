@@ -230,5 +230,15 @@ public class CarQuickStepService extends Service {
                 Log.w(TAG, "onUnbind: Failed to reply to OverviewProxyService", e);
             }
         }
+
+        @Override
+        public void onDisplayRemoved(int displayId) {
+            // no-op
+        }
+
+        @Override
+        public void onDisplayReady(int displayId) {
+            // no-op
+        }
     }
 }
