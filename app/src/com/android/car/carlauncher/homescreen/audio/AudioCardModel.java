@@ -18,22 +18,22 @@ package com.android.car.carlauncher.homescreen.audio;
 
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 
-/** A wrapper around {@code MediaViewModel} and {@code InCallModel}. */
+/** A wrapper around {@code MediaViewModel} and {@code InCallViewModel}. */
 public class AudioCardModel implements HomeCardInterface.Model {
 
     private final MediaViewModel mMediaViewModel;
-    private final InCallModel mInCallViewModel;
+    private final InCallViewModel mInCallViewModel;
 
-    public AudioCardModel(MediaViewModel mediaViewModel, InCallModel inCallModel) {
+    public AudioCardModel(MediaViewModel mediaViewModel, InCallViewModel inCallViewModel) {
         mMediaViewModel = mediaViewModel;
-        mInCallViewModel = inCallModel;
+        mInCallViewModel = inCallViewModel;
     }
 
     MediaViewModel getMediaViewModel() {
         return mMediaViewModel;
     }
 
-    InCallModel getInCallViewModel() {
+    InCallViewModel getInCallViewModel() {
         return mInCallViewModel;
     }
 

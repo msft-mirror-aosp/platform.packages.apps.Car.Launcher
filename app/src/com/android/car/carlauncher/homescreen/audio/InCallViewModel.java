@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Google Inc.
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,32 +25,33 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
-import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.Transformations;
 
 import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
-import com.android.car.carlauncher.homescreen.audio.telecom.InCallServiceImpl;
 import com.android.car.carlauncher.homescreen.ui.CardContent;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
-import com.android.car.telephony.calling.InCallServiceManager;
+import com.android.car.telephony.calling.CallComparator;
+import com.android.car.telephony.calling.CallDetailLiveData;
+import com.android.car.telephony.calling.InCallModel;
 import com.android.car.telephony.common.CallDetail;
 import com.android.car.telephony.common.TelecomUtils;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.util.ArrayUtils;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.time.Clock;
@@ -59,18 +60,17 @@ import java.util.concurrent.CompletableFuture;
 /**
  * The {@link HomeCardInterface.Model} for ongoing phone calls.
  */
-public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener,
-        PropertyChangeListener {
+public class InCallViewModel implements AudioModel {
 
-    private static final String TAG = "InCallModel";
-    private static final String PROPERTY_IN_CALL_SERVICE = "PROPERTY_IN_CALL_SERVICE";
+    private static final String TAG = "InCallViewModel";
     private static final String CAR_APP_SERVICE_INTERFACE = "androidx.car.app.CarAppService";
     private static final String CAR_APP_ACTIVITY_INTERFACE =
             "androidx.car.app.activity.CarAppActivity";
     /** androidx.car.app.CarAppService.CATEGORY_CALLING_APP from androidx car app library. */
     private static final String CAR_APP_CATEGORY_CALLING = "androidx.car.app.category.CALLING";
     private static final boolean DEBUG = false;
-    protected static InCallServiceManager sInCallServiceManager;
+
+    private InCallModel mInCallModel;
 
     protected Context mContext;
     private TelecomManager mTelecomManager;
@@ -78,10 +78,14 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
     private PackageManager mPackageManager;
     private final Clock mElapsedTimeClock;
 
+    private final LiveData<Call> mPrimaryCallLiveData;
+    private final LiveData<CallDetail> mCallDetailLiveData;
+
+    private Observer<Object> mCallObserver;
+    private Observer<Object> mCallAudioStateObserver;
+
     protected Call mCurrentCall;
     private CompletableFuture<Void> mPhoneNumberInfoFuture;
-
-    protected InCallServiceImpl mInCallService;
 
     private CardHeader mDefaultDialerCardHeader;
     private CardHeader mCardHeader;
@@ -96,16 +100,16 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
 
     protected final InCallIntentRouter mInCallIntentRouter = InCallIntentRouter.getInstance();
 
-    private Call.Callback mCallback = new Call.Callback() {
-        @Override
-        public void onStateChanged(Call call, int state) {
-            super.onStateChanged(call, state);
-            handleActiveCall(call);
-        }
-    };
 
-    public InCallModel(Clock elapsedTimeClock) {
-        mElapsedTimeClock = elapsedTimeClock;
+    public InCallViewModel() {
+        mElapsedTimeClock = SystemClock.elapsedRealtimeClock();
+        mInCallModel = new InCallModel(InCallServiceManagerProvider.get(), new CallComparator());
+        mPrimaryCallLiveData = mInCallModel.getPrimaryCallLiveData();
+        mCallDetailLiveData = Transformations.switchMap(mPrimaryCallLiveData, call -> {
+            CallDetailLiveData callDetailLiveData = new CallDetailLiveData();
+            callDetailLiveData.setTelecomCall(call);
+            return callDetailLiveData;
+        });
     }
 
     @Override
@@ -123,23 +127,16 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         mDefaultDialerCardHeader = createCardHeader(mTelecomManager.getDefaultDialerPackage());
         mCardHeader = mDefaultDialerCardHeader;
 
-        sInCallServiceManager = InCallServiceManagerProvider.get();
-        sInCallServiceManager.addObserver(this);
-        if (sInCallServiceManager.getInCallService() != null) {
-            onInCallServiceConnected();
-        }
+        mCallObserver = o -> onCallChanged(mPrimaryCallLiveData.getValue());
+        mPrimaryCallLiveData.observeForever(mCallObserver);
+
+        mCallAudioStateObserver =
+                o -> onCallAudioStateChanged(mInCallModel.getCallAudioStateLiveData().getValue());
+        mInCallModel.getCallAudioStateLiveData().observeForever(mCallAudioStateObserver);
     }
 
     @Override
     public void onDestroy(Context context) {
-        sInCallServiceManager.removeObserver(this);
-        if (mInCallService != null) {
-            if (mInCallService.getCalls() != null && !mInCallService.getCalls().isEmpty()) {
-                onCallRemoved(mInCallService.getCalls().get(0));
-            }
-            mInCallService.removeListener(InCallModel.this);
-            mInCallService = null;
-        }
         if (mPhoneNumberInfoFuture != null) {
             mPhoneNumberInfoFuture.cancel(/* mayInterruptIfRunning= */true);
         }
@@ -168,8 +165,9 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
     @Override
     public Intent getIntent() {
         Intent intent = null;
-        if (isSelfManagedCall()) {
-            String callingAppPackageName = getCallingAppPackageName();
+        CallDetail callDetail = mCallDetailLiveData.getValue();
+        if (callDetail != null && callDetail.isSelfManaged()) {
+            String callingAppPackageName = callDetail.getCallingAppPackageName();
             if (!TextUtils.isEmpty(callingAppPackageName)) {
                 if (isCarAppCallingService(callingAppPackageName)) {
                     intent = new Intent();
@@ -204,54 +202,33 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         }
     }
 
+    @VisibleForTesting
+    void onCallAudioStateChanged(CallAudioState audioState) {
+
+        if (updateMuteButtonIconState(audioState)) {
+            mOnModelUpdateListener.onModelUpdate(this);
+        }
+    }
+
+    private void onCallChanged(Call call) {
+        if (call != null) {
+            mCurrentCall = call;
+            handleActiveCall(mCurrentCall);
+        } else {
+            mCurrentCall = null;
+            mCardHeader = null;
+            mCardContent = null;
+            mOnModelUpdateListener.onModelUpdate(this);
+        }
+    }
+
     /** Indicates whether there is an active call or not. */
     public boolean hasActiveCall() {
         return mCurrentCall != null;
     }
 
-    /**
-     * When a {@link Call} is added, notify the {@link HomeCardInterface.Presenter} to update the
-     * card to display content on the ongoing phone call.
-     */
-    @Override
-    public void onCallAdded(Call call) {
-        if (call == null) {
-            return;
-        }
-        mCurrentCall = call;
-        call.registerCallback(mCallback);
-        @Call.CallState int callState = call.getDetails().getState();
-        if (callState == Call.STATE_ACTIVE || callState == Call.STATE_DIALING) {
-            handleActiveCall(call);
-        }
-    }
-
-    /**
-     * When a {@link Call} is removed, notify the {@link HomeCardInterface.Presenter} to update the
-     * card to remove the content on the no longer ongoing phone call.
-     */
-    @Override
-    public void onCallRemoved(Call call) {
-        mCurrentCall = null;
-        mCardHeader = null;
-        mCardContent = null;
-        mOnModelUpdateListener.onModelUpdate(this);
-        if (call != null) {
-            call.unregisterCallback(mCallback);
-        }
-    }
-
-    /**
-     * When a {@link CallAudioState} is changed, update the model and notify the
-     * {@link HomeCardInterface.Presenter} to update the view.
-     */
-    @Override
-    public void onCallAudioStateChanged(CallAudioState audioState) {
-        // This is implemented to listen to changes to audio from other sources and update the
-        // content accordingly.
-        if (updateMuteButtonIconState(audioState)) {
-            mOnModelUpdateListener.onModelUpdate(this);
-        }
+    protected Call getCurrentCall() {
+        return mCurrentCall;
     }
 
     /**
@@ -341,15 +318,11 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         mOnModelUpdateListener.onModelUpdate(this);
     }
 
-    protected Call getCurrentCall() {
-        return mCurrentCall;
-    }
-
     protected void handleActiveCall(@NonNull Call call) {
         @Call.CallState int callState = call.getDetails().getState();
         CallDetail callDetails = CallDetail.fromTelecomCallDetail(call.getDetails());
         if (callDetails.isSelfManaged()) {
-            String packageName = getCallingAppPackageName();
+            String packageName = callDetails.getCallingAppPackageName();
             mCardHeader = createCardHeader(packageName);
         }
         if (mCardHeader == null) {
@@ -401,7 +374,7 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
                 mContext.getDrawable(R.drawable.ic_mute_activatable),
                 v -> {
                     boolean toggledValue = !v.isSelected();
-                    mInCallService.setMuted(toggledValue);
+                    InCallServiceManagerProvider.get().setMuted(toggledValue);
                     v.setSelected(toggledValue);
                 });
         mEndCallButton = new DescriptiveTextWithControlsView.Control(
@@ -421,20 +394,6 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         return mMuteButton.getIcon().getState();
     }
 
-    @Nullable
-    private String getCallingAppPackageName() {
-        Call.Details callDetails = mCurrentCall == null ? null : mCurrentCall.getDetails();
-        PhoneAccountHandle phoneAccountHandle =
-                callDetails == null ? null : callDetails.getAccountHandle();
-        return phoneAccountHandle == null ? null
-                : phoneAccountHandle.getComponentName().getPackageName();
-    }
-
-    private boolean isSelfManagedCall() {
-        return mCurrentCall != null
-                && mCurrentCall.getDetails().hasProperty(Call.Details.PROPERTY_SELF_MANAGED);
-    }
-
     private CardHeader createCardHeader(String packageName) {
         if (!TextUtils.isEmpty(packageName)) {
             try {
@@ -450,24 +409,6 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
         return null;
     }
 
-    @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        Log.d(TAG, "InCallService has updated.");
-        if (PROPERTY_IN_CALL_SERVICE.equals(evt.getPropertyName())
-                && sInCallServiceManager.getInCallService() != null) {
-            onInCallServiceConnected();
-        }
-    }
-
-    private void onInCallServiceConnected() {
-        Log.d(TAG, "InCall service is connected");
-        mInCallService = (InCallServiceImpl) sInCallServiceManager.getInCallService();
-        mInCallService.addListener(this);
-        if (mInCallService.getCalls() != null && !mInCallService.getCalls().isEmpty()) {
-            onCallAdded(mInCallService.getCalls().get(0));
-        }
-    }
-
     private boolean isCarAppCallingService(String packageName) {
         // Check that app is integrated with CAL and handles calls
         Intent serviceIntent =
@@ -479,7 +420,7 @@ public class InCallModel implements AudioModel, InCallServiceImpl.InCallListener
             return false;
         }
 
-        // Check that app has CAl activity
+        // Check that app has CAL activity
         Intent activityIntent = new Intent();
         activityIntent.setComponent(new ComponentName(packageName, CAR_APP_ACTIVITY_INTERFACE));
 

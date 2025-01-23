@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Google Inc.
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import android.telecom.CallAudioState;
 
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.car.apps.common.testutils.InstantTaskExecutorRule;
 import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
@@ -41,22 +42,24 @@ import com.android.internal.util.ArrayUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.time.Clock;
-
 @RunWith(JUnit4.class)
-public class InCallModelTest {
+public class InCallViewModelTest {
 
+    @Rule
+    public TestRule rule = new InstantTaskExecutorRule();
     private static final String PHONE_NUMBER = "01234567";
     private static final String DISPLAY_NAME = "Test Caller";
     private static final String INITIALS = "T";
 
-    private InCallModel mInCallModel;
+    private InCallViewModel mInCallModel;
     private String mOngoingCallSecondaryText;
     private String mDialingCallSecondaryText;
 
@@ -64,8 +67,6 @@ public class InCallModelTest {
 
     @Mock
     private HomeCardInterface.Model.OnModelUpdateListener mOnModelUpdateListener;
-    @Mock
-    private Clock mClock;
 
     private Call mCall = null;
 
@@ -73,7 +74,7 @@ public class InCallModelTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         mContext = ApplicationProvider.getApplicationContext();
-        mInCallModel = new InCallModel(mClock);
+        mInCallModel = new InCallViewModel();
         mInCallModel.setOnModelUpdateListener(mOnModelUpdateListener);
         mInCallModel.onCreate(mContext);
         Resources resources = ApplicationProvider.getApplicationContext().getResources();
@@ -89,13 +90,6 @@ public class InCallModelTest {
     @Test
     public void noChange_doesNotCallPresenter() {
         verify(mOnModelUpdateListener, never()).onModelUpdate(any());
-    }
-
-    @Test
-    public void onCallRemoved_callsPresenter() {
-        mInCallModel.onCallRemoved(mCall);
-
-        verify(mOnModelUpdateListener).onModelUpdate(mInCallModel);
     }
 
     @Test
