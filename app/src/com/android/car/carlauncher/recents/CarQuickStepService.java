@@ -31,7 +31,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.android.systemui.shared.recents.IOverviewProxy;
+import com.android.systemui.shared.recents.ILauncherProxy;
 import com.android.systemui.shared.statusbar.phone.BarTransitions;
 import com.android.systemui.shared.system.QuickStepContract.SystemUiStateFlags;
 import com.android.wm.shell.recents.IRecentTasks;
@@ -57,7 +57,7 @@ public class CarQuickStepService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return new CarOverviewProxyBinder();
+        return new CarLauncherProxyBinder();
     }
 
     @Override
@@ -89,7 +89,7 @@ public class CarQuickStepService extends Service {
         startActivity(intent);
     }
 
-    private class CarOverviewProxyBinder extends IOverviewProxy.Stub {
+    private class CarLauncherProxyBinder extends ILauncherProxy.Stub {
         @Override
         public void onActiveNavBarRegionChanges(Region activeRegion) {
             // no-op
