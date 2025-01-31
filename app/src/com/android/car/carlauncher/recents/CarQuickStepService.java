@@ -237,7 +237,7 @@ public class CarQuickStepService extends Service {
         }
 
         @Override
-        public void onDisplayReady(int displayId) {
+        public void onDisplayAddSystemDecorations(int displayId) {
             // no-op
         }
 
