@@ -25,11 +25,13 @@ import android.content.Intent;
 import android.graphics.Region;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.IRemoteCallback;
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.android.systemui.shared.recents.IOverviewProxy;
+import com.android.systemui.shared.recents.ILauncherProxy;
 import com.android.systemui.shared.statusbar.phone.BarTransitions;
 import com.android.systemui.shared.system.QuickStepContract.SystemUiStateFlags;
 import com.android.wm.shell.recents.IRecentTasks;
@@ -37,6 +39,9 @@ import com.android.wm.shell.recents.IRecentTasks;
 import java.util.List;
 
 public class CarQuickStepService extends Service {
+
+    private static final String TAG = "CarQuickStepService";
+
     private RecentTasksProvider mRecentTasksProvider;
     private ActivityManager mActivityManager;
     private ComponentName mRecentsComponent;
@@ -52,7 +57,7 @@ public class CarQuickStepService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return new CarOverviewProxyBinder();
+        return new CarLauncherProxyBinder();
     }
 
     @Override
@@ -84,7 +89,7 @@ public class CarQuickStepService extends Service {
         startActivity(intent);
     }
 
-    private class CarOverviewProxyBinder extends IOverviewProxy.Stub {
+    private class CarLauncherProxyBinder extends ILauncherProxy.Stub {
         @Override
         public void onActiveNavBarRegionChanges(Region activeRegion) {
             // no-op
@@ -213,6 +218,31 @@ public class CarQuickStepService extends Service {
 
         @Override
         public void appTransitionPending(boolean pending) {
+            // no-op
+        }
+
+        @Override
+        public void onUnbind(IRemoteCallback reply) {
+            // no-op but immediately call the reply to unblock OveriewProxyService.
+            try {
+                reply.sendResult(null);
+            } catch (RemoteException e) {
+                Log.w(TAG, "onUnbind: Failed to reply to OverviewProxyService", e);
+            }
+        }
+
+        @Override
+        public void onDisplayRemoved(int displayId) {
+            // no-op
+        }
+
+        @Override
+        public void onDisplayAddSystemDecorations(int displayId) {
+            // no-op
+        }
+
+        @Override
+        public void onDisplayRemoveSystemDecorations(int displayId) {
             // no-op
         }
     }
