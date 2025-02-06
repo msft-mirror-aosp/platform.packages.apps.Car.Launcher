@@ -28,10 +28,12 @@ import static org.mockito.Mockito.when;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.car.docklib.DockInterface;
+import com.android.car.dockutil.R;
 import com.android.car.dockutil.events.DockEvent;
 
 import org.junit.Before;
@@ -48,6 +50,8 @@ public class DockEventsReceiverTest {
     public Intent mIntent;
     @Mock
     public DockInterface mDockInterface;
+    @Mock
+    public Resources mResources;
 
     private DockEventsReceiver mDockEventsReceiver;
 
@@ -55,6 +59,8 @@ public class DockEventsReceiverTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
         mDockEventsReceiver = new DockEventsReceiver(mDockInterface);
+        when(mContext.getResources()).thenReturn(mResources);
+        when(mResources.getIntArray(R.array.dock_supported_displays)).thenReturn(new int[] {0});
     }
 
     @Test
