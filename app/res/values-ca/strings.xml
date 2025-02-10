@@ -28,7 +28,7 @@
     <string name="projected_onclick_launch_error_toast_text" msgid="8853804785626030351">"No es pot iniciar Android Auto. No s\'ha trobat cap activitat."</string>
     <string name="projection_devices" msgid="2556503818120676439">"{count,plural, =1{# dispositiu}other{# dispositius}}"</string>
     <string name="weather_app_name" msgid="4356705068077942048">"Temps"</string>
-    <string name="fake_weather_main_text" msgid="2545755284647327839">"--° Principalment assolellat"</string>
+    <string name="fake_weather_main_text" msgid="2545755284647327839">"--° Majoritàriament assolellat"</string>
     <string name="fake_weather_footer_text" msgid="8640814250285014485">"Mountain View • Màx.: --° Mín.: --°"</string>
     <string name="times_separator" msgid="1962841895013564645">"/"</string>
     <string name="recents_empty_state_text" msgid="8228569970506899117">"No hi ha cap element recent"</string>
