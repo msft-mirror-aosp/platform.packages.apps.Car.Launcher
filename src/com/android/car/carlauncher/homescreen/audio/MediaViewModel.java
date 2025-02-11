@@ -185,9 +185,14 @@ public class MediaViewModel extends AndroidViewModel implements AudioModel {
 
     @Override
     public Intent getIntent() {
-        MediaSource mediaSource = getMediaSourceViewModel().getPrimaryMediaSource().getValue();
+        MediaSource mediaSource = getMediaSource();
 
         return mediaSource != null ? mediaSource.getIntent() : null;
+    }
+
+    /** Get the associated MediaSource of the current playing media */
+    public MediaSource getMediaSource() {
+        return getMediaSourceViewModel().getPrimaryMediaSource().getValue();
     }
 
     @Override
