@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
-import com.android.car.carlauncher.homescreen.audio.InCallModel;
+import com.android.car.carlauncher.homescreen.audio.InCallViewModel;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextView;
 
@@ -47,7 +47,7 @@ public class DialerCardPresenterTest {
     @Mock
     private DialerCardFragment mView;
     @Mock
-    private InCallModel mModel;
+    private InCallViewModel mModel;
 
     @Mock
     private DialerCardPresenter.OnInCallStateChangeListener mOnInCallStateChangeListener;
