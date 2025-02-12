@@ -24,7 +24,7 @@ import com.android.car.carlauncher.homescreen.CardPresenter;
 import com.android.car.carlauncher.homescreen.HomeCardFragment.OnViewClickListener;
 import com.android.car.carlauncher.homescreen.HomeCardFragment.OnViewLifecycleChangeListener;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
-import com.android.car.carlauncher.homescreen.audio.InCallModel;
+import com.android.car.carlauncher.homescreen.audio.InCallViewModel;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class DialerCardPresenter extends CardPresenter {
         void onInCallStateChanged(boolean hasActiveCall);
     }
 
-    private InCallModel mViewModel;
+    private InCallViewModel mViewModel;
     private DialerCardFragment mFragment;
 
     @VisibleForTesting
@@ -68,7 +68,7 @@ public class DialerCardPresenter extends CardPresenter {
             new HomeCardInterface.Model.OnModelUpdateListener() {
                 @Override
                 public void onModelUpdate(HomeCardInterface.Model model) {
-                    InCallModel dialerCardModel = (InCallModel) model;
+                    InCallViewModel dialerCardModel = (InCallViewModel) model;
                     if (dialerCardModel.getCardHeader() != null) {
                         mFragment.updateHeaderView(dialerCardModel.getCardHeader());
                     }
@@ -103,7 +103,7 @@ public class DialerCardPresenter extends CardPresenter {
         // No-op
     }
 
-    public void setModel(InCallModel viewModel) {
+    public void setModel(InCallViewModel viewModel) {
         mViewModel = viewModel;
     }
 
