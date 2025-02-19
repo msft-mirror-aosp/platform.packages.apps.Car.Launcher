@@ -18,7 +18,7 @@ package com.android.car.carlauncher.recents;
 
 import static android.app.ActivityManager.RECENT_IGNORE_UNAVAILABLE;
 
-import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FREEFORM;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_DESK;
 import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FULLSCREEN;
 import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_SPLIT;
 
@@ -76,7 +76,7 @@ import java.util.List;
 public class RecentTasksProviderTest {
     private static final int RECENT_TASKS_LENGTH = 20;
     private static final int SPLIT_RECENT_TASKS_LENGTH = 2;
-    private static final int FREEFORM_RECENT_TASKS_LENGTH = 3;
+    private static final int DESK_RECENT_TASKS_LENGTH = 3;
 
     private RecentTasksProvider mRecentTasksProvider;
     private GroupedTaskInfo[] mGroupedRecentTaskInfo;
@@ -195,7 +195,7 @@ public class RecentTasksProviderTest {
     @Test
     public void getRecentTasksAsync_getRecentTaskIds_filters_TYPE_SPLIT() throws
             RemoteException {
-        initRecentTaskList(/* addTypeSplit= */ true, /* addTypeFreeform= */ false);
+        initRecentTaskList(/* addTypeSplit= */ true, /* addTypeDesk= */ false);
         assertThat(mGroupedRecentTaskInfo.length).isEqualTo(
                 RECENT_TASKS_LENGTH + SPLIT_RECENT_TASKS_LENGTH);
         when(mRecentTaskProxy.getRecentTasks(anyInt(), eq(RECENT_IGNORE_UNAVAILABLE),
@@ -218,9 +218,9 @@ public class RecentTasksProviderTest {
     @Test
     public void getRecentTasksAsync_getRecentTaskIds_filters_TYPE_FREEFORM() throws
             RemoteException {
-        initRecentTaskList(/* addTypeSplit= */ false, /* addTypeFreeform= */ true);
+        initRecentTaskList(/* addTypeSplit= */ false, /* addTypeDesk= */ true);
         assertThat(mGroupedRecentTaskInfo.length).isEqualTo(
-                RECENT_TASKS_LENGTH + FREEFORM_RECENT_TASKS_LENGTH);
+                RECENT_TASKS_LENGTH + DESK_RECENT_TASKS_LENGTH);
         when(mRecentTaskProxy.getRecentTasks(anyInt(), eq(RECENT_IGNORE_UNAVAILABLE),
                 anyInt())).thenReturn(mGroupedRecentTaskInfo);
 
@@ -360,10 +360,10 @@ public class RecentTasksProviderTest {
     }
 
     private void initRecentTaskList() {
-        initRecentTaskList(/* addTypeSplit= */ false, /* addTypeFreeform= */ false);
+        initRecentTaskList(/* addTypeSplit= */ false, /* addTypeDesk= */ false);
     }
 
-    private void initRecentTaskList(boolean addTypeSplit, boolean addTypeFreeform) {
+    private void initRecentTaskList(boolean addTypeSplit, boolean addTypeDesk) {
         List<GroupedTaskInfo> groupedRecentTaskInfos = new ArrayList<>();
         for (int i = 0; i < RECENT_TASKS_LENGTH; i++) {
             groupedRecentTaskInfos.add(
@@ -375,10 +375,10 @@ public class RecentTasksProviderTest {
                         createGroupedRecentTaskInfo(createRecentTaskInfo(i), TYPE_SPLIT));
             }
         }
-        if (addTypeFreeform) {
-            for (int i = 0; i < FREEFORM_RECENT_TASKS_LENGTH; i++) {
+        if (addTypeDesk) {
+            for (int i = 0; i < DESK_RECENT_TASKS_LENGTH; i++) {
                 groupedRecentTaskInfos.add(
-                        createGroupedRecentTaskInfo(createRecentTaskInfo(i), TYPE_FREEFORM));
+                        createGroupedRecentTaskInfo(createRecentTaskInfo(i), TYPE_DESK));
             }
         }
         mGroupedRecentTaskInfo = groupedRecentTaskInfos.toArray(GroupedTaskInfo[]::new);
