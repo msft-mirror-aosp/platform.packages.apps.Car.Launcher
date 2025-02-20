@@ -25,7 +25,9 @@ import android.content.Intent;
 import android.graphics.Region;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.IRemoteCallback;
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -37,6 +39,9 @@ import com.android.wm.shell.recents.IRecentTasks;
 import java.util.List;
 
 public class CarQuickStepService extends Service {
+
+    private static final String TAG = "CarQuickStepService";
+
     private RecentTasksProvider mRecentTasksProvider;
     private ActivityManager mActivityManager;
     private ComponentName mRecentsComponent;
@@ -214,6 +219,16 @@ public class CarQuickStepService extends Service {
         @Override
         public void appTransitionPending(boolean pending) {
             // no-op
+        }
+
+        @Override
+        public void onUnbind(IRemoteCallback reply) {
+            // no-op but immediately call the reply to unblock OveriewProxyService.
+            try {
+                reply.sendResult(null);
+            } catch (RemoteException e) {
+                Log.w(TAG, "onUnbind: Failed to reply to OverviewProxyService", e);
+            }
         }
     }
 }
