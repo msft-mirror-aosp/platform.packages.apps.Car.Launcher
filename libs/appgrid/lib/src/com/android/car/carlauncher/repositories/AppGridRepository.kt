@@ -120,7 +120,7 @@ class AppGridRepositoryImpl(
 ) : AppGridRepository {
 
     private val isVisibleBackgroundUser = !userManager.isUserForeground &&
-        userManager.isUserVisible && !userManager.isProfile
+            userManager.isUserVisible && !userManager.isProfile
 
     /**
      * Provides a flow of all apps in the app grid.
@@ -193,9 +193,13 @@ class AppGridRepositoryImpl(
      */
     override fun getMediaAppsList(): Flow<List<AppItem>> {
         return launcherActivities.getOnPackagesChanged().map {
-            mediaTemplateApps.getAllMediaServices(true).map {
+            val templatedMediaApps = mediaTemplateApps.getAllMediaServices(true).map {
                 it.toAppInfo(MEDIA).toAppItem(true)
             }
+            val calMediaApps = launcherActivities.getAllCalMediaLauncherActivities().map {
+                AppInfo(it.label, it.componentName, it.getBadgedIcon(0), LAUNCHER).toAppItem(true)
+            }
+            templatedMediaApps + calMediaApps
         }.flowOn(bgDispatcher).distinctUntilChanged()
     }
 
@@ -229,11 +233,12 @@ class AppGridRepositoryImpl(
         private val _launchActionType: AppLauncherProviderType,
         var redirectIntent: Intent? = null
     ) {
-        val launchActionType get() = if (redirectIntent == null) {
-            _launchActionType
-        } else {
-            MIRRORING
-        }
+        val launchActionType
+            get() = if (redirectIntent == null) {
+                _launchActionType
+            } else {
+                MIRRORING
+            }
 
         val appOrderInfo =
             AppOrderInfo(componentName.packageName, componentName.className, displayName.toString())
@@ -292,8 +297,9 @@ class AppGridRepositoryImpl(
         if (isVisibleBackgroundUser) {
             return try {
                 packageManager.getPackageInfo(
-                    appInfo.componentName.packageName, PackageManager.GET_PERMISSIONS)
-                    .requestedPermissions?.any {it == MANAGE_OWN_CALLS} ?: false
+                    appInfo.componentName.packageName, PackageManager.GET_PERMISSIONS
+                )
+                    .requestedPermissions?.any { it == MANAGE_OWN_CALLS } ?: false
             } catch (e: NameNotFoundException) {
                 Log.e(TAG, "Unable to query app permissions for $appInfo $e")
                 false

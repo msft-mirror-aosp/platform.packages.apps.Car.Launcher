@@ -266,6 +266,7 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
 
     private fun initViewModel() {
         val launcherActivities: LauncherActivitiesDataSource = LauncherActivitiesDataSourceImpl(
+            requireContext().packageManager,
             requireContext().getSystemService(LauncherApps::class.java),
             { broadcastReceiver: BroadcastReceiver?, intentFilter: IntentFilter? ->
                 requireContext().registerReceiver(broadcastReceiver, intentFilter)
