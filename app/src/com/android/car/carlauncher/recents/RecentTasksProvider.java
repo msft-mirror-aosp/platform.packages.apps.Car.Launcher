@@ -18,7 +18,7 @@ package com.android.car.carlauncher.recents;
 
 import static android.app.ActivityManager.RECENT_IGNORE_UNAVAILABLE;
 
-import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FREEFORM;
+import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_DESK;
 import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FULLSCREEN;
 import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_SPLIT;
 
@@ -193,12 +193,12 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
                         getRecentTaskIconAsync(task.key.id);
                         break;
                     case TYPE_SPLIT:
-                    case TYPE_FREEFORM:
+                    case TYPE_DESK:
                         areSplitOrFreeformTypeTasksPresent = true;
                 }
             }
             if (areSplitOrFreeformTypeTasksPresent && DEBUG) {
-                Log.d(TAG, "Automotive doesn't support TYPE_SPLIT and TYPE_FREEFORM tasks");
+                Log.d(TAG, "Automotive doesn't support TYPE_SPLIT and TYPE_DESK tasks");
             }
             if (mRecentsDataChangeListener != null) {
                 sMainHandler.post(() -> mRecentsDataChangeListener.recentTasksFetched());
