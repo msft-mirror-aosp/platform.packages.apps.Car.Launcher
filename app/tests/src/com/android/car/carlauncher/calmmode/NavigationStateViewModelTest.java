@@ -36,7 +36,7 @@ import android.icu.util.MeasureUnit;
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
 
-import com.android.car.apps.common.testutils.InstantTaskExecutorRule;
+import com.android.car.carlauncher.InstantTaskExecutorRule;
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 
 import org.junit.Before;
