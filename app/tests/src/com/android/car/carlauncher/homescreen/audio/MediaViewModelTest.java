@@ -34,8 +34,8 @@ import androidx.test.annotation.UiThreadTest;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.car.apps.common.testutils.InstantTaskExecutorRule;
 import com.android.car.carlauncher.AppLauncherUtils;
+import com.android.car.carlauncher.InstantTaskExecutorRule;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.CardHeader;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
@@ -241,4 +241,3 @@ public class MediaViewModelTest extends AbstractExtendedMockitoTestCase  {
         assertEquals(seekBarViewModel.getSeekBarColor(), COLORS);
     }
 }
-

@@ -33,7 +33,7 @@ import android.telecom.CallAudioState;
 
 import androidx.test.core.app.ApplicationProvider;
 
-import com.android.car.apps.common.testutils.InstantTaskExecutorRule;
+import com.android.car.carlauncher.InstantTaskExecutorRule;
 import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
 import com.android.car.carlauncher.homescreen.ui.DescriptiveTextWithControlsView;
