@@ -34,11 +34,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 
-import android.car.app.RemoteCarTaskView;
 import android.car.test.mocks.AbstractExtendedMockitoTestCase;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -55,6 +56,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,13 +80,7 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
             + "component=com.android.car.carlauncher/"
             + "com.android.car.carlauncher.homescreen.MapActivityTos;"
             + "action=android.intent.action.MAIN;end";
-    private static final String DEFAULT_MAP_INTENT = "intent:#Intent;"
-            + "component=com.android.car.maps/"
-            + "com.android.car.maps.MapActivity;"
-            + "action=android.intent.action.MAIN;end";
-    private static final String CUSTOM_MAP_INTENT = "intent:#Intent;component=com.custom.car.maps/"
-            + "com.custom.car.maps.MapActivity;"
-            + "action=android.intent.action.MAIN;end";
+
     // TOS disabled app list is non empty when TOS is not accepted.
     private static final String NON_EMPTY_TOS_DISABLED_APPS =
             "com.test.package1, com.test.package2";
@@ -95,6 +91,11 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     protected void onSessionBuilder(CustomMockitoSessionBuilder session) {
         session.spyStatic(AppLauncherUtils.class);
         session.spyStatic(CarLauncherUtils.class);
+    }
+
+    @Before
+    public void setUp() {
+        assumeFalse(hasSplitscreenMultitaskingFeature());
     }
 
     @After
@@ -143,15 +144,12 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     }
 
     @Test
-    public void onCreate_tosMapActivity_tosUnaccepted_canvasOptimizedMapsDisabledByTos() {
+    public void onCreate_tosUnacceptedAndCanvasOptimizedMapsDisabledByTos_launchesTosMapIntent() {
         doReturn(false).when(() -> AppLauncherUtils.tosAccepted(any()));
         doReturn(true)
-                        .when(() ->
-                                CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
+                .when(() -> CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
         doReturn(createIntentFromString(TOS_MAP_INTENT))
                 .when(() -> CarLauncherUtils.getTosMapIntent(any()));
-        doReturn(createIntentFromString(DEFAULT_MAP_INTENT))
-                .when(() -> CarLauncherUtils.getSmallCanvasOptimizedMapIntent(any()));
         doReturn(tosDisabledPackages())
                 .when(() -> AppLauncherUtils.getTosDisabledPackages(any()));
 
@@ -168,12 +166,12 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     }
 
     @Test
-    public void onCreate_tosMapActivity_tosUnaccepted_mapsNotDisabledByTos() {
+    public void onCreate_tosUnacceptedAndDefaultMapsNotDisabledByTos_doesNotLaunchTosMapIntent() {
         doReturn(false).when(() -> AppLauncherUtils.tosAccepted(any()));
-        doReturn(true)
+        doReturn(false)
                 .when(() -> CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
-        doReturn(createIntentFromString(CUSTOM_MAP_INTENT))
-                .when(() -> CarLauncherUtils.getSmallCanvasOptimizedMapIntent(any()));
+        doReturn(createIntentFromString(TOS_MAP_INTENT))
+                .when(() -> CarLauncherUtils.getTosMapIntent(any()));
         doReturn(tosDisabledPackages())
                 .when(() -> AppLauncherUtils.getTosDisabledPackages(any()));
 
@@ -185,14 +183,14 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
             // these can be some other navigation app set as default,
             // package name will not be null.
             // We will not replace the map intent with TOS map activity
-            assertEquals(
-                    createIntentFromString(CUSTOM_MAP_INTENT).getComponent().getClassName(),
+            assertNotEquals(
+                    createIntentFromString(TOS_MAP_INTENT).getComponent().getClassName(),
                     mapIntent.getComponent().getClassName());
         });
     }
 
     @Test
-    public void onCreate_tosMapActivity_tosAccepted() {
+    public void onCreate_tosAccepted_doesNotLaunchTosMapIntent() {
         doReturn(true).when(() -> AppLauncherUtils.tosAccepted(any()));
         doReturn(createIntentFromString(TOS_MAP_INTENT))
                 .when(() -> CarLauncherUtils.getTosMapIntent(any()));
@@ -202,7 +200,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         mActivityScenario.onActivity(activity -> {
             Intent mapIntent = activity.getMapsIntent();
             // If TOS is accepted, map intent is not replaced
-            assertNotEquals("com.android.car.carlauncher.homescreen.MapActivityTos",
+            assertNotEquals(
+                    createIntentFromString(TOS_MAP_INTENT).getComponent().getClassName(),
                     mapIntent.getComponent().getClassName());
         });
     }
@@ -279,6 +278,15 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     }
 
     @Test
+    public void onCreate_whenTosIsNull_tosStateContentObserverIsNotNull() {
+        // Settings.Secure KEY_USER_TOS_ACCEPTED is null when not set explicitly.
+        mActivityScenario = ActivityScenario.launch(new Intent(mContext, CarLauncher.class));
+
+        // Content observer is not null after activity is created
+        mActivityScenario.onActivity(activity -> assertNotNull(activity.mTosContentObserver));
+    }
+
+    @Test
     public void recreate_afterTosIsInitialized_tosStateContentObserverIsNotNull() {
         TestableContext mContext = new TestableContext(InstrumentationRegistry.getContext());
         Settings.Secure.putInt(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, 0);
@@ -313,9 +321,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         mActivityScenario.onActivity(activity -> {
             assertNotNull(activity.mCarLauncherViewModel); // CarLauncherViewModel is setup
 
-            RemoteCarTaskView oldRemoteCarTaskView =
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue();
-            assertNotNull(oldRemoteCarTaskView);
+            Intent oldMapsIntent = activity.mCarLauncherViewModel.getMapsIntent();
+            assertNotNull(oldMapsIntent);
 
             // Initialize TOS
             Settings.Secure.putInt(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, 1);
@@ -323,9 +330,10 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                     KEY_UNACCEPTED_TOS_DISABLED_APPS, NON_EMPTY_TOS_DISABLED_APPS);
             activity.mTosContentObserver.onChange(true);
 
-            // Different instance of task view since TOS has gone from uninitialized to initialized
-            assertThat(oldRemoteCarTaskView).isNotSameInstanceAs(
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue());
+            // Different instance of maps intent since TOS has gone from uninitialized to
+            // initialized
+            assertThat(oldMapsIntent).isNotSameInstanceAs(
+                    activity.mCarLauncherViewModel.getMapsIntent());
         });
     }
 
@@ -341,9 +349,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         mActivityScenario.onActivity(activity -> {
             assertNotNull(activity.mCarLauncherViewModel); // CarLauncherViewModel is setup
 
-            RemoteCarTaskView oldRemoteCarTaskView =
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue();
-            assertNotNull(oldRemoteCarTaskView);
+            Intent oldMapsIntent = activity.mCarLauncherViewModel.getMapsIntent();
+            assertNotNull(oldMapsIntent);
 
             // Accept TOS
             Settings.Secure.putInt(mContext.getContentResolver(), KEY_USER_TOS_ACCEPTED, 2);
@@ -351,9 +358,9 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                     KEY_UNACCEPTED_TOS_DISABLED_APPS, EMPTY_TOS_DISABLED_APPS);
             activity.mTosContentObserver.onChange(true);
 
-            // Different instance of task view since TOS has been accepted
-            assertThat(oldRemoteCarTaskView).isNotSameInstanceAs(
-                    activity.mCarLauncherViewModel.getRemoteCarTaskView().getValue());
+            // Different instance of maps intent since TOS has been accepted
+            assertThat(oldMapsIntent).isNotSameInstanceAs(
+                    activity.mCarLauncherViewModel.getMapsIntent());
         });
     }
 
@@ -382,5 +389,13 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
                 }
             });
         });
+    }
+
+    /**
+     * Checks whether the device has automotive split-screen multitasking feature enabled
+     */
+    private boolean hasSplitscreenMultitaskingFeature() {
+        return mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 }

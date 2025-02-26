@@ -37,4 +37,6 @@
     <string name="calm_mode_title" msgid="4364804976931157567">"काम (शांत) मोड"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"सूची"</string>
     <string name="media_card_history_header_title" msgid="8337396297165848931">"मीडिया सोर्स"</string>
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"Maps की सुविधा बंद है. सेवा की शर्तें स्वीकार नहीं की गई हैं"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"Maps की सुविधा बंद है. ड्राइव करने के बाद समीक्षा करें."</string>
 </resources>

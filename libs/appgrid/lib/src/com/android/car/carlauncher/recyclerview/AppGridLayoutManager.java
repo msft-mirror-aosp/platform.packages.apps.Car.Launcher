@@ -24,15 +24,27 @@ import android.content.Context;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.car.carlauncher.AppGridRecyclerView;
+import com.android.car.carlauncher.pagination.PageMeasurementHelper;
+
 /**
- * Grid style layout manager for AppGridRecyclerView.
+ * Grid style layout manager for {@link AppGridRecyclerView}
  */
 public class AppGridLayoutManager extends GridLayoutManager {
     boolean mShouldLayoutChildren = true;
 
-    public AppGridLayoutManager(Context context, int numOfCols, int numOfRows,
+    private static final int DEFAULT_SPAN_COUNT = 3;
+
+    /**
+     * Initializes the layoutManager.
+     * Note: The spanCount is updated when dimensions are available,
+     * check:{@link
+     * AppGridRecyclerView#onDimensionsUpdated(PageMeasurementHelper.PageDimensions,
+     * PageMeasurementHelper.GridDimensions)}
+     */
+    public AppGridLayoutManager(Context context,
             @PageOrientation int pageOrientation) {
-        super(context, isHorizontal(pageOrientation) ? numOfRows : numOfCols,
+        super(context, DEFAULT_SPAN_COUNT,
                 isHorizontal(pageOrientation)
                         ? GridLayoutManager.HORIZONTAL : GridLayoutManager.VERTICAL, false);
     }
