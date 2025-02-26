@@ -146,7 +146,7 @@ public class CarQuickStepService extends Service {
         }
 
         @Override
-        public void onSystemUiStateChanged(@SystemUiStateFlags long stateFlags) {
+        public void onSystemUiStateChanged(@SystemUiStateFlags long stateFlags, int displayId) {
             // no-op
         }
 
