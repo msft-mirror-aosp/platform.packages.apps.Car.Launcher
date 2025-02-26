@@ -22,6 +22,11 @@
         <item name="oemTokenOverrideEnabled">true</item>
     </style>
 
+    <style name="Theme.ControlBar" parent="Theme.CarUi.NoToolbar">
+        <item name="oemTokenOverrideEnabled">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+
     <style name="Theme.CalmMode" parent="Theme.CarUi.NoToolbar">
         <item name="oemTokenOverrideEnabled">true</item>
         <item name="android:windowNoTitle">true</item>
