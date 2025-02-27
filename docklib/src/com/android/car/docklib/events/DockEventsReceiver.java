@@ -18,6 +18,7 @@ package com.android.car.docklib.events;
 
 import static android.content.Context.RECEIVER_EXPORTED;
 
+import static com.android.car.dockutil.events.DockCompatUtils.isDockSupportedOnDisplay;
 import static com.android.car.dockutil.events.DockEventSenderHelper.EXTRA_COMPONENT;
 
 import android.content.BroadcastReceiver;
@@ -48,6 +49,10 @@ public class DockEventsReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (!isDockSupportedOnDisplay(context, context.getDisplayId())) {
+            Log.e(TAG, "Dock event received on unsupported display " + context.getDisplayId());
+            return;
+        }
         DockEvent event = DockEvent.toDockEvent(intent.getAction());
         ComponentName component = intent.getParcelableExtra(EXTRA_COMPONENT, ComponentName.class);
 
