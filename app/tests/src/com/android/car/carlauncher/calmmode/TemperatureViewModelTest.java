@@ -42,7 +42,7 @@ import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.car.apps.common.testutils.InstantTaskExecutorRule;
+import com.android.car.carlauncher.InstantTaskExecutorRule;
 
 import org.junit.Before;
 import org.junit.Rule;
