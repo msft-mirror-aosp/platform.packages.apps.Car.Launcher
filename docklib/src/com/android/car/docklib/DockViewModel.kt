@@ -72,7 +72,7 @@ open class DockViewModel(
     private val colorExtractor = ColorExtractor()
     private val defaultIconColor = context.resources.getColor(
             R.color.icon_default_color,
-            null // theme
+            context.theme // theme
     )
     private val currentItems = MutableLiveData<List<DockAppItem>>()
     private val mediaServiceComponents = MediaUtils.fetchMediaServiceComponents(packageManager)

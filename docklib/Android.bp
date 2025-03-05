@@ -37,7 +37,10 @@ android_library {
 
     resource_dirs: ["res"],
 
-    libs: ["android.car"],
+    libs: [
+        "android.car",
+        "token-shared-lib-prebuilt",
+    ],
 
     static_libs: [
         "androidx.recyclerview_recyclerview",
@@ -49,11 +52,13 @@ android_library {
         "CarLauncherCommon",
         "SystemUISharedLib",
         "//frameworks/libs/systemui:iconloader",
-        "car-resource-common",
         "dock_item",
         "car_launcher_flags_java_lib",
         "car-media-common-no-overlayable",
+        "oem-token-lib",
     ],
+
+    enforce_uses_libs: false,
 
     platform_apis: true,
 

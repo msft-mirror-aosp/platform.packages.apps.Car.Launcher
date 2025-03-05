@@ -67,7 +67,7 @@ class DockItemViewHolder(
             .getDimension(R.dimen.icon_stroke_width_static)
     private val defaultIconColor = itemView.resources.getColor(
             R.color.icon_default_color,
-            null // theme
+            userContext.theme
     )
     private val appIcon: ShapeableImageView = itemView.requireViewById(R.id.dock_app_icon)
     private val iconColorExecutor = Executors.newSingleThreadExecutor()
@@ -95,15 +95,15 @@ class DockItemViewHolder(
                 .getDimension(R.dimen.icon_stroke_width_excited),
             staticIconStrokeColor = itemView.resources.getColor(
                 R.color.icon_static_stroke_color,
-                null // theme
+                userContext.theme
             ),
             excitedIconStrokeColor = itemView.resources.getColor(
                 R.color.icon_excited_stroke_color,
-                null // theme
+                userContext.theme
             ),
             restrictedIconStrokeColor = itemView.resources.getColor(
                 R.color.icon_restricted_stroke_color,
-                null // theme
+                userContext.theme
             ),
             defaultIconColor,
             excitedColorFilter = PorterDuffColorFilter(
