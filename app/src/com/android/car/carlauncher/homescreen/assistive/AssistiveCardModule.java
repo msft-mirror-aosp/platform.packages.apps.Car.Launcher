@@ -16,6 +16,8 @@
 
 package com.android.car.carlauncher.homescreen.assistive;
 
+import android.content.Context;
+
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.R;
@@ -37,7 +39,7 @@ public class AssistiveCardModule implements HomeCardModule {
     private HomeCardFragment mAssistiveCardView;
 
     @Override
-    public void setViewModelProvider(ViewModelProvider viewModelProvider) {
+    public void setViewModelProvider(ViewModelProvider viewModelProvider, Context context) {
         mViewModelProvider = viewModelProvider;
     }
 

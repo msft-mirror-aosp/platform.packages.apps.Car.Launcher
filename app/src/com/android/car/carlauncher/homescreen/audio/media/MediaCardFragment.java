@@ -133,7 +133,7 @@ public class MediaCardFragment extends HomeCardFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (!Flags.mediaCardFullscreen()) {
+        if (!getResources().getBoolean(R.bool.config_enableMediaCardFullscreen)) {
             mBlurRadius = getResources().getFloat(R.dimen.card_background_image_blur_radius);
             mDefaultCardBackgroundImage = new CardContent.CardBackgroundImage(
                     getContext().getDrawable(R.drawable.default_audio_background),

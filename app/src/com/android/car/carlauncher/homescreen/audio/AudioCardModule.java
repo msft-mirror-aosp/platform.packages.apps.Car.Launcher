@@ -16,6 +16,8 @@
 
 package com.android.car.carlauncher.homescreen.audio;
 
+import android.content.Context;
+
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.R;
@@ -33,14 +35,14 @@ public class AudioCardModule implements HomeCardModule {
     protected HomeCardInterface.View mAudioCardView;
     protected ViewModelProvider mViewModelProvider;
     @Override
-    public void setViewModelProvider(ViewModelProvider viewModelProvider) {
+    public void setViewModelProvider(ViewModelProvider viewModelProvider, Context context) {
         if (mViewModelProvider != null) {
             throw new IllegalStateException("Cannot reset the view model provider");
         }
         mViewModelProvider = viewModelProvider;
 
         mAudioCardPresenter = new AudioCardPresenter(
-                new DialerCardPresenter(), new MediaCardPresenter());
+                new DialerCardPresenter(), new MediaCardPresenter(), context);
         mAudioCardPresenter.setModel(new AudioCardModel(mViewModelProvider));
         mAudioCardView = new AudioCardFragment();
         mAudioCardPresenter.setView(mAudioCardView);

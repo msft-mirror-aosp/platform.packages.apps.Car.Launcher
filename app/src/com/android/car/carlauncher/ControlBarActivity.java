@@ -69,7 +69,8 @@ public class ControlBarActivity extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule) Class.forName(
                             providerClassName).newInstance();
-                    cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
+                    cardModule.setViewModelProvider(
+                            new ViewModelProvider(/* owner= */this), /* context = */ this);
                     mHomeCardModules.add(cardModule);
                     if (DEBUG) {
                         long reflectionTime = System.currentTimeMillis() - reflectionStartTime;
@@ -77,7 +78,7 @@ public class ControlBarActivity extends FragmentActivity {
                                 + " took " + reflectionTime + " ms");
                     }
                 } catch (IllegalAccessException | InstantiationException
-                        | ClassNotFoundException e) {
+                         | ClassNotFoundException e) {
                     Log.w(TAG, "Unable to create HomeCardProvider class " + providerClassName, e);
                 }
             }
