@@ -16,7 +16,10 @@
 
 package com.android.car.carlauncher.homescreen.audio;
 
+import android.content.Context;
+
 import com.android.car.carlauncher.Flags;
+import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.CardPresenter;
 import com.android.car.carlauncher.homescreen.HomeCardFragment;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
@@ -38,13 +41,15 @@ public class AudioCardPresenter extends CardPresenter {
 
     // The fragment controlled by this presenter.
     private AudioCardFragment mFragment;
+    private Context mContext;
+    private boolean mEnableMediaCardFullscreen;
 
     private final HomeCardFragment.OnViewLifecycleChangeListener mOnViewLifecycleChangeListener =
             new HomeCardFragment.OnViewLifecycleChangeListener() {
                 @Override
                 public void onViewCreated() {
                     mDialerPresenter.setView(mFragment.getInCallFragment());
-                    if (!Flags.mediaCardFullscreen()) {
+                    if (!mEnableMediaCardFullscreen) {
                         mMediaPresenter.setView(mFragment.getMediaFragment());
                     }
                 }
@@ -55,18 +60,21 @@ public class AudioCardPresenter extends CardPresenter {
             };
 
     public AudioCardPresenter(DialerCardPresenter dialerPresenter,
-            MediaCardPresenter mediaPresenter) {
+            MediaCardPresenter mediaPresenter, Context context) {
         mDialerPresenter = dialerPresenter;
         mMediaPresenter = mediaPresenter;
+        mContext = context;
+        mEnableMediaCardFullscreen = mContext.getResources().getBoolean(
+                R.bool.config_enableMediaCardFullscreen);
 
         mDialerPresenter.setOnInCallStateChangeListener(hasActiveCall -> {
             if (hasActiveCall) {
-                if (!Flags.mediaCardFullscreen()) {
+                if (!mEnableMediaCardFullscreen) {
                     mMediaPresenter.setShowMedia(false);
                 }
                 mFragment.showInCallCard();
             } else {
-                if (!Flags.mediaCardFullscreen()) {
+                if (!mEnableMediaCardFullscreen) {
                     mMediaPresenter.setShowMedia(true);
                 }
                 mFragment.showMediaCard();

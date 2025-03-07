@@ -37,6 +37,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="config_calmMode_showNavigation"/>
       <item type="bool" name="config_calmMode_showTemperature"/>
       <item type="bool" name="config_enableCalmMode"/>
+      <item type="bool" name="config_enableMediaCardFullscreen"/>
       <item type="bool" name="config_homecard_single_line_secondary_descriptive_text"/>
       <item type="bool" name="config_launch_most_recent_task_on_recents_dismiss"/>
       <item type="bool" name="show_seek_bar"/>

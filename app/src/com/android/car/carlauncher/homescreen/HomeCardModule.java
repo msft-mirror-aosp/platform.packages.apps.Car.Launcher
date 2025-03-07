@@ -16,6 +16,8 @@
 
 package com.android.car.carlauncher.homescreen;
 
+import android.content.Context;
+
 import androidx.annotation.IdRes;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -40,7 +42,7 @@ public interface HomeCardModule {
      * Sets the {@link ViewModelProvider}. which provides {@link androidx.lifecycle.ViewModel}s for
      * the scope of the {@link androidx.lifecycle.ViewModelStoreOwner} specified when constructed.
      */
-    void setViewModelProvider(ViewModelProvider viewModelProvider);
+    void setViewModelProvider(ViewModelProvider viewModelProvider, Context context);
 
     /**
      * Returns the id of the container view that will hold this card.
