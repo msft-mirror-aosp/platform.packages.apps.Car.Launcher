@@ -20,7 +20,7 @@
     <string name="reset_appgrid_title" msgid="6491348358859198288">"بازنشانی جدول برنامه‌ها به ترتیب حروف الفبا"</string>
     <string name="reset_appgrid_dialogue_message" msgid="2278301828239327586">"این عملکرد همه ترتیب‌های سفارشی را حذف خواهد کرد. می‌خواهید ادامه دهید؟"</string>
     <string name="app_launcher_title_all_apps" msgid="3522783138519460233">"همه برنامه‌ها"</string>
-    <string name="app_launcher_title_media_only" msgid="7194631822174015710">"برنامه‌های رسانه"</string>
+    <string name="app_launcher_title_media_only" msgid="7194631822174015710">"برنامه‌های رسانه‌ای"</string>
     <string name="app_launcher_stop_app_cant_stop_text" msgid="6513703446595313338">"برنامه متوقف نمی‌شود."</string>
     <string name="hide_debug_apps" msgid="7140064693464751647">"پنهان کردن برنامه‌های اشکال‌زدایی"</string>
     <string name="show_debug_apps" msgid="2748157232151197494">"نمایش برنامه‌های اشکال‌زدایی"</string>

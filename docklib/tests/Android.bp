@@ -30,7 +30,10 @@ android_test {
     libs: [
         "android.car",
         "android.test.base.stubs.system",
+        "token-shared-lib-prebuilt",
     ],
+
+    enforce_uses_libs: false,
 
     optimize: {
         enabled: false,
