@@ -47,6 +47,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
 import com.android.car.carlauncher.homescreen.audio.IntentHandler;
+import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
@@ -110,7 +111,7 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
+    private final IntentHandler mIntentHandler = new IntentHandler() {
         @Override
         public void handleIntent(Intent intent) {
             if (intent != null) {
@@ -173,16 +174,16 @@ public class CarLauncher extends FragmentActivity {
             }
         }
 
-        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
+        MediaIntentRouter.getInstance().registerMediaIntentHandler(mIntentHandler);
+        InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
         initializeCards();
         setupContentObserversForTos();
     }
 
     private void setupRemoteCarTaskView(ViewGroup parent) {
         mCarLauncherViewModel = new ViewModelProvider(this,
-                new CarLauncherViewModelFactory(this))
+                new CarLauncherViewModelFactory(this, getMapsIntent()))
                 .get(CarLauncherViewModel.class);
-        mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
 
         getLifecycle().addObserver(mCarLauncherViewModel);
         addOnNewIntentListener(mCarLauncherViewModel.getNewIntentListener());
@@ -315,18 +316,6 @@ public class CarLauncher extends FragmentActivity {
                 ? CarLauncherUtils.getSmallCanvasOptimizedMapIntent(this)
                 : CarLauncherUtils.getMapsIntent(this);
 
-        String packageName = mapIntent.getComponent() != null
-                ? mapIntent.getComponent().getPackageName()
-                : null;
-        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(this);
-
-        // Launch tos map intent when the user has not accepted tos and when the
-        // default maps package is not available to package manager, or it's disabled by tos
-        if (!AppLauncherUtils.tosAccepted(this)
-                && (packageName == null || tosDisabledPackages.contains(packageName))) {
-            mapIntent = CarLauncherUtils.getTosMapIntent(this);
-            Log.i(TAG, "Launching tos activity in task view");
-        }
         // Don't want to show this Activity in Recents.
         mapIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         return mapIntent;
@@ -356,9 +345,10 @@ public class CarLauncher extends FragmentActivity {
                 if (DEBUG) {
                     Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
                 }
-                if (mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
-                    mCarLauncherViewModel.getRemoteCarTaskView().getValue().release();
-                    setupRemoteCarTaskView(mMapsCard);
+                if (mCarLauncherViewModel != null
+                        && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                    // Reinitialize the remote car task view with the new maps intent
+                    mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
                 }
                 if (tosAccepted) {
                     unregisterTosContentObserver();

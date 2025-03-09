@@ -37,4 +37,6 @@
     <string name="calm_mode_title" msgid="4364804976931157567">"ಶಾಂತ ಮೋಡ್"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"ಸರದಿ"</string>
     <string name="media_card_history_header_title" msgid="8337396297165848931">"ಮಾಧ್ಯಮದ ಮೂಲ"</string>
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"Maps ಅನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ. ಸೇವಾ ನಿಯಮಗಳನ್ನು ಸಮ್ಮತಿಸಲಾಗಿಲ್ಲ"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"Maps ಅನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ. ನಿಮ್ಮ ಡ್ರೈವ್‌ ನಂತರ ಪರಿಶೀಲಿಸಿ."</string>
 </resources>

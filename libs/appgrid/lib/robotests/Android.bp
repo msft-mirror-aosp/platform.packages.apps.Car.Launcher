@@ -37,6 +37,8 @@ android_robolectric_test {
         "androidx.test.core",
         "android.car.testapi",
         "android.car-system-stubs",
+        "flag-junit",
+        "truth",
     ],
 
     test_suites: [
