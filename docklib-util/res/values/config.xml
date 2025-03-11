@@ -16,4 +16,8 @@
   -->
 
 <resources>
+    <!--list of all the display ids where dock feature is supported-->
+    <integer-array name="dock_supported_displays">
+        <item>0</item>
+    </integer-array>
 </resources>

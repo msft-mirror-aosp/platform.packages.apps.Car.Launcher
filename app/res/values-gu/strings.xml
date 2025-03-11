@@ -37,4 +37,6 @@
     <string name="calm_mode_title" msgid="4364804976931157567">"શાંત મોડ"</string>
     <string name="media_card_queue_header_title" msgid="8801994125708995575">"કતાર"</string>
     <string name="media_card_history_header_title" msgid="8337396297165848931">"મીડિયા સૉર્સ"</string>
+    <string name="map_tos_review_button_text" msgid="5609545803755287215">"Maps બંધ કરવામાં આવ્યું છે. સેવાની શરતો સ્વીકારી નથી"</string>
+    <string name="map_tos_review_button_distraction_optimized_text" msgid="2126379934796527013">"Maps બંધ કરવામાં આવ્યું છે. તમારી ડ્રાઇવ પછી રિવ્યૂ કરો."</string>
 </resources>

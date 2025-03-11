@@ -16,13 +16,13 @@
 
 package com.android.car.dockutil.events;
 
+import static com.android.car.dockutil.events.DockCompatUtils.isDockSupportedOnDisplay;
 import static com.android.car.hidden.apis.HiddenApiAccess.getDisplayId;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.view.Display;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -81,7 +81,7 @@ public class DockEventSenderHelper {
     @VisibleForTesting
     void sendEventBroadcast(@NonNull DockEvent event,
             @NonNull ActivityManager.RunningTaskInfo taskInfo) {
-        if (getDisplayId(taskInfo) != Display.DEFAULT_DISPLAY) {
+        if (!isDockSupportedOnDisplay(mContext, getDisplayId(taskInfo))) {
             return;
         }
         ComponentName component = getComponentName(taskInfo);
