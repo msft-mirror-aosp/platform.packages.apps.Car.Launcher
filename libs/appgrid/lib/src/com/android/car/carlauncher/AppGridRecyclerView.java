@@ -156,7 +156,7 @@ public class AppGridRecyclerView extends RecyclerView implements DimensionUpdate
     }
 
     @Override
-    public void onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens) {
+    public boolean onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens) {
         ViewGroup.LayoutParams layoutParams = getLayoutParams();
         layoutParams.width = pageDimens.recyclerViewWidthPx;
         layoutParams.height = pageDimens.recyclerViewHeightPx;
@@ -187,5 +187,6 @@ public class AppGridRecyclerView extends RecyclerView implements DimensionUpdate
         addItemDecoration(mPageMarginDecoration);
         // Now attach adapter to the recyclerView, after dimens are updated.
         super.setAdapter(mAdapter);
+        return false;
     }
 }
