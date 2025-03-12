@@ -28,21 +28,8 @@ android_library {
     resource_dirs: ["res"],
 
     static_libs: [
-        "dock_flags_java_lib",
         "androidx.lifecycle_lifecycle-extensions",
     ],
 
     manifest: "AndroidManifest.xml",
-}
-
-aconfig_declarations {
-    name: "dock_flags",
-    package: "com.android.car.dockutil",
-    container: "system",
-    srcs: ["dock_flags.aconfig"],
-}
-
-java_aconfig_library {
-    name: "dock_flags_java_lib",
-    aconfig_declarations: "dock_flags",
 }

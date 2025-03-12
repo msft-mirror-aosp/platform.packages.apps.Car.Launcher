@@ -26,7 +26,6 @@ import android.view.View
 import com.android.car.carlaunchercommon.shortcuts.AppInfoShortcutItem
 import com.android.car.carlaunchercommon.shortcuts.ForceStopShortcutItem
 import com.android.car.carlaunchercommon.shortcuts.PinShortcutItem
-import com.android.car.dockutil.Flags
 import com.android.car.dockutil.events.DockCompatUtils.isDockSupportedOnDisplay
 import com.android.car.dockutil.events.DockEventSenderHelper
 import com.android.car.ui.shortcutspopup.CarUiShortcutsPopup
@@ -81,9 +80,7 @@ class AppShortcutsFactory(
                         UserHandle.getUserHandleForUid(Process.myUid())
                     )
                 )
-        if (Flags.dockFeature() &&
-            isDockSupportedOnDisplay(context, context.display?.displayId ?: INVALID_DISPLAY)
-        ) {
+        if (isDockSupportedOnDisplay(context, context.display?.displayId ?: INVALID_DISPLAY)) {
             carUiShortcutsPopupBuilder
                 .addShortcut(buildPinToDockShortcut(componentName, context))
         }
