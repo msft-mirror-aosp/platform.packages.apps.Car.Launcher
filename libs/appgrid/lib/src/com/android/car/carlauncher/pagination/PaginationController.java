@@ -23,6 +23,7 @@ import com.android.car.carlauncher.pagination.PageMeasurementHelper.GridDimensio
 import com.android.car.carlauncher.pagination.PageMeasurementHelper.PageDimensions;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -74,8 +75,11 @@ public class PaginationController {
          * Updates all listeners with the new measured dimensions.
          */
         public void notifyDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens) {
-            for (DimensionUpdateListener listener : mListeners) {
-                listener.onDimensionsUpdated(pageDimens, gridDimens);
+            Iterator<DimensionUpdateListener> iterator = mListeners.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().onDimensionsUpdated(pageDimens, gridDimens)) {
+                    iterator.remove();
+                }
             }
         }
     }
@@ -89,7 +93,11 @@ public class PaginationController {
     public interface DimensionUpdateListener {
         /**
          * Updates layout params from the updated dimensions measurements in {@link PageDimensions}
-         * and {@link GridDimensions}*/
-        void onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens);
+         * and {@link GridDimensions}
+         *
+         * @return true if this listener should be removed after the first invocation,
+         * indicating it's designed for a single execution.
+         */
+        boolean onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens);
     }
 }
