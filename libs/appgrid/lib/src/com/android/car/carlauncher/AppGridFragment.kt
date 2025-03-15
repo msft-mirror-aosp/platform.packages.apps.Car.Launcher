@@ -201,22 +201,6 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
         })
         appGridRecyclerView.adapter = adapter
 
-        appGridViewModel.getAppList().asLiveData().observe(
-            viewLifecycleOwner
-        ) { appItems: List<AppItem?>? ->
-            adapter.setLauncherItems(appItems)
-            nextScrollDestination = snapCallback.snapPosition
-            updateScrollState()
-        }
-
-        appGridViewModel.requiresDistractionOptimization().asLiveData().observe(
-            viewLifecycleOwner
-        ) { uxRestrictions: Boolean ->
-            handleDistractionOptimization(
-                uxRestrictions
-            )
-        }
-
         // set drag listener and global layout listener, which will dynamically adjust app grid
         // height and width depending on device screen size. ize.
         if (resources.getBoolean(R.bool.config_allow_reordering)) {
@@ -240,6 +224,28 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
         backgroundAnimationHelper = BackgroundAnimationHelper(windowBackground, banner)
 
         setupTosBanner()
+
+        dimensionUpdateCallback.addListener { _, _ ->
+            // TODO(b/402879929): Await for the first pass of dimensionUpdateCallback before setting
+            //  the list on the recycler view
+            appGridViewModel.getAppList().asLiveData().observe(
+                viewLifecycleOwner
+            ) { appItems: List<AppItem?>? ->
+                adapter.setLauncherItems(appItems)
+                nextScrollDestination = snapCallback.snapPosition
+                updateScrollState()
+            }
+
+            appGridViewModel.requiresDistractionOptimization().asLiveData().observe(
+                viewLifecycleOwner
+            ) { uxRestrictions: Boolean ->
+                handleDistractionOptimization(
+                    uxRestrictions
+                )
+            }
+            // remove self after first callback is received.
+            true
+        }
     }
 
     /**
@@ -489,12 +495,13 @@ class AppGridFragment : Fragment(), PageSnapListener, AppItemDragListener, Dimen
     override fun onDimensionsUpdated(
         pageDimens: PageMeasurementHelper.PageDimensions,
         gridDimens: PageMeasurementHelper.GridDimensions
-    ) {
+    ): Boolean {
         // TODO(b/271637411): move this method into a scroll controller
         appGridMarginHorizontal = pageDimens.marginHorizontalPx
         appGridMarginVertical = pageDimens.marginVerticalPx
         appGridWidth = gridDimens.gridWidthPx
         appGridHeight = gridDimens.gridHeightPx
+        return false
     }
 
     override fun onAppPositionChanged(newPosition: Int, appItem: AppItem) {
