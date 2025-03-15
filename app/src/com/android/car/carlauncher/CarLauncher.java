@@ -204,6 +204,10 @@ public class CarLauncher extends FragmentActivity {
         getLifecycle().addObserver(mCarLauncherViewModel);
         addOnNewIntentListener(mCarLauncherViewModel.getNewIntentListener());
 
+        setUpRemoteCarTaskViewObserver(parent);
+    }
+
+    private void setUpRemoteCarTaskViewObserver(ViewGroup parent) {
         mCarLauncherViewModel.getRemoteCarTaskView().observe(this, taskView -> {
             if (taskView == null || taskView.getParent() == parent) {
                 // Discard if the parent is still the same because it doesn't signify a config
@@ -365,6 +369,7 @@ public class CarLauncher extends FragmentActivity {
                         && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
                     // Reinitialize the remote car task view with the new maps intent
                     mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
+                    setUpRemoteCarTaskViewObserver(mMapsCard);
                 }
                 if (tosAccepted) {
                     unregisterTosContentObserver();
