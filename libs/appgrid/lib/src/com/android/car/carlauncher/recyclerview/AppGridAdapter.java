@@ -17,7 +17,6 @@
 package com.android.car.carlauncher.recyclerview;
 
 import static com.android.car.carlauncher.AppGridConstants.AppItemBoundDirection;
-import static com.android.car.carlauncher.AppGridConstants.PageOrientation;
 
 import android.content.Context;
 import android.graphics.Rect;
@@ -26,11 +25,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.car.carlauncher.AppGridFragment.Mode;
 import com.android.car.carlauncher.AppGridPageSnapper;
+import com.android.car.carlauncher.AppGridRecyclerView;
 import com.android.car.carlauncher.AppItem;
 import com.android.car.carlauncher.LauncherItem;
 import com.android.car.carlauncher.LauncherItemDiffCallback;
@@ -51,11 +52,11 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private static final String TAG = "AppGridAdapter";
     private final Context mContext;
     private final LayoutInflater mInflater;
-    private final PageIndexingHelper mIndexingHelper;
+    private PageIndexingHelper mIndexingHelper;
     private final AppItemViewHolder.AppItemDragCallback mDragCallback;
     private final AppGridPageSnapper.AppGridPageSnapCallback mSnapCallback;
-    private final int mNumOfCols;
-    private final int mNumOfRows;
+    private int mNumOfCols;
+    private int mNumOfRows;
     private int mAppItemWidth;
     private int mAppItemHeight;
     // grid order of the mLauncherItems used by DiffUtils in dispatchUpdates to animate UI updates
@@ -70,23 +71,36 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private AppGridAdapterListener mAppGridAdapterListener;
 
-    public AppGridAdapter(Context context, int numOfCols, int numOfRows,
+    public AppGridAdapter(Context context,
             AppItemViewHolder.AppItemDragCallback dragCallback,
             AppGridPageSnapper.AppGridPageSnapCallback snapCallback,
             AppGridAdapterListener appGridAdapterListener,
             Mode mode) {
         mContext = context;
         mInflater = LayoutInflater.from(context);
-        mNumOfCols = numOfCols;
-        mNumOfRows = numOfRows;
         mDragCallback = dragCallback;
         mSnapCallback = snapCallback;
-        int pageOrientation =  context.getResources().getBoolean(R.bool.use_vertical_app_grid)
-                ? PageOrientation.VERTICAL : PageOrientation.HORIZONTAL;
-        mIndexingHelper = new PageIndexingHelper(numOfCols, numOfRows, pageOrientation);
         mGridOrderedLauncherItems = new ArrayList<>();
         mAppGridMode = mode;
         mAppGridAdapterListener = appGridAdapterListener;
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        if (!(recyclerView instanceof AppGridRecyclerView)) {
+            throw new IllegalStateException(
+                    "AppGridPageSnapper can only be used with AppGridRecyclerView.");
+        }
+        super.onAttachedToRecyclerView(recyclerView);
+        mNumOfRows = ((AppGridRecyclerView) recyclerView).getNumOfRows();
+        mNumOfCols = ((AppGridRecyclerView) recyclerView).getNumOfCols();
+        mIndexingHelper = ((AppGridRecyclerView) recyclerView).getPageIndexingHelper();
+        if (mIndexingHelper == null) {
+            throw new IllegalStateException(
+                    "AppGridRecyclerView's PageIndexingHelper is not initialized. "
+                            + "Please ensure the adapter is attached to AppGridRecyclerView only "
+                            + "after the bounds are ready.");
+        }
     }
 
     /**

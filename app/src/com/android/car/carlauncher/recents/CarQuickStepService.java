@@ -17,7 +17,6 @@
 package com.android.car.carlauncher.recents;
 
 import static com.android.car.carlauncher.recents.CarRecentsActivity.OPEN_RECENT_TASK_ACTION;
-import static com.android.wm.shell.shared.ShellSharedConstants.KEY_EXTRA_SHELL_RECENT_TASKS;
 
 import android.app.ActivityManager;
 import android.app.Service;
@@ -94,7 +93,7 @@ public class CarQuickStepService extends Service {
         @Override
         public void onInitialize(Bundle params) throws RemoteException {
             IRecentTasks recentTasks = IRecentTasks.Stub.asInterface(
-                    params.getBinder(KEY_EXTRA_SHELL_RECENT_TASKS));
+                    params.getBinder(IRecentTasks.DESCRIPTOR));
             mRecentTasksProvider.init(getApplicationContext(), recentTasks);
         }
 
@@ -192,22 +191,22 @@ public class CarQuickStepService extends Service {
         }
 
         @Override
-        public void checkNavBarModes() {
+        public void checkNavBarModes(int displayId) {
             // no-op
         }
 
         @Override
-        public void finishBarAnimations() {
+        public void finishBarAnimations(int displayId) {
             // no-op
         }
 
         @Override
-        public void touchAutoDim(boolean reset) {
+        public void touchAutoDim(int displayid, boolean reset) {
             // no-op
         }
 
         @Override
-        public void transitionTo(@BarTransitions.TransitionMode int barMode,
+        public void transitionTo(int displayId, @BarTransitions.TransitionMode int barMode,
                 boolean animate) {
             // no-op
         }
