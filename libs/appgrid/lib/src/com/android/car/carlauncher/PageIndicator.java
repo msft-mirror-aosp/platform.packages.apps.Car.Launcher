@@ -75,7 +75,7 @@ public class PageIndicator extends FrameLayout implements DimensionUpdateListene
     }
 
     @Override
-    public void onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens) {
+    public boolean onDimensionsUpdated(PageDimensions pageDimens, GridDimensions gridDimens) {
         ViewGroup.LayoutParams indicatorContainerParams = mContainer.getLayoutParams();
         indicatorContainerParams.width = pageDimens.pageIndicatorWidthPx;
         indicatorContainerParams.height = pageDimens.pageIndicatorHeightPx;
@@ -85,6 +85,7 @@ public class PageIndicator extends FrameLayout implements DimensionUpdateListene
         mAppGridWidth = gridDimens.gridWidthPx;
         mAppGridHeight = gridDimens.gridHeightPx;
         updatePageCount(mPageCount);
+        return false;
     }
 
     /**
