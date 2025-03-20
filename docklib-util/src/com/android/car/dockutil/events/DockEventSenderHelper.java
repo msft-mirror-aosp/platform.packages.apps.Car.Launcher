@@ -28,8 +28,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
-import com.android.car.dockutil.Flags;
-
 /**
  * Helper used to send Dock Events.
  */
@@ -91,10 +89,6 @@ public class DockEventSenderHelper {
     }
 
     private void sendEventBroadcast(@NonNull DockEvent event, @NonNull ComponentName component) {
-        if (!Flags.dockFeature()) {
-            return;
-        }
-
         Intent intent = new Intent();
         intent.setAction(event.toString());
         intent.putExtra(EXTRA_COMPONENT, component);

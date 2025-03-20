@@ -35,14 +35,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.platform.test.flag.junit.SetFlagsRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.car.dockutil.Flags;
-
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -52,8 +48,6 @@ import org.mockito.MockitoAnnotations;
 
 @RunWith(AndroidJUnit4.class)
 public class DockEventSenderHelperTest {
-    @Rule
-    public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
     @Mock
     public ActivityManager.RunningTaskInfo mRunningTaskInfo;
     @Mock
@@ -74,7 +68,6 @@ public class DockEventSenderHelperTest {
         MockitoAnnotations.initMocks(this);
         when(mContext.getResources()).thenReturn(mResources);
         when(mResources.getIntArray(anyInt())).thenReturn(mDockSupportedDisplayId);
-        mSetFlagsRule.enableFlags(Flags.FLAG_DOCK_FEATURE);
         mDockEventSenderHelper = new DockEventSenderHelper(mContext);
     }
 
