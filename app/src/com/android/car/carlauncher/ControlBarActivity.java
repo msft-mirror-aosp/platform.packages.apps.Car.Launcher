@@ -16,19 +16,25 @@
 
 package com.android.car.carlauncher;
 
-import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
-
+import android.app.ActivityOptions;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.WindowManager;
+import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
+import com.android.car.carlauncher.homescreen.audio.IntentHandler;
+import com.android.car.carlauncher.homescreen.audio.MediaLaunchHandler;
+import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
+import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
+import com.android.car.media.common.source.MediaSource;
 
 import java.util.Set;
 
@@ -41,17 +47,37 @@ public class ControlBarActivity extends FragmentActivity {
 
     private Set<HomeCardModule> mHomeCardModules;
 
+    private final IntentHandler mIntentHandler = new IntentHandler() {
+        @Override
+        public void handleIntent(Intent intent) {
+            if (intent != null) {
+                ActivityOptions options = ActivityOptions.makeBasic();
+                startActivity(intent, options.toBundle());
+            }
+        }
+    };
+
+    // Used instead of IntentHandler because media apps may provide a PendingIntent instead
+    private final MediaLaunchHandler mMediaMediaLaunchHandler = new MediaLaunchHandler() {
+        @Override
+        public void handleLaunchMedia(@NonNull MediaSource mediaSource) {
+            if (DEBUG) {
+                Log.d(TAG, "Launching media source " + mediaSource);
+            }
+            mediaSource.launchActivity(ControlBarActivity.this, ActivityOptions.makeBasic());
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Setting as trusted overlay to let touches pass through.
-        getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
-        // To pass touches to the underneath task.
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+        getTheme().applyStyle(R.style.CarLauncherActivityThemeOverlay, true);
 
         setContentView(R.layout.control_bar_container);
         initializeCards();
+
+        MediaLaunchRouter.getInstance().registerMediaLaunchHandler(mMediaMediaLaunchHandler);
+        InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
     }
 
     @Override
@@ -67,8 +93,13 @@ public class ControlBarActivity extends FragmentActivity {
                     R.array.config_homeCardModuleClasses)) {
                 try {
                     long reflectionStartTime = System.currentTimeMillis();
-                    HomeCardModule cardModule = (HomeCardModule) Class.forName(
-                            providerClassName).newInstance();
+                    HomeCardModule cardModule = (HomeCardModule)
+                            Class.forName(providerClassName).newInstance();
+                    if (Flags.mediaCardFullscreen()) {
+                        if (cardModule.getCardResId() == R.id.top_card) {
+                            findViewById(R.id.top_card).setVisibility(View.GONE);
+                        }
+                    }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);
                     if (DEBUG) {
@@ -77,7 +108,7 @@ public class ControlBarActivity extends FragmentActivity {
                                 + " took " + reflectionTime + " ms");
                     }
                 } catch (IllegalAccessException | InstantiationException
-                        | ClassNotFoundException e) {
+                         | ClassNotFoundException e) {
                     Log.w(TAG, "Unable to create HomeCardProvider class " + providerClassName, e);
                 }
             }
