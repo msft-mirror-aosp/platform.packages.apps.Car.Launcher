@@ -69,7 +69,6 @@ open class DockViewModel(
     }
 
     private val noSpotAvailableToPinToastMsg = context.getString(R.string.pin_failed_no_spots)
-    private val colorExtractor = ColorExtractor()
     private val defaultIconColor = context.resources.getColor(
             R.color.icon_default_color,
             context.theme // theme
@@ -444,7 +443,7 @@ open class DockViewModel(
         return getIconColor(ai.loadIcon(packageManager))
     }
 
-    private fun getIconColor(icon: Drawable) = colorExtractor.findDominantColorByHue(
+    private fun getIconColor(icon: Drawable) = ColorExtractor.findDominantColorByHue(
             iconFactory.createScaledBitmap(icon, BaseIconFactory.MODE_DEFAULT)
     )
 
