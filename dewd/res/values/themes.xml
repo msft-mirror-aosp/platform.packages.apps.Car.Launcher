@@ -19,6 +19,6 @@
 
     <style name="DewdCarLauncherTheme" parent="Theme.CarUi.NoToolbar">
         <item name="oemTokenOverrideEnabled">true</item>
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowBackground">?oemColorSurface</item>
     </style>
 </resources>
