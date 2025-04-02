@@ -40,6 +40,7 @@ android_library {
 
     static_libs: [
         "car_launcher_flags_java_lib",
+        "com_android_systemui_car_flags_lib",
         "androidx-constraintlayout_constraintlayout-solver",
         "androidx-constraintlayout_constraintlayout",
         "androidx.lifecycle_lifecycle-extensions",
