@@ -23,6 +23,7 @@
         <item name="textAppearanceGridItemSecondary">
             @android:style/TextAppearance.DeviceDefault.Small
         </item>
+        <item name="oemTokenOverrideEnabled">true</item>
     </style>
 
     <style name="Theme.Launcher.AppGridActivity.NoToolbar" parent="Theme.CarUi.NoToolbar">
@@ -31,6 +32,7 @@
         <item name="textAppearanceGridItemSecondary">
             @android:style/TextAppearance.DeviceDefault.Small
         </item>
+        <item name="oemTokenOverrideEnabled">true</item>
     </style>
     <style name="ActionDialogTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:windowNoTitle">true</item>

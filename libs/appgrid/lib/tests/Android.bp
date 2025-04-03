@@ -29,6 +29,7 @@ android_test {
         "android.car",
         "android.test.base.stubs.system",
         "android.car-system-stubs",
+        "token-shared-lib-prebuilt",
     ],
 
     optimize: {
@@ -50,6 +51,7 @@ android_test {
         "truth",
         "testables",
         "CarAppGrid-lib",
+        "oem-token-lib",
     ],
 
     platform_apis: true,
