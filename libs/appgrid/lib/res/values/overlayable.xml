@@ -28,7 +28,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="use_vertical_app_grid"/>
       <item type="color" name="app_item_on_hover_background_color"/>
       <item type="color" name="app_item_on_hover_border_color"/>
-      <item type="color" name="app_name_color"/>
       <item type="color" name="banner_background_color"/>
       <item type="color" name="banner_button_text_color"/>
       <item type="color" name="banner_title_text_color"/>
