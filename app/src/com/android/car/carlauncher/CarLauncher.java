@@ -18,16 +18,19 @@ package com.android.car.carlauncher;
 
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 import static android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLED_APPS;
+import static android.content.pm.PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
 import static com.android.car.carlauncher.AppGridFragment.Mode.ALL_APPS;
 import static com.android.car.carlauncher.CarLauncherViewModel.CarLauncherViewModelFactory;
+import static com.android.systemui.car.Flags.scalableUi;
 
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.TaskStackListener;
 import android.car.Car;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.os.Bundle;
@@ -40,7 +43,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
-import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -53,7 +55,6 @@ import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
-import com.android.car.media.common.source.MediaSource;
 import com.android.wm.shell.taskview.TaskView;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -114,25 +115,19 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mIntentHandler = new IntentHandler() {
-        @Override
-        public void handleIntent(Intent intent) {
-            if (intent != null) {
-                ActivityOptions options = ActivityOptions.makeBasic();
-                startActivity(intent, options.toBundle());
-            }
+    private final IntentHandler mIntentHandler = intent -> {
+        if (intent != null) {
+            ActivityOptions options = ActivityOptions.makeBasic();
+            startActivity(intent, options.toBundle());
         }
     };
 
     // Used instead of IntentHandler because media apps may provide a PendingIntent instead
-    private final MediaLaunchHandler mMediaMediaLaunchHandler = new MediaLaunchHandler() {
-        @Override
-        public void handleLaunchMedia(@NonNull MediaSource mediaSource) {
-            if (DEBUG) {
-                Log.d(TAG, "Launching media source " + mediaSource);
-            }
-            mediaSource.launchActivity(CarLauncher.this, ActivityOptions.makeBasic());
+    private final MediaLaunchHandler mMediaMediaLaunchHandler = mediaSource -> {
+        if (DEBUG) {
+            Log.d(TAG, "Launching media source " + mediaSource);
         }
+        mediaSource.launchActivity(CarLauncher.this, ActivityOptions.makeBasic());
     };
 
     @Override
@@ -143,17 +138,26 @@ public class CarLauncher extends FragmentActivity {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
         getTheme().applyStyle(R.style.CarLauncherActivityThemeOverlay, true);
+
+        // TODO(b/408491355): remove `isDewdActive()` checks and clean up legacy logic when all
+        //   targets are migrated to DEWD.
+        if (isDewdActive()) {
+            setContentView(R.layout.home);
+            return;
+        }
+
         // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
         // visible background users.
         // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
         // there is no maps use-case for passengers.
+        // Note: for now MUMD/MUPAND are not using DEWD.
         UserManager um = getSystemService(UserManager.class);
         boolean isPassengerDisplay = getDisplayId() != Display.DEFAULT_DISPLAY
                 || um.isVisibleBackgroundUsersOnDefaultDisplaySupported();
 
         // Don't show the maps panel in multi window mode.
-        // NOTE: CTS tests for split screen are not compatible with activity views on the default
-        // activity of the launcher
+        // NOTE: CTS tests for split screen are not compatible with activity views on the
+        // default activity of the launcher
         if (isInMultiWindowMode() || isInPictureInPictureMode()) {
             setContentView(R.layout.car_launcher_multiwindow);
         } else {
@@ -181,8 +185,8 @@ public class CarLauncher extends FragmentActivity {
                 }
             } else {
                 // For Passenger display show the AppGridFragment in place of the Maps view.
-                // Also we can skip initializing all the TaskView related objects as they are not
-                // used in this case.
+                // Also we can skip initializing all the TaskView related objects as they are
+                // not used in this case.
                 getSupportFragmentManager().beginTransaction().replace(R.id.maps_card,
                         AppGridFragment.newInstance(ALL_APPS)).commit();
 
@@ -193,6 +197,7 @@ public class CarLauncher extends FragmentActivity {
         InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
 
         initializeCards();
+
         setupContentObserversForTos();
     }
 
@@ -226,12 +231,19 @@ public class CarLauncher extends FragmentActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
         maybeLogReady();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        if (isDewdActive()) {
+            // no-op
+            return;
+        }
+
         TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
         unregisterTosContentObserver();
         release();
@@ -269,6 +281,12 @@ public class CarLauncher extends FragmentActivity {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+
+        if (isDewdActive()) {
+            // no-op
+            return;
+        }
+
         initializeCards();
     }
 
@@ -365,12 +383,14 @@ public class CarLauncher extends FragmentActivity {
                 if (DEBUG) {
                     Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
                 }
+
                 if (mCarLauncherViewModel != null
                         && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
                     // Reinitialize the remote car task view with the new maps intent
                     mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
                     setUpRemoteCarTaskViewObserver(mMapsCard);
                 }
+
                 if (tosAccepted) {
                     unregisterTosContentObserver();
                 }
@@ -380,5 +400,13 @@ public class CarLauncher extends FragmentActivity {
                 Settings.Secure.getUriFor(KEY_UNACCEPTED_TOS_DISABLED_APPS),
                 /* notifyForDescendants*/ false,
                 mTosContentObserver);
+    }
+
+    /** Returns {@code true} if the declarative launcher configuration is active. */
+    private boolean isDewdActive() {
+        // TODO(b/408442463): add a dedicated flag to activate DEWD "mode"
+        PackageManager packageManager = getPackageManager();
+        return scalableUi() && packageManager != null
+                && packageManager.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 }

@@ -13,12 +13,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<resources
-    xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <style name="DewdCarLauncherTheme" parent="Theme.CarUi.NoToolbar">
-        <item name="oemTokenOverrideEnabled">true</item>
-        <item name="android:windowBackground">@android:color/black</item>
-    </style>
-</resources>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/home"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
