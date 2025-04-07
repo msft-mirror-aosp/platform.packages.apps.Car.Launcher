@@ -1,12 +1,10 @@
 # Default code reviewers picked from top 3 or more developers.
 # Please update this list if you find better candidates.
 
+ankiit@google.com
+snekkalapudi@google.com
 alexstetson@google.com
-danzz@google.com
+priyanksingh@google.com
+farivar@google.com
+calhuang@google.com
 babakbo@google.com
-arnaudberry@google.com
-stenning@google.com
-gauravbhola@google.com  # for TaskView only
-
-# Recents
-per-file src/com/android/car/carlauncher/recents/* = jainams@google.com

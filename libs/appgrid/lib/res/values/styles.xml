@@ -18,7 +18,7 @@
 
     <style name="AppDisplayNameStyle">
         <item name="android:textSize">28sp</item>
-        <item name="android:textColor">@color/app_name_color</item>
+        <item name="android:textColor">?oemColorOnSurface</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:ellipsize">end</item>
         <item name="android:maxLines">1</item>
