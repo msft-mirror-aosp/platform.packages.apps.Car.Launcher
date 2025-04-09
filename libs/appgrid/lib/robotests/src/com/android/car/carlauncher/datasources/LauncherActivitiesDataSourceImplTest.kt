@@ -17,12 +17,17 @@
 package com.android.car.carlauncher.datasources
 
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.UserHandle
+import com.android.car.carlauncher.datasources.LauncherActivitiesDataSourceImpl.Companion.CAR_APP_MEDIA_CATEGORY
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.collect
@@ -36,6 +41,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -46,10 +53,20 @@ import org.robolectric.RuntimeEnvironment
 class LauncherActivitiesDataSourceImplTest {
 
     private val scope = TestScope()
+
     private val bgDispatcher =
         StandardTestDispatcher(scope.testScheduler, name = "Background dispatcher")
 
     private val launcherActivities: List<LauncherActivityInfo> = listOf(mock(), mock())
+
+    private val calMediaComponentName = ComponentName(CAR_APP_SERVICE_MEDIA, "Media")
+    private val calNavigationComponentName = ComponentName(CAR_APP_SERVICE_NAVIGATION, "Navigation")
+    private val calMediaLauncherActivityInfo: LauncherActivityInfo = mock {
+        on { componentName } doReturn calMediaComponentName
+    }
+    private val calMediaLauncherActivities: List<LauncherActivityInfo> =
+        listOf(calMediaLauncherActivityInfo)
+
     private var broadcastReceiverCallback: BroadcastReceiver? = null
     private val registerReceiverFun: (BroadcastReceiver, IntentFilter) -> Unit =
         { broadcastReceiver, _ ->
@@ -59,8 +76,50 @@ class LauncherActivitiesDataSourceImplTest {
     private val myUserHandle: UserHandle = mock()
     private val launcherApps: LauncherApps = mock {
         on { getActivityList(null, myUserHandle) } doReturn launcherActivities
+        on {
+            getActivityList(CAR_APP_SERVICE_MEDIA, myUserHandle)
+        } doReturn calMediaLauncherActivities
+        on { getActivityList(CAR_APP_SERVICE_NAVIGATION, myUserHandle) } doReturn launcherActivities
+    }
+
+    private val listOfComponentNames = listOf(
+        calMediaComponentName, // 0, CarAppService MEDIA
+        calNavigationComponentName, // 1, CarAppService NAVIGATION
+    )
+
+    // List of CarAppServices returned by the PackageManager for queryIntentServices.
+    private val carAppServices: List<ResolveInfo> = listOfComponentNames.map { getResolveInfo(it) }
+
+    /**
+     * Returns a mocked ResolveInfo
+     * @param componentName packageName + className of the mocked [ServiceInfo]
+     * with an IntentFilter for the CarAppService category
+     */
+    private fun getResolveInfo(componentName: ComponentName): ResolveInfo {
+        return ResolveInfo().apply {
+            serviceInfo = ServiceInfo().apply {
+                packageName = componentName.packageName
+                name = componentName.className
+            }
+            filter = IntentFilter().apply {
+                if (componentName.packageName == CAR_APP_SERVICE_MEDIA) {
+                    addCategory(CAR_APP_MEDIA_CATEGORY)
+                } else if (componentName.packageName == CAR_APP_SERVICE_NAVIGATION) {
+                    addCategory(CAR_APP_NAVIGATION_CATEGORY)
+                }
+            }
+        }
+    }
+
+    private val packageManager: PackageManager = mock {
+        on {
+            queryIntentServices(
+                any(), anyInt()
+            )
+        } doReturn carAppServices
     }
     private val dataSource: LauncherActivitiesDataSource = LauncherActivitiesDataSourceImpl(
+        packageManager,
         launcherApps,
         registerReceiverFun,
         unregisterReceiverFun,
@@ -133,8 +192,23 @@ class LauncherActivitiesDataSourceImplTest {
         }
     }
 
+    @Test
+    fun getAllCalMediaLauncherActivities_onlyReturnsMediaCategory() = scope.runTest {
+        val outputCalActivityInfoList =
+            dataSource.getAllCalMediaLauncherActivities()
+
+        assertEquals(outputCalActivityInfoList.size, 1)
+        assertEquals(
+            outputCalActivityInfoList[0].componentName.packageName,
+            CAR_APP_SERVICE_MEDIA
+        )
+    }
+
     companion object {
         const val BROADCAST_EXPECTED_PACKAGE_NAME_1 = "com.test.example1"
         const val BROADCAST_EXPECTED_PACKAGE_NAME_2 = "com.test.example2"
+        const val CAR_APP_SERVICE_MEDIA = "com.test.car.app.package.media"
+        const val CAR_APP_SERVICE_NAVIGATION = "com.test.car.app.package.navigation"
+        const val CAR_APP_NAVIGATION_CATEGORY = "androidx.car.app.category.NAVIGATION"
     }
 }

@@ -22,6 +22,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.content.res.Resources
 import android.os.UserHandle
 import com.android.car.carlauncher.R
@@ -40,6 +42,11 @@ interface LauncherActivitiesDataSource {
      * Gets all the Launchable activities for the user.
      */
     suspend fun getAllLauncherActivities(): List<LauncherActivityInfo>
+
+    /**
+     * Gets all the Launchable activities for the user that have a CAL MBS integration.
+     */
+    suspend fun getAllCalMediaLauncherActivities(): List<LauncherActivityInfo>
 
     /**
      * Flow notifying changes if packages are changed.
@@ -70,6 +77,7 @@ interface LauncherActivitiesDataSource {
  * @property [bgDispatcher] Executes all the operations on this background coroutine dispatcher.
  */
 class LauncherActivitiesDataSourceImpl(
+    private val packageManager: PackageManager,
     private val launcherApps: LauncherApps,
     private val registerReceiverFunction: (BroadcastReceiver, IntentFilter) -> Unit,
     private val unregisterReceiverFunction: (BroadcastReceiver) -> Unit,
@@ -79,6 +87,11 @@ class LauncherActivitiesDataSourceImpl(
 ) : LauncherActivitiesDataSource {
 
     private val listOfApps = resources.getStringArray(R.array.hidden_apps).toList()
+
+    companion object {
+        const val CAR_APP_SERVICE_INTERFACE: String = "androidx.car.app.CarAppService"
+        const val CAR_APP_MEDIA_CATEGORY: String = "androidx.car.app.category.MEDIA"
+    }
 
     /**
      * Gets all launcherActivities for a user with [userHandle]
@@ -90,6 +103,23 @@ class LauncherActivitiesDataSourceImpl(
                 null,
                 userHandle
             )
+        }
+    }
+
+    /**
+     * Gets all launcherActivities for a user with [userHandle] that have an MBS service
+     * with CarAppLibrary metadata defined
+     */
+    override suspend fun getAllCalMediaLauncherActivities(): List<LauncherActivityInfo> {
+        return withContext(bgDispatcher) {
+            packageManager.queryIntentServices(
+                Intent(CAR_APP_SERVICE_INTERFACE),
+                PackageManager.GET_RESOLVED_FILTER
+            ).filter {
+                hasCalMediaCategory(it)
+            }.map {
+                launcherApps.getActivityList(it.serviceInfo.packageName, userHandle)
+            }.flatten()
         }
     }
 
@@ -136,5 +166,18 @@ class LauncherActivitiesDataSourceImpl(
      */
     override fun getAppsToHide(): List<String> {
         return listOfApps
+    }
+
+    private fun hasCalMediaCategory(resolveInfo: ResolveInfo?): Boolean {
+        if (resolveInfo == null) return false
+
+        if (resolveInfo.filter == null) return false
+
+        for (i in 0 until resolveInfo.filter.countCategories()) {
+            if (resolveInfo.filter.getCategory(i).equals(CAR_APP_MEDIA_CATEGORY)) {
+                return true
+            }
+        }
+        return false
     }
 }
