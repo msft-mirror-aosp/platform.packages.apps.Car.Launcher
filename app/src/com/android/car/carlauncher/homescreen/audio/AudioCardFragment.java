@@ -118,6 +118,7 @@ public class AudioCardFragment extends Fragment implements HomeCardInterface.Vie
 
     /** Does a fragment transaction to show the media card and hide the dialer card */
     public void showMediaCard() {
+        if (!isAdded()) return;
         FragmentManager fragmentManager = getChildFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.show(mMediaFragment);
@@ -127,6 +128,7 @@ public class AudioCardFragment extends Fragment implements HomeCardInterface.Vie
 
     /** Does a fragment transaction to show the dialer card and hide the media card */
     public void showInCallCard() {
+        if (!isAdded()) return;
         FragmentManager fragmentManager = getChildFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.hide(mMediaFragment);
