@@ -27,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.android.car.carlauncher.AppGridFragment.Mode;
+import com.android.car.oem.tokens.Token;
 import com.android.car.ui.core.CarUi;
 import com.android.car.ui.toolbar.MenuItem;
 import com.android.car.ui.toolbar.NavButtonMode;
@@ -51,6 +52,7 @@ public class AppGridActivity extends AppCompatActivity {
         } else {
             setTheme(R.style.Theme_Launcher_AppGridActivity_NoToolbar);
         }
+        Token.applyOemTokenStyle(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.app_grid_container_activity);
 
