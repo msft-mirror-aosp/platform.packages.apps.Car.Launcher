@@ -79,6 +79,7 @@ public class InCallViewModel implements AudioModel {
     private final Clock mElapsedTimeClock;
 
     private final LiveData<Call> mPrimaryCallLiveData;
+    private final LiveData<CallAudioState> mCallAudioStateLiveData;
     private final LiveData<CallDetail> mCallDetailLiveData;
 
     private Observer<Object> mCallObserver;
@@ -110,6 +111,7 @@ public class InCallViewModel implements AudioModel {
             callDetailLiveData.setTelecomCall(call);
             return callDetailLiveData;
         });
+        mCallAudioStateLiveData = mInCallModel.getCallAudioStateLiveData();
     }
 
     @Override
@@ -132,7 +134,7 @@ public class InCallViewModel implements AudioModel {
 
         mCallAudioStateObserver =
                 o -> onCallAudioStateChanged(mInCallModel.getCallAudioStateLiveData().getValue());
-        mInCallModel.getCallAudioStateLiveData().observeForever(mCallAudioStateObserver);
+        mCallAudioStateLiveData.observeForever(mCallAudioStateObserver);
     }
 
     @Override
@@ -140,6 +142,9 @@ public class InCallViewModel implements AudioModel {
         if (mPhoneNumberInfoFuture != null) {
             mPhoneNumberInfoFuture.cancel(/* mayInterruptIfRunning= */true);
         }
+        mPrimaryCallLiveData.removeObserver(mCallObserver);
+        mCallAudioStateLiveData.removeObserver(mCallAudioStateObserver);
+        mOnModelUpdateListener = null;
     }
 
     @Override
@@ -204,7 +209,6 @@ public class InCallViewModel implements AudioModel {
 
     @VisibleForTesting
     void onCallAudioStateChanged(CallAudioState audioState) {
-
         if (updateMuteButtonIconState(audioState)) {
             mOnModelUpdateListener.onModelUpdate(this);
         }
@@ -214,7 +218,7 @@ public class InCallViewModel implements AudioModel {
         if (call != null) {
             mCurrentCall = call;
             handleActiveCall(mCurrentCall);
-        } else {
+        } else if (mCurrentCall != null) {
             mCurrentCall = null;
             mCardHeader = null;
             mCardContent = null;
