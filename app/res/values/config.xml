@@ -77,4 +77,16 @@
     <bool name="config_calmMode_showTemperature">true</bool>
     <string name="config_calmMode_componentName">com.android.car.carlauncher/com.android.car.carlauncher.calmmode.CalmModeActivity</string>
 
+    <!--
+        Rely on the declarative system windows configuration for home screen handling. When this
+        flag is set to `true`, the launcher activity is only used as a static bottom most layer.
+        Unlike "legacy" launcher, the home screen logic is deferred to the relevant panels and,
+        where necessary, system services to handle things beyond panel visibility and transitions
+        (e.g. Terms Of Service handling logic).
+
+        TODO(b/408491355): remove this configuration flag when the transition to DEWD is completed
+            for all affected automotive targets.
+     -->
+    <bool name="config_useDewdLauncher">false</bool>
+
 </resources>
