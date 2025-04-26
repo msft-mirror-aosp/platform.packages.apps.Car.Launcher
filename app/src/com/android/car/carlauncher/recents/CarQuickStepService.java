@@ -181,7 +181,7 @@ public class CarQuickStepService extends Service {
         }
 
         @Override
-        public void enterStageSplitFromRunningApp(boolean leftOrTop) {
+        public void enterStageSplitFromRunningApp(int displayId, boolean leftOrTop) {
             // no-op
         }
 
