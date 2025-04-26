@@ -18,7 +18,6 @@ package com.android.car.carlauncher;
 
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
 import static android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLED_APPS;
-import static android.content.pm.PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
 import static com.android.car.carlauncher.AppGridFragment.Mode.ALL_APPS;
@@ -30,7 +29,6 @@ import android.app.ActivityOptions;
 import android.app.TaskStackListener;
 import android.car.Car;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.os.Bundle;
@@ -142,6 +140,14 @@ public class CarLauncher extends FragmentActivity {
         // TODO(b/408491355): remove `isDewdActive()` checks and clean up legacy logic when all
         //   targets are migrated to DEWD.
         if (isDewdActive()) {
+            if (DEBUG) {
+                Log.d(TAG, "Dewd Launcher active");
+            }
+
+            if (!scalableUi()) {
+                Log.e(TAG, "Scalable UI is disabled - home screen will appear empty!");
+            }
+
             setContentView(R.layout.home);
             return;
         }
@@ -404,9 +410,6 @@ public class CarLauncher extends FragmentActivity {
 
     /** Returns {@code true} if the declarative launcher configuration is active. */
     private boolean isDewdActive() {
-        // TODO(b/408442463): add a dedicated flag to activate DEWD "mode"
-        PackageManager packageManager = getPackageManager();
-        return scalableUi() && packageManager != null
-                && packageManager.hasSystemFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
+        return getResources().getBoolean(R.bool.config_useDewdLauncher);
     }
 }
