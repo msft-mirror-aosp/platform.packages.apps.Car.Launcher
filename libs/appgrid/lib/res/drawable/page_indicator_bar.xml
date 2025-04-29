@@ -19,8 +19,8 @@
     android:shape="rectangle">
     <corners android:radius="@dimen/page_indicator_edge_corner_radius"/>
     <solid
-        android:color="@color/page_indicator_bar_color"/>
+        android:color="?oemColorPrimary"/>
     <stroke
-        android:color="@color/page_indicator_bar_color">
+        android:color="?oemColorPrimary">
     </stroke>
 </shape>

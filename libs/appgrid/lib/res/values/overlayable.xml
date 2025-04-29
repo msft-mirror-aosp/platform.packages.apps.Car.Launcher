@@ -32,7 +32,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="color" name="banner_button_text_color"/>
       <item type="color" name="banner_title_text_color"/>
       <item type="color" name="icon_tint"/>
-      <item type="color" name="page_indicator_bar_color"/>
       <item type="color" name="recent_apps_line_divider_color"/>
       <item type="dimen" name="app_bar_height"/>
       <item type="dimen" name="app_grid_header_margin"/>
