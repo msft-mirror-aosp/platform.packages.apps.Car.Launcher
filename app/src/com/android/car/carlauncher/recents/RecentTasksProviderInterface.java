@@ -16,7 +16,6 @@
 
 package com.android.car.carlauncher.recents;
 
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -86,11 +85,10 @@ public interface RecentTasksProviderInterface {
      * {@code recentsActivity} in the top running tasks, the method will not attempt to open the top
      * task and return false.
      *
-     * @param recentsActivity {@link Activity} that is responsible to show recent tasks.
      * @param displayId       the display's id where {@code recentsActivity} is drawn.
      * @return if the top task was found and opened.
      */
-    boolean openTopRunningTask(@NonNull Class<? extends Activity> recentsActivity, int displayId);
+    boolean openTopRunningTask(int displayId);
 
     /**
      * @param taskId the {@code taskId} of the recent task to be removed from recents.

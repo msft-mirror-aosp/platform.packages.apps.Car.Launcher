@@ -239,7 +239,7 @@ public class RecentTasksViewModel {
      * Communicates failure through {@link RecentTasksChangeListener}.
      */
     public void openMostRecentTask() {
-        if (!mDataStore.openTopRunningTask(CarRecentsActivity.class, mDisplayId)) {
+        if (!mDataStore.openTopRunningTask(mDisplayId)) {
             mRecentTasksChangeListener.forEach(RecentTasksChangeListener::onOpenTopRunningTaskFail);
         }
     }

@@ -149,10 +149,7 @@ public class CarRecentsActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        if (OPEN_RECENT_TASK_ACTION.equals(getIntent().getAction())) {
-            if (mLaunchMostRecentTaskOnDismiss) {
-                mRecentTasksViewModel.openMostRecentTask();
-            }
+        if (handleOpenRecentTaskAction()) {
             return;
         }
         mRecentTasksViewModel.fetchRecentTaskList();
@@ -208,6 +205,19 @@ public class CarRecentsActivity extends AppCompatActivity implements
         if (mRecentTasksViewModel.getRecentTasksSize() == 0) {
             launchHomeIntent();
         }
+    }
+
+    /**
+     * Handle OPEN_RECENT_TASK_ACTION if part of the current intent action.
+     */
+    protected boolean handleOpenRecentTaskAction() {
+        if (OPEN_RECENT_TASK_ACTION.equals(getIntent().getAction())) {
+            if (mLaunchMostRecentTaskOnDismiss) {
+                mRecentTasksViewModel.openMostRecentTask();
+            }
+            return true;
+        }
+        return false;
     }
 
     /**
