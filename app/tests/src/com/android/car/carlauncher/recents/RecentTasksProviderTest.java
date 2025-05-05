@@ -130,6 +130,9 @@ public class RecentTasksProviderTest {
             ((Runnable) invocation.getArgument(0)).run();
             return null;
         });
+        mContext.getOrCreateTestableResources().addOverride(
+                com.android.internal.R.string.config_recentsComponentName,
+                new ComponentName(mContext, RECENTS_ACTIVITY.class).flattenToString());
         RecentTasksProvider.setHandler(mHandler);
         mRecentTasksProvider = RecentTasksProvider.getInstance();
         mRecentTasksProvider.setActivityManagerWrapper(mActivityManagerWrapper);
@@ -322,7 +325,7 @@ public class RecentTasksProviderTest {
                 .thenReturn(infos);
         ActivityManager.RunningTaskInfo taskAfterRecents = infos[tasksBeforeRecents + 1];
 
-        mRecentTasksProvider.openTopRunningTask(RECENTS_ACTIVITY.class, displayId);
+        mRecentTasksProvider.openTopRunningTask(displayId);
 
         verify(mActivityManagerWrapper).startActivityFromRecents(eq(taskAfterRecents.taskId),
                 nullable(ActivityOptions.class));
@@ -338,7 +341,7 @@ public class RecentTasksProviderTest {
         when(mActivityManagerWrapper.getRunningTasks(anyBoolean(), eq(displayId)))
                 .thenReturn(infos);
 
-        mRecentTasksProvider.openTopRunningTask(RECENTS_ACTIVITY.class, displayId);
+        mRecentTasksProvider.openTopRunningTask(displayId);
 
         verify(mActivityManagerWrapper, never()).startActivityFromRecents(anyInt(),
                 nullable(ActivityOptions.class));
@@ -354,7 +357,7 @@ public class RecentTasksProviderTest {
         when(mActivityManagerWrapper.getRunningTasks(anyBoolean(), eq(displayId)))
                 .thenReturn(infos);
 
-        boolean ret = mRecentTasksProvider.openTopRunningTask(RECENTS_ACTIVITY.class, displayId);
+        boolean ret = mRecentTasksProvider.openTopRunningTask(displayId);
 
         assertThat(ret).isFalse();
     }
@@ -410,7 +413,7 @@ public class RecentTasksProviderTest {
             ActivityManager.RunningTaskInfo info = mock(ActivityManager.RunningTaskInfo.class);
             info.taskId = i;
             if (i == tasksBeforeRecents) {
-                info.topActivity = new ComponentName("pkg-" + i, recentsClazz);
+                info.topActivity = new ComponentName(mContext, RECENTS_ACTIVITY.class);
             } else {
                 info.topActivity = new ComponentName("pkg-" + i, "class-" + i);
             }
