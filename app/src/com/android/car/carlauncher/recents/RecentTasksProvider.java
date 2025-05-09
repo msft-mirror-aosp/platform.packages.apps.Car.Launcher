@@ -22,7 +22,6 @@ import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_DESK;
 import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_FULLSCREEN;
 import static com.android.wm.shell.shared.GroupedTaskInfo.TYPE_SPLIT;
 
-import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.TaskInfo;
 import android.content.ComponentName;
@@ -266,8 +265,9 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
     }
 
     @Override
-    public boolean openTopRunningTask(@NonNull Class<? extends Activity> recentsActivity,
-            int displayId) {
+    public boolean openTopRunningTask(int displayId) {
+        ComponentName recentsActivity = ComponentName.unflattenFromString(
+                mContext.getString(com.android.internal.R.string.config_recentsComponentName));
         ActivityManager.RunningTaskInfo[] runningTasks = mActivityManagerWrapper.getRunningTasks(
                 /* filterOnlyVisibleRecents= */ false, displayId);
         boolean foundRecentsTask = false;
@@ -280,10 +280,10 @@ public class RecentTasksProvider implements RecentTasksProviderInterface {
                 return mActivityManagerWrapper.startActivityFromRecents(
                         runningTask.taskId, /* options= */ null);
             }
-            String topComponent = runningTask.topActivity != null
-                    ? runningTask.topActivity.getClassName()
-                    : runningTask.baseIntent.getComponent().getClassName();
-            if (recentsActivity.getName().equals(topComponent)) {
+            ComponentName topComponent = runningTask.topActivity != null
+                    ? runningTask.topActivity
+                    : runningTask.baseIntent.getComponent();
+            if (recentsActivity.equals(topComponent)) {
                 foundRecentsTask = true;
             }
         }
