@@ -24,6 +24,7 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 
 import java.net.URISyntaxException;
+import java.util.Set;
 
 /**
  * Utils for CarLauncher package.
@@ -64,10 +65,26 @@ public class CarLauncherUtils {
             }
 
             if (preferredIntent.resolveActivityInfo(pm, /* flags= */ 0) != null) {
-                return preferredIntent;
+                return  maybeReplaceWithTosMapIntent(context, preferredIntent);
             }
         }
-        return defaultIntent;
+        return  maybeReplaceWithTosMapIntent(context, defaultIntent);
+    }
+
+    private static Intent maybeReplaceWithTosMapIntent(Context context, Intent mapIntent) {
+        String packageName = mapIntent.getComponent() != null
+                ? mapIntent.getComponent().getPackageName()
+                : null;
+        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(context);
+
+        // Launch tos map intent when the user has not accepted tos and when the
+        // default maps package is not available to package manager, or it's disabled by tos
+        if (!AppLauncherUtils.tosAccepted(context)
+                && (packageName == null || tosDisabledPackages.contains(packageName))) {
+            Log.i(TAG, "Replacing default maps intent with tos map intent");
+            mapIntent = getTosMapIntent(context);
+        }
+        return mapIntent;
     }
 
     /**
@@ -115,11 +132,11 @@ public class CarLauncherUtils {
         try {
             Intent intent = Intent.parseUri(intentString, Intent.URI_INTENT_SCHEME);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            return intent;
+            return maybeReplaceWithTosMapIntent(context, intent);
         } catch (URISyntaxException e) {
             Log.w(TAG, "Invalid intent URI in config_smallCanvasOptimizedMapIntent: \""
                     + intentString + "\". Falling back to fullscreen map.");
-            return getMapsIntent(context);
+            return maybeReplaceWithTosMapIntent(context, getMapsIntent(context));
         }
     }
 
