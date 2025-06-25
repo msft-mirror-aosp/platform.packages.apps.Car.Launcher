@@ -260,7 +260,7 @@ public class CarLauncher extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
-                    if (getResources().getBoolean(R.bool.config_enableMediaCardFullscreen)) {
+                    if (CarLauncherUtils.mediaCardFullscreen(this)) {
                         if (cardModule.getCardResId() == R.id.top_card) {
                             findViewById(R.id.top_card).setVisibility(View.GONE);
                         }

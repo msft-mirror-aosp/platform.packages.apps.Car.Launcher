@@ -16,6 +16,7 @@
 
 package com.android.car.carlauncher;
 
+import android.annotation.NonNull;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -120,5 +121,13 @@ public class CarLauncherUtils {
                     + intentString + "\". Falling back to fullscreen map.");
             return getMapsIntent(context);
         }
+    }
+
+    /**
+     * This replaces {@code Flags.mediaCardFullscreen()}
+     * Returns the value of {@code R.bool.config_enableMediaCardFullscreen}
+     */
+    public static boolean mediaCardFullscreen(@NonNull Context context) {
+        return context.getResources().getBoolean(R.bool.config_enableMediaCardFullscreen);
     }
 }
