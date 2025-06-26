@@ -143,15 +143,13 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     }
 
     @Test
-    public void onCreate_tosMapActivity_tosUnaccepted_canvasOptimizedMapsDisabledByTos() {
+    public void onCreate_tosUnacceptedAndCanvasOptimizedMapsDisabledByTos_launchesTosMapIntent() {
         doReturn(false).when(() -> AppLauncherUtils.tosAccepted(any()));
         doReturn(true)
                         .when(() ->
                                 CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
         doReturn(createIntentFromString(TOS_MAP_INTENT))
                 .when(() -> CarLauncherUtils.getTosMapIntent(any()));
-        doReturn(createIntentFromString(DEFAULT_MAP_INTENT))
-                .when(() -> CarLauncherUtils.getSmallCanvasOptimizedMapIntent(any()));
         doReturn(tosDisabledPackages())
                 .when(() -> AppLauncherUtils.getTosDisabledPackages(any()));
 
@@ -168,16 +166,19 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
     }
 
     @Test
-    public void onCreate_tosMapActivity_tosUnaccepted_mapsNotDisabledByTos() {
+    public void onCreate_tosUnacceptedAndDefaultMapsNotDisabledByTos_doesNotLaunchTosMapIntent() {
         doReturn(false).when(() -> AppLauncherUtils.tosAccepted(any()));
         doReturn(true)
                 .when(() -> CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
         doReturn(createIntentFromString(CUSTOM_MAP_INTENT))
                 .when(() -> CarLauncherUtils.getSmallCanvasOptimizedMapIntent(any()));
+        doReturn(createIntentFromString(TOS_MAP_INTENT))
+                .when(() -> CarLauncherUtils.getTosMapIntent(any()));
         doReturn(tosDisabledPackages())
                 .when(() -> AppLauncherUtils.getTosDisabledPackages(any()));
 
         mActivityScenario = ActivityScenario.launch(CarLauncher.class);
+        mActivityScenario.moveToState(Lifecycle.State.RESUMED);
 
         mActivityScenario.onActivity(activity -> {
             Intent mapIntent = activity.getMapsIntent();
@@ -185,15 +186,19 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
             // these can be some other navigation app set as default,
             // package name will not be null.
             // We will not replace the map intent with TOS map activity
-            assertEquals(
-                    createIntentFromString(CUSTOM_MAP_INTENT).getComponent().getClassName(),
+            assertNotEquals(
+                    createIntentFromString(TOS_MAP_INTENT).getComponent().getClassName(),
                     mapIntent.getComponent().getClassName());
         });
     }
 
     @Test
-    public void onCreate_tosMapActivity_tosAccepted() {
+    public void onCreate_tosAccepted_doesNotLaunchTosMapIntent() {
         doReturn(true).when(() -> AppLauncherUtils.tosAccepted(any()));
+        doReturn(true)
+                .when(() -> CarLauncherUtils.isSmallCanvasOptimizedMapIntentConfigured(any()));
+        doReturn(createIntentFromString(CUSTOM_MAP_INTENT))
+                .when(() -> CarLauncherUtils.getSmallCanvasOptimizedMapIntent(any()));
         doReturn(createIntentFromString(TOS_MAP_INTENT))
                 .when(() -> CarLauncherUtils.getTosMapIntent(any()));
 
@@ -202,7 +207,8 @@ public class CarLauncherTest extends AbstractExtendedMockitoTestCase {
         mActivityScenario.onActivity(activity -> {
             Intent mapIntent = activity.getMapsIntent();
             // If TOS is accepted, map intent is not replaced
-            assertNotEquals("com.android.car.carlauncher.homescreen.MapActivityTos",
+            assertNotEquals(
+                    createIntentFromString(TOS_MAP_INTENT).getComponent().getClassName(),
                     mapIntent.getComponent().getClassName());
         });
     }

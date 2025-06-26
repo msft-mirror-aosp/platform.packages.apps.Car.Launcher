@@ -357,8 +357,11 @@ public class CarLauncher extends FragmentActivity {
                 if (DEBUG) {
                     Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
                 }
-                if (mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                if (mCarLauncherViewModel != null
+                        && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                    // Reinitialize the remote car task view with the new maps intent
                     mCarLauncherViewModel.getRemoteCarTaskView().getValue().release();
+                    mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
                     setupRemoteCarTaskView(mMapsCard);
                 }
                 if (tosAccepted) {
