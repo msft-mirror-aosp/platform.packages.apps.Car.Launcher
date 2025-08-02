@@ -18,8 +18,7 @@ package com.android.car.carlauncher.homescreen.audio;
 
 import android.content.Context;
 
-import com.android.car.carlauncher.Flags;
-import com.android.car.carlauncher.R;
+import com.android.car.carlauncher.CarLauncherUtils;
 import com.android.car.carlauncher.homescreen.CardPresenter;
 import com.android.car.carlauncher.homescreen.HomeCardFragment;
 import com.android.car.carlauncher.homescreen.HomeCardInterface;
@@ -42,14 +41,13 @@ public class AudioCardPresenter extends CardPresenter {
     // The fragment controlled by this presenter.
     private AudioCardFragment mFragment;
     private Context mContext;
-    private boolean mEnableMediaCardFullscreen;
 
     private final HomeCardFragment.OnViewLifecycleChangeListener mOnViewLifecycleChangeListener =
             new HomeCardFragment.OnViewLifecycleChangeListener() {
                 @Override
                 public void onViewCreated() {
                     mDialerPresenter.setView(mFragment.getInCallFragment());
-                    if (!mEnableMediaCardFullscreen) {
+                    if (!CarLauncherUtils.mediaCardFullscreen(mContext)) {
                         mMediaPresenter.setView(mFragment.getMediaFragment());
                     }
                 }
@@ -64,17 +62,15 @@ public class AudioCardPresenter extends CardPresenter {
         mDialerPresenter = dialerPresenter;
         mMediaPresenter = mediaPresenter;
         mContext = context;
-        mEnableMediaCardFullscreen = mContext.getResources().getBoolean(
-                R.bool.config_enableMediaCardFullscreen);
 
         mDialerPresenter.setOnInCallStateChangeListener(hasActiveCall -> {
             if (hasActiveCall) {
-                if (!mEnableMediaCardFullscreen) {
+                if (!CarLauncherUtils.mediaCardFullscreen(mContext)) {
                     mMediaPresenter.setShowMedia(false);
                 }
                 mFragment.showInCallCard();
             } else {
-                if (!mEnableMediaCardFullscreen) {
+                if (!CarLauncherUtils.mediaCardFullscreen(mContext)) {
                     mMediaPresenter.setShowMedia(true);
                 }
                 mFragment.showMediaCard();
@@ -91,7 +87,7 @@ public class AudioCardPresenter extends CardPresenter {
     /** Sets the model for this presenter. */
     public void setModel(AudioCardModel viewModel) {
         mDialerPresenter.setModel(viewModel.getInCallViewModel());
-        if (!Flags.mediaCardFullscreen()) {
+        if (!CarLauncherUtils.mediaCardFullscreen(mContext)) {
             mMediaPresenter.setModel(viewModel.getMediaViewModel());
         }
     }

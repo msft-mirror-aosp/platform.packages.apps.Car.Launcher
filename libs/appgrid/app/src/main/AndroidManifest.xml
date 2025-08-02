@@ -38,18 +38,38 @@
         android:label="@string/app_name"
         android:supportsRtl="true">
 
-    <activity-alias
-            android:name="com.android.car.appgrid.test.AppGridActivity"
-            android:targetActivity="com.android.car.carlauncher.AppGridActivity"
-            android:launchMode="singleInstance"
+        <activity-alias
+                android:name="com.android.car.appgrid.test.AppGridActivity"
+                android:targetActivity="com.android.car.carlauncher.AppGridActivity"
+                android:launchMode="singleInstance"
+                android:exported="true"
+                android:theme="@style/Theme.Launcher.AppGridActivity"
+                android:excludeFromRecents="true">
+                <meta-data android:name="distractionOptimized" android:value="true"/>
+                <intent-filter>
+                    <action android:name="android.intent.action.MAIN" />
+                    <category android:name="android.intent.category.LAUNCHER" />
+                </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="com.android.car.appgrid.test.ResetLauncherActivity"
+            android:excludeFromRecents="true"
             android:exported="true"
-            android:theme="@style/Theme.Launcher.AppGridActivity"
-            android:excludeFromRecents="true">
-            <meta-data android:name="distractionOptimized" android:value="true"/>
+            android:launchMode="singleInstance"
+            android:targetActivity="com.android.car.carlauncher.ResetLauncherActivity"
+            android:theme="@style/ActionDialogTheme">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="com.android.settings.action.EXTRA_SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <meta-data
+                android:name="com.android.settings.title"
+                android:resource="@string/reset_appgrid_title" />
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.apps" />
         </activity-alias>
 
     </application>

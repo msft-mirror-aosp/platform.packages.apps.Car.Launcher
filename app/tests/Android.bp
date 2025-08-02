@@ -22,7 +22,10 @@ package {
 android_test {
     name: "CarLauncherTests",
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 
     resource_dirs: ["res"],
 
@@ -48,6 +51,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.fragment_fragment-testing",
         "hamcrest-library",
+        "mockito-kotlin2",
         "mockito-target-extended",
         "truth",
         "testables",

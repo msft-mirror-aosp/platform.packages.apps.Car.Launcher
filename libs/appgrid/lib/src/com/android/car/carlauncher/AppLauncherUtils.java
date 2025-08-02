@@ -20,7 +20,7 @@ import static android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLE
 import static android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED;
 
 import static com.android.car.carlauncher.datasources.restricted.TosDataSourceImpl.TOS_DISABLED_APPS_SEPARATOR;
-import static com.android.car.carlauncher.datasources.restricted.TosDataSourceImpl.TOS_NOT_ACCEPTED;
+import static com.android.car.carlauncher.datasources.restricted.TosDataSourceImpl.TOS_ACCEPTED;
 import static com.android.car.carlauncher.datasources.restricted.TosDataSourceImpl.TOS_UNINITIALIZED;
 
 import android.app.ActivityOptions;
@@ -107,7 +107,7 @@ public class AppLauncherUtils {
         String settingsValue = Settings.Secure.getString(
                 contentResolverForUser,
                 KEY_USER_TOS_ACCEPTED);
-        return !Objects.equals(settingsValue, TOS_NOT_ACCEPTED);
+        return Objects.equals(settingsValue, TOS_ACCEPTED) || tosStatusUninitialized(context);
     }
 
     /**
@@ -123,6 +123,6 @@ public class AppLauncherUtils {
         String settingsValue = Settings.Secure.getString(
                 contentResolverForUser,
                 KEY_USER_TOS_ACCEPTED);
-        return Objects.equals(settingsValue, TOS_UNINITIALIZED);
+        return settingsValue == null || Objects.equals(settingsValue, TOS_UNINITIALIZED);
     }
 }

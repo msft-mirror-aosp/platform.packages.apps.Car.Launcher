@@ -16,6 +16,7 @@
 
 package com.android.car.carlauncher.datastore;
 
+import android.os.FileObserver;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -44,6 +45,8 @@ public abstract class ProtoDataSource<T extends MessageLite> {
     private static final String TAG = "ProtoDataSource";
     private FileInputStream mInputStream;
     private FileOutputStream mOutputStream;
+    private FileDeletionObserver mFileDeletionObserver;
+    private FileObserver mFileObserver;
 
     public ProtoDataSource(File dataFileDirectory, String dataFileName) {
         mFile = new File(dataFileDirectory, dataFileName);
@@ -80,6 +83,7 @@ public abstract class ProtoDataSource<T extends MessageLite> {
      */
     public boolean writeToFile(T data) {
         boolean success = true;
+        boolean dataFileAlreadyExisted = getDataFile().exists();
         try {
             if (mOutputStream == null) {
                 mOutputStream = new FileOutputStream(getDataFile(), false);
@@ -99,6 +103,23 @@ public abstract class ProtoDataSource<T extends MessageLite> {
             } catch (IOException e) {
                 Log.e(TAG, "Unable to close output stream. ");
             }
+        }
+        // If writing to the file was successful and this file is newly created, attach deletion
+        // observer.
+        if (success && !dataFileAlreadyExisted) {
+            // Stop watching for deletions on any previously monitored file.
+            detachFileDeletionObserver();
+            mFileObserver = new FileObserver(getDataFile()) {
+                @Override
+                public void onEvent(int event, @Nullable String path) {
+                    if (DELETE_SELF == event) {
+                        Log.i(TAG, "DELETE_SELF event triggered");
+                        mFileDeletionObserver.onDeleted();
+                        mFileObserver.stopWatching();
+                    }
+                }
+            };
+            mFileObserver.startWatching();
         }
         return success;
     }
@@ -149,6 +170,31 @@ public abstract class ProtoDataSource<T extends MessageLite> {
     }
 
     /**
+     * Attaches a {@link FileDeletionObserver} that will be notified when the
+     * associated proto file is deleted.
+     *
+     * <p>Calling this method replaces any previously attached observer.
+     *
+     * @param observer The {@link FileDeletionObserver} to attach, or {@code null}
+     *        to remove any existing observer.
+     */
+    public void attachFileDeletionObserver(FileDeletionObserver observer) {
+        mFileDeletionObserver = observer;
+    }
+
+    /**
+     * Detaches the currently attached {@link FileDeletionObserver}, if any.
+     *
+     * <p>This stops the observer from receiving further notifications about file
+     * deletion events.
+     */
+    public void detachFileDeletionObserver() {
+        if (mFileObserver != null) {
+            mFileObserver.stopWatching();
+        }
+    }
+
+    /**
      * This method will be called by {@link ProtoDataSource#readFromFile}.
      *
      * Implementation is left to subclass since {@link MessageLite.parseDelimitedFrom(InputStream)}
@@ -176,4 +222,21 @@ public abstract class ProtoDataSource<T extends MessageLite> {
      */
     protected abstract void writeDelimitedTo(T outputData, OutputStream outputStream)
             throws IOException;
+
+    /**
+     * An interface for observing the deletion of a file.
+     *
+     * <p>Classes that implement this interface can be attached to a
+     * {@code ProtoDataSource} (or a similar class managing file monitoring)
+     * to receive notifications when the associated file is deleted.
+     *
+     * @see ProtoDataSource#attachFileDeletionObserver(FileDeletionObserver)
+     * @see ProtoDataSource#detachFileDeletionObserver()
+     */
+    public interface FileDeletionObserver {
+        /**
+         * Called when the observed file is deleted.
+         */
+        void onDeleted();
+    }
 }

@@ -260,7 +260,7 @@ public class CarLauncher extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
-                    if (getResources().getBoolean(R.bool.config_enableMediaCardFullscreen)) {
+                    if (CarLauncherUtils.mediaCardFullscreen(this)) {
                         if (cardModule.getCardResId() == R.id.top_card) {
                             findViewById(R.id.top_card).setVisibility(View.GONE);
                         }
@@ -316,18 +316,6 @@ public class CarLauncher extends FragmentActivity {
                 ? CarLauncherUtils.getSmallCanvasOptimizedMapIntent(this)
                 : CarLauncherUtils.getMapsIntent(this);
 
-        String packageName = mapIntent.getComponent() != null
-                ? mapIntent.getComponent().getPackageName()
-                : null;
-        Set<String> tosDisabledPackages = AppLauncherUtils.getTosDisabledPackages(this);
-
-        // Launch tos map intent when the user has not accepted tos and when the
-        // default maps package is not available to package manager, or it's disabled by tos
-        if (!AppLauncherUtils.tosAccepted(this)
-                && (packageName == null || tosDisabledPackages.contains(packageName))) {
-            mapIntent = CarLauncherUtils.getTosMapIntent(this);
-            Log.i(TAG, "Launching tos activity in task view");
-        }
         // Don't want to show this Activity in Recents.
         mapIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
         return mapIntent;
@@ -357,8 +345,11 @@ public class CarLauncher extends FragmentActivity {
                 if (DEBUG) {
                     Log.d(TAG, "TOS disabled apps:" + tosDisabledApps);
                 }
-                if (mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                if (mCarLauncherViewModel != null
+                        && mCarLauncherViewModel.getRemoteCarTaskView().getValue() != null) {
+                    // Reinitialize the remote car task view with the new maps intent
                     mCarLauncherViewModel.getRemoteCarTaskView().getValue().release();
+                    mCarLauncherViewModel.initializeRemoteCarTaskView(getMapsIntent());
                     setupRemoteCarTaskView(mMapsCard);
                 }
                 if (tosAccepted) {
