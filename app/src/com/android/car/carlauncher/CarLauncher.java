@@ -156,10 +156,7 @@ public class CarLauncher extends FragmentActivity {
         // visible background users.
         // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
         // there is no maps use-case for passengers.
-        // Note: for now MUMD/MUPAND are not using DEWD.
-        UserManager um = getSystemService(UserManager.class);
-        boolean isPassengerDisplay = getDisplayId() != Display.DEFAULT_DISPLAY
-                || um.isVisibleBackgroundUsersOnDefaultDisplaySupported();
+        boolean isPassengerDisplay = isPassengerDisplay();
 
         // Don't show the maps panel in multi window mode.
         // NOTE: CTS tests for split screen are not compatible with activity views on the
@@ -408,8 +405,16 @@ public class CarLauncher extends FragmentActivity {
                 mTosContentObserver);
     }
 
+    /** Returns {@code true} if the launcher is currently running on a passenger display. */
+    private boolean isPassengerDisplay() {
+        UserManager um = getSystemService(UserManager.class);
+        return getDisplayId() != Display.DEFAULT_DISPLAY
+                || um.isVisibleBackgroundUsersOnDefaultDisplaySupported();
+    }
+
     /** Returns {@code true} if the declarative launcher configuration is active. */
     private boolean isDewdActive() {
-        return getResources().getBoolean(R.bool.config_useDewdLauncher);
+        // Note: for now, passengers do not support dewd
+        return !isPassengerDisplay() && getResources().getBoolean(R.bool.config_useDewdLauncher);
     }
 }
