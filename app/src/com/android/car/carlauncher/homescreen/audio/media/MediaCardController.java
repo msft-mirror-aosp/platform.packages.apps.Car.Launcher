@@ -40,7 +40,6 @@ import android.widget.LinearLayout;
 import androidx.constraintlayout.motion.widget.MotionLayout;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.android.car.apps.common.RoundedDrawable;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.carlauncher.R;
 import com.android.car.media.common.CustomPlaybackAction;
@@ -240,10 +239,7 @@ public class MediaCardController extends PlaybackCardController implements
                 /* drawable */ R.drawable.media_card_default_album_art,
                 /* theme */ mView.getContext().getTheme())
                 : drawable;
-        RoundedDrawable roundedDrawable = new RoundedDrawable(drawableToUse, mView.getResources()
-                .getFloat(R.dimen.media_card_album_art_drawable_corner_ratio));
-        super.updateAlbumCoverWithDrawable(roundedDrawable);
-
+        super.updateAlbumCoverWithDrawable(drawableToUse);
         if (mCardViewModel.getPanelExpanded()) {
             mAlbumCoverVisibility = mAlbumCover.getVisibility();
             mAlbumCover.setVisibility(View.INVISIBLE);
@@ -534,7 +530,7 @@ public class MediaCardController extends PlaybackCardController implements
         if ((isSkipNextEnabled || isSkipNextReserved)) {
             updateButton(mSkipNextButton, mView.getContext().getDrawable(
                     com.android.car.media.common.R.drawable.ic_skip_next),
-                    mView.getContext().getDrawable(R.drawable.circle_button_background),
+                    mView.getContext().getDrawable(R.drawable.media_card_button_background),
                     true, isSkipNextEnabled, (v) -> {
                 if (playbackController != null) {
                     playbackController.skipToNext();
@@ -565,7 +561,7 @@ public class MediaCardController extends PlaybackCardController implements
         if ((isSkipPrevEnabled || isSkipPrevReserved)) {
             updateButton(mSkipPrevButton, mView.getContext().getDrawable(
                     com.android.car.media.common.R.drawable.ic_skip_previous),
-                    mView.getContext().getDrawable(R.drawable.circle_button_background),
+                    mView.getContext().getDrawable(R.drawable.media_card_button_background),
                     true, isSkipPrevEnabled, (v) -> {
                     if (playbackController != null) {
                         playbackController.skipToPrevious();
@@ -605,7 +601,7 @@ public class MediaCardController extends PlaybackCardController implements
                 .fetchDrawable(mView.getContext());
         if (customAction != null) {
             updateButton(button, customAction.mIcon, mView.getContext().getDrawable(
-                    R.drawable.circle_button_background), true, true, (v) -> {
+                    R.drawable.media_card_button_background), true, true, (v) -> {
                 if (playbackController != null) {
                         playbackController.doCustomAction(
                                 customAction.mAction, customAction.mExtras);
