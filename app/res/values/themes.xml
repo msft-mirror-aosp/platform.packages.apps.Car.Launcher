@@ -39,13 +39,14 @@
 
     <style name="CarLauncherActivityThemeOverlay">
         <item name="launcherCardCornerRadius">?oemShapeCornerLarge</item>
-        <item name="mediaCardCardRadius">?oemShapeCornerLarge</item>
+        <item name="mediaCardCornerRadius">?oemShapeCornerLarge</item>
+        <item name="mediaCardItemCornerRadius">?oemShapeCornerMedium</item>
         <item name="mediaCardPillRadius">?oemShapeCornerFull</item>
-        <item name="carTextPrimary">?oemColorNeutralPalette95</item>
-        <item name="carTextSecondary">?oemColorNeutralVariantPalette70</item>
+        <item name="carTextPrimary">?oemColorOnBackground</item>
+        <item name="carTextSecondary">?oemColorOnSurfaceVariant</item>
     </style>
 
     <style name="MapTosActivityThemeOverlay">
-        <item name="carTextPrimary">?oemColorNeutralPalette95</item>
+        <item name="carTextPrimary">?oemColorOnBackground</item>
     </style>
 </resources>
