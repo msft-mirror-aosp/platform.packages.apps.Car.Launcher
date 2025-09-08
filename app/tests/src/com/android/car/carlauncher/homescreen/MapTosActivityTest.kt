@@ -19,24 +19,18 @@ package com.android.car.carlauncher.homescreen
 import android.car.settings.CarSettings.Secure.KEY_UNACCEPTED_TOS_DISABLED_APPS
 import android.car.settings.CarSettings.Secure.KEY_USER_TOS_ACCEPTED
 import android.content.Intent
-import android.platform.test.annotations.DisableFlags
-import android.platform.test.annotations.EnableFlags
-import android.platform.test.flag.junit.SetFlagsRule
 import android.provider.Settings
 import android.testing.TestableContext
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.car.carlauncher.Flags
 import com.android.car.carlauncher.R
 import com.google.common.truth.Truth.assertThat
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class MapTosActivityTest {
-    @get:Rule val setFlagsRule = SetFlagsRule()
     private val context =
         TestableContext(InstrumentationRegistry.getInstrumentation().targetContext)
     private val resources = context.resources
@@ -68,7 +62,6 @@ class MapTosActivityTest {
     }
 
     @Test
-    @EnableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
     fun onCreate_tosContentObserver_isNotNull() {
         Settings.Secure.putInt(context.contentResolver, KEY_USER_TOS_ACCEPTED, 1)
         Settings.Secure.putString(
@@ -85,24 +78,6 @@ class MapTosActivityTest {
     }
 
     @Test
-    @DisableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
-    fun onCreate_whenFlagDisabled_tosContentObserver_isNull() {
-        Settings.Secure.putInt(context.contentResolver, KEY_USER_TOS_ACCEPTED, 1)
-        Settings.Secure.putString(
-            context.contentResolver,
-            KEY_UNACCEPTED_TOS_DISABLED_APPS,
-            NON_EMPTY_TOS_DISABLED_APPS
-        )
-
-        ActivityScenario.launch<MapTosActivity>(
-            Intent(context, MapTosActivity::class.java)
-        ).use { scenario ->
-            scenario.onActivity { assertThat(it.tosContentObserver).isNull() }
-        }
-    }
-
-    @Test
-    @EnableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
     fun afterTosIsAccepted_activityIsFinishing() {
         Settings.Secure.putInt(context.contentResolver, KEY_USER_TOS_ACCEPTED, 1)
         Settings.Secure.putString(

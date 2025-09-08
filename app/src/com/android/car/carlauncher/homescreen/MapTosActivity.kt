@@ -30,7 +30,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.android.car.carlauncher.AppLauncherUtils
-import com.android.car.carlauncher.Flags
 import com.android.car.carlauncher.R
 import com.android.car.ui.utils.CarUiUtils
 import com.android.car.ui.uxr.DrawableStateTextView
@@ -62,36 +61,29 @@ class MapTosActivity : AppCompatActivity() {
             AppLauncherUtils.launchApp(it.context, tosIntent)
         }
 
-        if (Flags.tosRestrictionsEnabled()) {
-            // Enable edge-to-edge display
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            window.decorView.rootView.setOnApplyWindowInsetsListener { v, insets ->
-                val appliedInsets = insets.getInsets(WindowInsets.Type.systemBars())
-                v.setPadding(
-                    appliedInsets.left,
-                    0, // top
-                    appliedInsets.right,
-                    0 // bottom
-                )
-                insets.inset(appliedInsets)
-            }
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.decorView.rootView.setOnApplyWindowInsetsListener { v, insets ->
+            val appliedInsets = insets.getInsets(WindowInsets.Type.systemBars())
+            v.setPadding(
+                appliedInsets.left,
+                0, // top
+                appliedInsets.right,
+                0 // bottom
+            )
+            insets.inset(appliedInsets)
         }
 
         setupCarUxRestrictionsListener()
         handleReviewButtonDistractionOptimized(requiresDistractionOptimization = false)
-
-        if (Flags.tosRestrictionsEnabled()) {
-            setupContentObserverForTos()
-        }
+        setupContentObserverForTos()
     }
 
     override fun onDestroy() {
         car?.getCarManager(CarUxRestrictionsManager::class.java)?.unregisterListener()
         car?.disconnect()
 
-        if (Flags.tosRestrictionsEnabled()) {
-            unregisterContentObserverForTos()
-        }
+        unregisterContentObserverForTos()
 
         super.onDestroy()
     }
