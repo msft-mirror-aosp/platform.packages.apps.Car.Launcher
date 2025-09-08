@@ -17,16 +17,12 @@
 package com.android.car.carlauncher
 
 import android.app.Application
-import android.platform.test.annotations.DisableFlags
-import android.platform.test.annotations.EnableFlags
-import android.platform.test.flag.junit.SetFlagsRule
 import androidx.test.core.app.ApplicationProvider
 import com.android.car.carlauncher.datasources.restricted.TosState
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -36,7 +32,6 @@ import shadows.ShadowResources
 @RunWith(RobolectricTestRunner::class)
 @Config(shadows = [ShadowResources::class])
 class AppGridViewModelTest {
-    @get:Rule val setFlagsRule = SetFlagsRule()
     private val appGridRepository = FakeAppGridRepository()
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private val viewModel = AppGridViewModel(appGridRepository, application)
@@ -47,7 +42,6 @@ class AppGridViewModelTest {
     }
 
     @Test
-    @EnableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
     fun getShouldShowTosBanner_whenFlagEnabledAndBannerDisabledByConfig_returnsFalse() = runTest {
         ShadowResources.setBoolean(R.bool.config_enable_tos_banner, false)
 
@@ -57,17 +51,6 @@ class AppGridViewModelTest {
     }
 
     @Test
-    @DisableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
-    fun getShouldShowTosBanner_whenFlagDisabled_returnsTrue() = runTest {
-        ShadowResources.setBoolean(R.bool.config_enable_tos_banner, false)
-
-        val enableBanner = viewModel.getShouldShowTosBanner().lastOrNull()
-
-        assertThat(enableBanner).isTrue()
-    }
-
-    @Test
-    @EnableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
     fun getShouldShowTosBanner_whenBlockTosAppsIsFalse_returnsFalse() = runTest {
         appGridRepository.tosState = TosState(false, emptyList())
         ShadowResources.setBoolean(R.bool.config_enable_tos_banner, true)
@@ -78,7 +61,6 @@ class AppGridViewModelTest {
     }
 
     @Test
-    @EnableFlags(Flags.FLAG_TOS_RESTRICTIONS_ENABLED)
     fun getShouldShowTosBanner_whenBlockTosAppsIsTrue_returnsTrue() = runTest {
         appGridRepository.tosState = TosState(true, emptyList())
         ShadowResources.setBoolean(R.bool.config_enable_tos_banner, true)

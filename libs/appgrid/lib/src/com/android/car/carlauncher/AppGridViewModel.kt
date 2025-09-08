@@ -128,11 +128,9 @@ class AppGridViewModel(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getShouldShowTosBanner(): Flow<Boolean> {
-        if (Flags.tosRestrictionsEnabled()) {
-            val enableBanner = application.resources.getBoolean(R.bool.config_enable_tos_banner)
-            if (!enableBanner) {
-                return flowOf(false)
-            }
+        val enableBanner = application.resources.getBoolean(R.bool.config_enable_tos_banner)
+        if (!enableBanner) {
+            return flowOf(false)
         }
         return appGridRepository.getTosState().mapLatest {
             if (!it.shouldBlockTosApps) {
