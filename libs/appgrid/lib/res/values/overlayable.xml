@@ -31,7 +31,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="color" name="banner_background_color"/>
       <item type="color" name="banner_button_text_color"/>
       <item type="color" name="banner_title_text_color"/>
-      <item type="color" name="icon_tint"/>
       <item type="color" name="recent_apps_line_divider_color"/>
       <item type="dimen" name="app_bar_height"/>
       <item type="dimen" name="app_grid_header_margin"/>
@@ -73,6 +72,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="search_result_margin"/>
       <item type="dimen" name="search_result_text_margin"/>
       <item type="dimen" name="threshold_to_start_drag_drop"/>
+      <item type="drawable" name="app_icon_background"/>
       <item type="drawable" name="app_item_highlight"/>
       <item type="drawable" name="banner_warning_image"/>
       <item type="drawable" name="page_indicator_bar"/>
