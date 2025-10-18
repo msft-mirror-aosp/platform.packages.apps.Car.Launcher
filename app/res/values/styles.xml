@@ -69,9 +69,12 @@
         <item name="android:scaleType">centerCrop</item>
         <item name="android:adjustViewBounds">false</item>
         <item name="shapeAppearanceOverlay">@style/RecentTaskThumbnail.RoundedBorder</item>
+        <item name="strokeColor">?oemColorOnSurfaceVariant</item>
+        <item name="strokeWidth">2dp</item>
     </style>
 
     <style name="HiddenRecentTaskThumbnail" parent="RecentTaskThumbnail">
+        <item name="strokeColor">@android:color/transparent</item>
     </style>
 
     <style name="RecentTaskDismissButton">
@@ -83,7 +86,7 @@
 
     <style name="RecentTaskThumbnail.RoundedBorder">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">8dp</item>
+        <item name="cornerSize">?oemShapeCornerExtraSmall</item>
     </style>
 
     <style name="CalmModeText">

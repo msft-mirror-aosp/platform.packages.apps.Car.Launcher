@@ -15,11 +15,11 @@
 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/dialer_button_icon_color"
-          android:state_enabled="true"
-          android:state_selected="false"/>
-    <item android:color="#FF000000"
-          android:state_enabled="true"
-          android:state_selected="true"/>
-    <item android:color="#80FFFFFF"
-          android:state_enabled="false"/>
+        android:state_enabled="true"
+        android:state_selected="true"/>
+    <item android:color="?oemColorOnSurface"
+        android:state_enabled="true"
+        android:state_selected="false"/>
+    <item android:color="?oemColorOnSurfaceVariant"
+        android:state_enabled="false"/>
 </selector>
