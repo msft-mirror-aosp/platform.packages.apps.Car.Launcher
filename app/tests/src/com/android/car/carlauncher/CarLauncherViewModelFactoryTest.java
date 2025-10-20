@@ -22,17 +22,21 @@ import static com.android.car.carlauncher.CarLauncherViewModel.CarLauncherViewMo
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import android.app.Instrumentation;
 import android.car.test.mocks.AbstractExtendedMockitoTestCase;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.view.WindowManager;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.car.carlauncher.CarLauncherViewModelTest.TestActivity;
 
@@ -45,6 +49,8 @@ import org.mockito.Mock;
 
 @RunWith(AndroidJUnit4.class)
 public class CarLauncherViewModelFactoryTest extends AbstractExtendedMockitoTestCase {
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+
     @Rule
     public final ActivityScenarioRule<TestActivity> mActivityRule =
             new ActivityScenarioRule<>(TestActivity.class);
@@ -59,6 +65,7 @@ public class CarLauncherViewModelFactoryTest extends AbstractExtendedMockitoTest
 
     @Before
     public void setUp() {
+        assumeFalse(hasSplitscreenMultitaskingFeature());
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         Context windowContext = mActivity
                 .createWindowContext(TYPE_APPLICATION_STARTING, /* options */ null);
@@ -71,7 +78,9 @@ public class CarLauncherViewModelFactoryTest extends AbstractExtendedMockitoTest
     public void tearDown() throws InterruptedException {
         mCarLauncherViewModelFactory = null;
         mActivityRule.getScenario().close();
-        mActivity.finishCompletely();
+        if (mActivity != null) {
+            mActivity.finishCompletely();
+        }
     }
 
     @Test
@@ -79,5 +88,13 @@ public class CarLauncherViewModelFactoryTest extends AbstractExtendedMockitoTest
         CarLauncherViewModel carLauncherViewModel =
                 mCarLauncherViewModelFactory.create(CarLauncherViewModel.class);
         assertThat(carLauncherViewModel).isNotNull();
+    }
+
+    /**
+     * Checks whether the device has automotive split-screen multitasking feature enabled
+     */
+    private boolean hasSplitscreenMultitaskingFeature() {
+        return mInstrumentation.getContext().getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 }

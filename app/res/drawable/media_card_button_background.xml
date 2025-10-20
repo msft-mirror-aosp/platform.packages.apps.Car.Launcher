@@ -16,8 +16,8 @@
 
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <shape
-            android:shape="oval">
+        <shape>
+            <corners android:radius="?oemShapeCornerFull"/>
             <solid android:color="?oemColorSurfaceContainerHighest"/>
         </shape>
     </item>

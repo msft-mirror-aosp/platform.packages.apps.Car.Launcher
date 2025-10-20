@@ -20,6 +20,7 @@ import static com.android.car.carlauncher.recents.CarRecentsActivity.OPEN_RECENT
 
 import android.app.ActivityManager;
 import android.app.Service;
+import android.app.contextualsearch.ContextualSearchConfig;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Region;
@@ -248,6 +249,11 @@ public class CarQuickStepService extends Service {
 
         @Override
         public void onActionCornerActivated(int action, int displayId) {
+            // no-op
+        }
+
+        @Override
+        public void invokeContextualSearch(int entryPoint, ContextualSearchConfig config) {
             // no-op
         }
     }

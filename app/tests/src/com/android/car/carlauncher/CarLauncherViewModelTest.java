@@ -18,12 +18,15 @@ package com.android.car.carlauncher;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.car.app.RemoteCarTaskView;
 import android.car.test.mocks.AbstractExtendedMockitoTestCase;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 
 import androidx.core.app.ActivityCompat;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -58,13 +61,16 @@ public final class CarLauncherViewModelTest extends AbstractExtendedMockitoTestC
 
     @Before
     public void setUp() {
+        assumeFalse(hasSplitscreenMultitaskingFeature());
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
     }
 
     @After
     public void tearDown() throws InterruptedException {
         mActivityRule.getScenario().close();
-        mActivity.finishCompletely();
+        if (mActivity != null) {
+            mActivity.finishCompletely();
+        }
         mRemoteCarTaskView = null;
     }
 
@@ -107,6 +113,14 @@ public final class CarLauncherViewModelTest extends AbstractExtendedMockitoTestC
         // activity being recreated due to a configuration change.
         runOnMain(() -> ActivityCompat.recreate(mActivity));
         mInstrumentation.waitForIdleSync();
+    }
+
+    /**
+     * Checks whether the device has automotive split-screen multitasking feature enabled
+     */
+    private boolean hasSplitscreenMultitaskingFeature() {
+        return mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 
     private void runOnMain(Runnable runnable) {
