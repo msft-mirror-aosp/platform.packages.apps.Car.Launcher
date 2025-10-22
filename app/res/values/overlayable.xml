@@ -27,6 +27,15 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="array" name="config_taskViewPackages"/>
       <item type="array" name="launcher_qc_provider_package_allowlist"/>
       <item type="array" name="packages_hidden_from_recents"/>
+      <item type="attr" name="oemColorPrimary"/>
+      <item type="attr" name="oemColorOnSurfaceVariant"/>
+      <item type="attr" name="oemColorSurfaceContainerHigh"/>
+      <item type="attr" name="oemColorSecondaryPalette80"/>
+      <item type="attr" name="oemTextAppearanceBodyLarge"/>
+      <item type="attr" name="oemTextAppearanceTitleMedium"/>
+      <item type="attr" name="oemTextAppearanceLabelMedium"/>
+      <item type="attr" name="oemShapeCornerSmall"/>
+      <item type="attr" name="oemShapeCornerExtraLarge"/>
       <item type="attr" name="carTextPrimary"/>
       <item type="attr" name="carTextSecondary"/>
       <item type="attr" name="cornerFamily"/>
