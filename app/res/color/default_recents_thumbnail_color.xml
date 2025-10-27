@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright (C) 2023 The Android Open Source Project
+  ~ Copyright (C) 2025 The Android Open Source Project
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -14,11 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<resources>
-    <color name="recent_apps_line_divider_color">#1FFFFFFF</color>
-    <color name="app_item_on_hover_border_color">#FF66B5FF</color>
-    <color name="app_item_on_hover_background_color">#3D66B5FF</color>
-    <color name="banner_background_color">#2E3134</color>
-    <color name="banner_button_text_color">#66B5FF</color>
-    <color name="banner_title_text_color">#FFFFFF</color>
-</resources>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:color="?oemColorSurfaceContainerHighest"/>
+</selector>
+

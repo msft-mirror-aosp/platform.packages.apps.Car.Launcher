@@ -27,6 +27,15 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="array" name="config_taskViewPackages"/>
       <item type="array" name="launcher_qc_provider_package_allowlist"/>
       <item type="array" name="packages_hidden_from_recents"/>
+      <item type="attr" name="oemColorPrimary"/>
+      <item type="attr" name="oemColorOnSurfaceVariant"/>
+      <item type="attr" name="oemColorSurfaceContainerHigh"/>
+      <item type="attr" name="oemColorSecondaryPalette80"/>
+      <item type="attr" name="oemTextAppearanceBodyLarge"/>
+      <item type="attr" name="oemTextAppearanceTitleMedium"/>
+      <item type="attr" name="oemTextAppearanceLabelMedium"/>
+      <item type="attr" name="oemShapeCornerSmall"/>
+      <item type="attr" name="oemShapeCornerExtraLarge"/>
       <item type="attr" name="carTextPrimary"/>
       <item type="attr" name="carTextSecondary"/>
       <item type="attr" name="cornerFamily"/>
@@ -51,6 +60,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="bool" name="use_media_source_color_for_seek_bar"/>
       <item type="color" name="card_background_scrim"/>
       <item type="color" name="clear_all_recents_text_color"/>
+      <item type="color" name="color_accent"/>
       <item type="color" name="date_divider_bar_color"/>
       <item type="color" name="default_recents_thumbnail_color"/>
       <item type="color" name="dialer_button_icon_color"/>
@@ -147,7 +157,6 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="dimen" name="vertical_border_size"/>
       <item type="drawable" name="button_ripple"/>
       <item type="drawable" name="car_button_background"/>
-      <item type="drawable" name="media_card_button_background"/>
       <item type="drawable" name="control_bar_contact_image_background"/>
       <item type="drawable" name="control_bar_image_background"/>
       <item type="drawable" name="default_audio_background"/>
@@ -172,8 +181,10 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="drawable" name="ic_recent_dismiss"/>
       <item type="drawable" name="ic_search_black"/>
       <item type="drawable" name="ic_temperature"/>
+      <item type="drawable" name="media_card_button_background"/>
       <item type="drawable" name="media_card_button_panel_background"/>
       <item type="drawable" name="media_card_default_album_art"/>
+      <item type="drawable" name="media_card_default_album_art_background"/>
       <item type="drawable" name="media_card_panel_button_shape"/>
       <item type="drawable" name="media_card_panel_handlebar"/>
       <item type="drawable" name="media_card_seekbar_progress"/>
@@ -224,6 +235,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="id" name="history_item_app_icon_inactive"/>
       <item type="id" name="history_list"/>
       <item type="id" name="history_list_container"/>
+      <item type="id" name="home"/>
       <item type="id" name="in_call_fragment_container"/>
       <item type="id" name="maps_card"/>
       <item type="id" name="media_card_panel_content_container"/>
@@ -308,6 +320,7 @@ REGENERATE USING packages/apps/Car/libs/tools/rro/generate-overlayable.py
       <item type="layout" name="card_fragment_audio_card"/>
       <item type="layout" name="control_bar_container"/>
       <item type="layout" name="descriptive_text"/>
+      <item type="layout" name="home"/>
       <item type="layout" name="map_tos_activity"/>
       <item type="layout" name="media_card_fullscreen"/>
       <item type="layout" name="media_card_history_header_item"/>

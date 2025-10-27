@@ -32,12 +32,3 @@ python3 $ANDROID_BUILD_TOP/packages/apps/Car/systemlibs/tools/rro/generate-overl
     -e $PROJECT_TOP/res/values/overlayable.xml \
     -o $PROJECT_TOP/res/values/overlayable.xml
 
-# CarAppGrid-lib overlayable
-
-PROJECT_TOP=$ANDROID_BUILD_TOP/packages/apps/Car/Launcher/libs/appgrid/lib
-
-python3 $ANDROID_BUILD_TOP/packages/apps/Car/systemlibs/tools/rro/generate-overlayable.py \
-    -n CarAppGrid-lib \
-    -r $PROJECT_TOP/res \
-    -e $PROJECT_TOP/res/values/overlayable.xml \
-    -o $PROJECT_TOP/res/values/overlayable.xml

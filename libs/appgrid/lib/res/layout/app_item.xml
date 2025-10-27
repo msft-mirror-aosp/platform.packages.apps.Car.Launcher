@@ -25,6 +25,7 @@
 
     <ImageView
         android:id="@+id/app_icon"
+        android:background="@drawable/app_icon_background"
         android:focusable="false"
         android:layout_width="@dimen/app_icon_size"
         android:layout_height="@dimen/app_icon_size"
