@@ -46,8 +46,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
-import com.android.car.carlauncher.homescreen.audio.IntentHandler;
-import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
+import com.android.car.carlauncher.homescreen.audio.MediaLaunchHandler;
+import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
 import com.android.wm.shell.taskview.TaskView;
@@ -110,14 +110,12 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
-        @Override
-        public void handleIntent(Intent intent) {
-            if (intent != null) {
-                ActivityOptions options = ActivityOptions.makeBasic();
-                startActivity(intent, options.toBundle());
-            }
+    // Used instead of IntentHandler because media apps may provide a PendingIntent instead
+    private final MediaLaunchHandler mMediaMediaLaunchHandler = mediaSource -> {
+        if (DEBUG) {
+            Log.d(TAG, "Launching media source " + mediaSource);
         }
+        mediaSource.launchActivity(CarLauncher.this, ActivityOptions.makeBasic());
     };
 
     @Override
@@ -173,7 +171,7 @@ public class CarLauncher extends FragmentActivity {
             }
         }
 
-        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
+        MediaLaunchRouter.getInstance().registerMediaLaunchHandler(mMediaMediaLaunchHandler);
         initializeCards();
         setupContentObserversForTos();
     }
