@@ -22,6 +22,10 @@
         <item>com.android.car.carlauncher.homescreen.audio.AudioCardModule</item>
     </string-array>
 
+    <!-- A list of component names that provide the initial appwidgets to display in the WidgetHostActivity -->
+    <string-array name="config_initialAppWidgets" translatable="false">
+    </string-array>
+
     <!--
         A list of preferred intents to use for displaying the maps card. Intents
         are formatted according to Intent.URI_ANDROID_APP_SCHEME.
@@ -89,4 +93,7 @@
      -->
     <bool name="config_useDewdLauncher">false</bool>
 
+    <!-- Unique ID for the AppWidgetHost in WidgetHostActivity. This ID should be unique
+         across the system, as it is used to identify this specific host. -->
+    <integer name="config_appwidget_host_id">1024</integer>
 </resources>
