@@ -19,6 +19,8 @@ package com.android.car.carlauncher;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY;
 
 import android.content.res.Configuration;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
@@ -45,12 +47,21 @@ public class ControlBarActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Setting as trusted overlay to let touches pass through.
-        getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
-        // To pass touches to the underneath task.
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+        if (getResources().getBoolean(R.bool.config_useDewdLauncher)) {
+            // Make the window transparent to let the home background show through.
+            getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-        setContentView(R.layout.control_bar_container);
+            setContentView(R.layout.control_bar_container_dewd);
+        } else {
+            // Setting as trusted overlay to let touches pass through.
+            getWindow().addPrivateFlags(PRIVATE_FLAG_TRUSTED_OVERLAY);
+            // To pass touches to the underneath task.
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+
+            setContentView(R.layout.control_bar_container);
+        }
+
+
         initializeCards();
     }
 

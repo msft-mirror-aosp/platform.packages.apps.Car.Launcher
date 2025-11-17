@@ -125,6 +125,12 @@ public class CarLauncher extends FragmentActivity {
         if (DEBUG) {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
+
+        if (isDewdActive()) {
+            setContentView(R.layout.home);
+            return;
+        }
+
         // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
         // visible background users.
         // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
@@ -209,6 +215,12 @@ public class CarLauncher extends FragmentActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        if (isDewdActive()) {
+            // no-op
+            return;
+        }
+
         TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
         unregisterTosContentObserver();
         release();
@@ -246,6 +258,12 @@ public class CarLauncher extends FragmentActivity {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+
+        if (isDewdActive()) {
+            // no-op
+            return;
+        }
+
         initializeCards();
     }
 
@@ -359,5 +377,10 @@ public class CarLauncher extends FragmentActivity {
                 Settings.Secure.getUriFor(KEY_UNACCEPTED_TOS_DISABLED_APPS),
                 /* notifyForDescendants*/ false,
                 mTosContentObserver);
+    }
+
+    /** Returns {@code true} if the declarative launcher configuration is active. */
+    private boolean isDewdActive() {
+        return getResources().getBoolean(R.bool.config_useDewdLauncher);
     }
 }
