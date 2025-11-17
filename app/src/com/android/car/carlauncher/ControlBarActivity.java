@@ -17,13 +17,11 @@
 package com.android.car.carlauncher;
 
 import android.app.ActivityOptions;
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
-import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -34,7 +32,6 @@ import com.android.car.carlauncher.homescreen.audio.IntentHandler;
 import com.android.car.carlauncher.homescreen.audio.MediaLaunchHandler;
 import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
-import com.android.car.media.common.source.MediaSource;
 
 import java.util.Set;
 
@@ -42,30 +39,24 @@ import java.util.Set;
  * Launcher activity that shows only the control bar fragment.
  */
 public class ControlBarActivity extends FragmentActivity {
-    private static final String TAG = "CarLauncher";
+    private static final String TAG = "ControlBarActivity";
     private static final boolean DEBUG = false;
 
     private Set<HomeCardModule> mHomeCardModules;
 
-    private final IntentHandler mIntentHandler = new IntentHandler() {
-        @Override
-        public void handleIntent(Intent intent) {
-            if (intent != null) {
-                ActivityOptions options = ActivityOptions.makeBasic();
-                startActivity(intent, options.toBundle());
-            }
+    private final IntentHandler mIntentHandler = intent -> {
+        if (intent != null) {
+            ActivityOptions options = ActivityOptions.makeBasic();
+            startActivity(intent, options.toBundle());
         }
     };
 
     // Used instead of IntentHandler because media apps may provide a PendingIntent instead
-    private final MediaLaunchHandler mMediaMediaLaunchHandler = new MediaLaunchHandler() {
-        @Override
-        public void handleLaunchMedia(@NonNull MediaSource mediaSource) {
-            if (DEBUG) {
-                Log.d(TAG, "Launching media source " + mediaSource);
-            }
-            mediaSource.launchActivity(ControlBarActivity.this, ActivityOptions.makeBasic());
+    private final MediaLaunchHandler mMediaMediaLaunchHandler = mediaSource -> {
+        if (DEBUG) {
+            Log.d(TAG, "Launching media source " + mediaSource);
         }
+        mediaSource.launchActivity(ControlBarActivity.this, ActivityOptions.makeBasic());
     };
 
     @Override
@@ -95,10 +86,8 @@ public class ControlBarActivity extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
-                    if (Flags.mediaCardFullscreen()) {
-                        if (cardModule.getCardResId() == R.id.top_card) {
-                            findViewById(R.id.top_card).setVisibility(View.GONE);
-                        }
+                    if (cardModule.getCardResId() == R.id.top_card) {
+                        findViewById(R.id.top_card).setVisibility(View.GONE);
                     }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);

@@ -28,3 +28,10 @@ flag {
   description: "This flag controls the terms of service restriction experience"
   bug: "369672428"
 }
+
+flag {
+  name: "app_widget_host"
+  namespace: "car_sys_exp"
+  description: "This flag controls whether car launcher supports showing app widgets"
+  bug: "457869713"
+}

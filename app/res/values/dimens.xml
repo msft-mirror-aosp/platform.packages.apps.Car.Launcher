@@ -132,4 +132,10 @@
     <dimen name="media_card_history_item_thumbnail_size">32dp</dimen>
     <dimen name="media_card_view_header_icon_size">32dp</dimen>
     <dimen name="media_card_text_view_guideline_start">248dp</dimen>
+
+    <dimen name="widget_media_card_height">490dp</dimen>
+    <dimen name="date_widget_padding">16dp</dimen>
+    <dimen name="date_widget_icon_margin_end">16dp</dimen>
+    <dimen name="date_widget_icon_side">48dp</dimen>
+    <dimen name="widget_vertical_margin">16dp</dimen>
 </resources>
