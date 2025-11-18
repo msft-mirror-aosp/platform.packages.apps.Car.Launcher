@@ -101,6 +101,9 @@
             android:exported="true"
             android:windowSoftInputMode="adjustPan">
             <meta-data android:name="distractionOptimized" android:value="true"/>
+            <property
+                android:name="android.window.ALLOW_HOME_ACTIVITY_ALWAYS_PRESENT"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.HOME"/>
