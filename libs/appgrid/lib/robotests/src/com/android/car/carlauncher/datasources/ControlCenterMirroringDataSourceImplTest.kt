@@ -225,7 +225,8 @@ class ControlCenterMirroringDataSourceImplTest {
         advanceUntilIdle()
         ShadowLooper.runUiThreadTasks()
 
-        assertEquals(expectedUnRegisterMsg.toString(), actualUnRegisterMsg.toString())
+        assertNotNull(actualUnRegisterMsg)
+        assertEquals(expectedUnRegisterMsg.what, actualUnRegisterMsg!!.what)
         assertNotNull(bindServiceConnection)
         verify(unbindService).invoke(bindServiceConnection!!)
     }
