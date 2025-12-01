@@ -42,11 +42,11 @@
         <item name="mediaCardCornerRadius">?oemShapeCornerLarge</item>
         <item name="mediaCardItemCornerRadius">?oemShapeCornerMedium</item>
         <item name="mediaCardPillRadius">?oemShapeCornerFull</item>
-        <item name="carTextPrimary">?oemColorOnBackground</item>
+        <item name="carTextPrimary">?oemColorOnSurface</item>
         <item name="carTextSecondary">?oemColorOnSurfaceVariant</item>
     </style>
 
     <style name="MapTosActivityThemeOverlay">
-        <item name="carTextPrimary">?oemColorOnBackground</item>
+        <item name="carTextPrimary">?oemColorOnSurface</item>
     </style>
 </resources>
