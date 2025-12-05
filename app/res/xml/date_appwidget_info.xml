@@ -18,6 +18,8 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
     android:minHeight="40dp"
+    android:maxResizeWidth="250dp"
+    android:maxResizeHeight="110dp"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/date_widget"
     android:resizeMode="horizontal|vertical"
