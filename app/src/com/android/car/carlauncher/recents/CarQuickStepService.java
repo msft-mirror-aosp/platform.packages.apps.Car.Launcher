@@ -182,6 +182,11 @@ public class CarQuickStepService extends Service {
         }
 
         @Override
+        public void enterStageSplitFromRunningApp(int displayId, boolean leftOrTop) {
+            // no-op
+        }
+
+        @Override
         public void onTaskbarToggled() {
             // no-op
         }
