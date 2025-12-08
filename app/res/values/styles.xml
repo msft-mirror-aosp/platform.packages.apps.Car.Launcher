@@ -125,7 +125,7 @@
         <item name="android:fontFamily">roboto-flex</item>
         <item name="android:textFontWeight">300</item>
         <item name="android:fontVariationSettings">"'wght' 300, 'wdth' 100, 'xtra' 468, 'xopq' 96, 'yopq' 79, 'ytuc' 712, 'ytas' 750, 'ytde' -203, 'ytfi' 738, 'opsz' 144"</item>
-        <item name="android:textColor">?oemColorOnBackground</item>
+        <item name="android:textColor">?oemColorOnSurface</item>
         <item name="android:textSize">300sp</item>
         <item name="android:textAlignment">center</item>
         <item name="android:format12Hour">hh:mm</item>
