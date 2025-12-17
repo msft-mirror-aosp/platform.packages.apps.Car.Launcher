@@ -16,9 +16,9 @@
 
 package com.android.car.carlauncher;
 
+import static android.app.Activity.RESULT_OK;
+
 import android.app.ActivityOptions;
-import android.appwidget.AppWidgetHost;
-import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
 import android.content.BroadcastReceiver;
@@ -30,8 +30,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.collection.ArraySet;
 import androidx.fragment.app.FragmentTransaction;
@@ -42,6 +44,8 @@ import com.android.car.carlauncher.homescreen.audio.IntentHandler;
 import com.android.car.carlauncher.homescreen.audio.MediaLaunchHandler;
 import com.android.car.carlauncher.homescreen.audio.dialer.InCallIntentRouter;
 import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
+import com.android.car.carlauncher.widgets.CarAppWidgetHost;
+import com.android.car.carlauncher.widgets.CarAppWidgetHostView;
 
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +59,11 @@ public class WidgetHostActivity extends AppCompatActivity {
 
     private static final String TAG = "WidgetHostActivity";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
-
+    private static final int REQUEST_BIND = 100;
+    private static final int REQUEST_CONFIGURE = REQUEST_BIND + 1;
+    private static final int RESULT_SUCCESS = RESULT_OK;
+    private static final int RESULT_NEEDS_BIND = RESULT_SUCCESS + 1;
+    private static final int RESULT_NEEDS_CONFIGURE = RESULT_NEEDS_BIND + 1;
     private final IntentHandler mIntentHandler = intent -> {
         if (intent != null) {
             ActivityOptions options = ActivityOptions.makeBasic();
@@ -69,7 +77,7 @@ public class WidgetHostActivity extends AppCompatActivity {
         }
         mediaSource.launchActivity(WidgetHostActivity.this, ActivityOptions.makeBasic());
     };
-    private final Set<Integer> mAppWidgetIds = new ArraySet<>();
+    private final Map<Integer, AppWidgetProviderInfo> mAppWidgetInfoMap = new HashMap<>();
     private final BroadcastReceiver mOverlayChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -81,8 +89,10 @@ public class WidgetHostActivity extends AppCompatActivity {
             }
         }
     };
+    private int mWidgetHeight;
+    private int mWidgetMediaCardHeight;
     private AppWidgetManager mAppWidgetManager;
-    private AppWidgetHost mAppWidgetHost;
+    private CarAppWidgetHost mAppWidgetHost;
     private LinearLayout mWidgetContainer;
     private ViewGroup mCardContainer;
     private Set<HomeCardModule> mHomeCardModules;
@@ -101,16 +111,28 @@ public class WidgetHostActivity extends AppCompatActivity {
         InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
 
         mAppWidgetManager = AppWidgetManager.getInstance(this);
-        mAppWidgetHost = new AppWidgetHost(this,
+        mAppWidgetHost = new CarAppWidgetHost(this,
                 getResources().getInteger(R.integer.config_appwidget_host_id));
         mWidgetContainer = findViewById(R.id.widget_container);
         mCardContainer = findViewById(R.id.card_container);
 
-        if (Flags.appWidgetHost()) {
-            loadAndDisplayWidgets();
-        } else {
-            mCardContainer.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
-        }
+        mWidgetHeight = (int) getResources().getDimension(R.dimen.widget_height);
+        mWidgetMediaCardHeight = (int) getResources().getDimension(
+                R.dimen.widget_media_card_height);
+
+        mCardContainer.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        mCardContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        if (Flags.appWidgetHost()) {
+                            loadAndDisplayWidgets();
+                        } else {
+                            mCardContainer.getLayoutParams().height =
+                                    ViewGroup.LayoutParams.MATCH_PARENT;
+                        }
+                    }
+                });
     }
 
     @Override
@@ -131,8 +153,53 @@ public class WidgetHostActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mAppWidgetIds.forEach(id -> mAppWidgetHost.deleteAppWidgetId(id));
-        mAppWidgetIds.clear();
+        mAppWidgetInfoMap.forEach((id, info) -> mAppWidgetHost.deleteAppWidgetId(id));
+        mAppWidgetInfoMap.clear();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_BIND && resultCode == RESULT_OK) {
+            int widgetId = data.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+            if (widgetId == -1) {
+                Log.e(TAG, "Unable to find widget id after bind");
+                return;
+            }
+
+            AppWidgetProviderInfo appWidgetInfo = mAppWidgetInfoMap.get(widgetId);
+            if (appWidgetInfo == null) {
+                Log.w(TAG, "REQUEST_BIND no AppWidgetProviderInfo");
+                return;
+            }
+            if (appWidgetInfo.configure == null) {
+                createHostView(widgetId, appWidgetInfo);
+            } else {
+                Bundle options = ActivityOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(
+                                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS
+                        )
+                        .toBundle();
+                mAppWidgetHost.startAppWidgetConfigureActivityForResult(this, widgetId,
+                        /* intentFlags= */ 0,
+                        REQUEST_CONFIGURE,
+                        options);
+            }
+        } else if (requestCode == REQUEST_CONFIGURE && resultCode == RESULT_OK) {
+            int widgetId = data.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+            if (widgetId == -1) {
+                Log.e(TAG, "Unable to find widget id after configure");
+                return;
+            }
+
+            AppWidgetProviderInfo appWidgetInfo = mAppWidgetInfoMap.get(widgetId);
+            if (appWidgetInfo == null) {
+                return;
+            }
+
+            createHostView(widgetId, appWidgetInfo);
+        }
     }
 
     private void initializeCards() {
@@ -184,23 +251,40 @@ public class WidgetHostActivity extends AppCompatActivity {
                 continue;
             }
 
-            int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
-            mAppWidgetIds.add(appWidgetId);
-
-            if (mAppWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, componentName)) {
-                AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, info);
-                mWidgetContainer.addView(hostView);
-                widgetAdded = true;
-
-                if (DEBUG) {
-                    Log.d(TAG, "Added widget with ID: " + appWidgetId + " from provider: "
-                            + componentName);
+            int appWidgetId = -1;
+            for (Map.Entry<Integer, AppWidgetProviderInfo> entry : mAppWidgetInfoMap.entrySet()) {
+                if (info.equals(entry.getValue())) {
+                    appWidgetId = entry.getKey();
+                    break;
                 }
-            } else {
-                if (DEBUG) {
-                    Log.d(TAG,
-                            "Widget bind not allowed; with ID: " + appWidgetId + " from provider: "
-                                    + componentName);
+            }
+            if (appWidgetId == -1) {
+                appWidgetId = mAppWidgetHost.allocateAppWidgetId();
+            }
+
+            int result = addWidget(appWidgetId, info);
+
+            switch (result) {
+                case RESULT_SUCCESS -> {
+                    widgetAdded = true;
+                }
+                case RESULT_NEEDS_BIND -> {
+                    Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, info.provider);
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER_PROFILE,
+                            info.getProfile());
+                    startActivityForResult(intent, REQUEST_BIND);
+                }
+                case RESULT_NEEDS_CONFIGURE -> {
+                    Bundle options = ActivityOptions.makeBasic()
+                            .setPendingIntentBackgroundActivityStartMode(
+                                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS
+                            )
+                            .toBundle();
+                    mAppWidgetHost.startAppWidgetConfigureActivityForResult(this, appWidgetId,
+                            /* intentFlags= */ 0, REQUEST_CONFIGURE,
+                            options);
                 }
             }
         }
@@ -209,5 +293,38 @@ public class WidgetHostActivity extends AppCompatActivity {
             mCardContainer.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
         }
         mWidgetContainer.setVisibility(widgetAdded ? View.VISIBLE : View.GONE);
+    }
+
+    private int addWidget(int appWidgetId, AppWidgetProviderInfo info) {
+        mAppWidgetInfoMap.put(appWidgetId, info);
+
+        if (mAppWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, info.provider)) {
+            if (info.configure != null) {
+                return RESULT_NEEDS_CONFIGURE;
+            }
+
+            createHostView(appWidgetId, info);
+
+            if (DEBUG) {
+                Log.d(TAG, "Added widget with ID: " + appWidgetId + " from provider: "
+                        + info.provider);
+            }
+            return RESULT_SUCCESS;
+        } else {
+            if (DEBUG) {
+                Log.d(TAG, "Widget bind not allowed; with ID: " + appWidgetId + " from provider: "
+                        + info.provider);
+            }
+            return RESULT_NEEDS_BIND;
+        }
+    }
+
+    private void createHostView(int id, AppWidgetProviderInfo info) {
+        CarAppWidgetHostView hostView =
+                (CarAppWidgetHostView) mAppWidgetHost.createView(this, id, info);
+        hostView.bind(info, mCardContainer.getWidth(), mWidgetHeight);
+        mWidgetContainer.addView(hostView);
+        mCardContainer.getLayoutParams().height = mWidgetMediaCardHeight;
+        mWidgetContainer.setVisibility(View.VISIBLE);
     }
 }
