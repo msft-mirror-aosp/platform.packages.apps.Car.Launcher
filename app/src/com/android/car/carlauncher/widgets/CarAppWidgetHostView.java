@@ -23,11 +23,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.SizeF;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RemoteViews;
 
-import com.android.car.carlauncher.R;
 import com.android.car.oem.tokens.Token;
 
 import java.util.List;
@@ -40,24 +40,22 @@ import java.util.List;
 public class CarAppWidgetHostView extends BaseLauncherAppWidgetHostView {
     private static final String TAG = "CarAppWidgetHostView";
     private AppWidgetProviderInfo mWidgetInfo = null;
+    // Flag to suppress default padding applied by the AppWidgetHostView.
+    // This is necessary to prevent the system's default widget padding from overriding
+    // our custom layout margins and ensuring precise control over the widget's appearance.
+    private boolean mDisableSetPadding = false;
     private int mWidth;
     private int mHeight;
-    private final int mHorizontalMargin;
-    private final int mVerticalMargin;
 
     public CarAppWidgetHostView(Context context) {
         super(context);
-        mHorizontalMargin =
-                (int) getResources().getDimension(R.dimen.widget_internal_horizontal_margin);
-        mVerticalMargin =
-                (int) getResources().getDimension(R.dimen.widget_internal_vertical_margin);
     }
 
     /**
      * Binds the widget with its provider information and sets its initial size.
      *
-     * @param info The {@link AppWidgetProviderInfo} for the widget.
-     * @param width The width of the host view.
+     * @param info   The {@link AppWidgetProviderInfo} for the widget.
+     * @param width  The width of the host view.
      * @param height The height of the host view.
      */
     public void bind(AppWidgetProviderInfo info, int width, int height) {
@@ -90,21 +88,34 @@ public class CarAppWidgetHostView extends BaseLauncherAppWidgetHostView {
     }
 
     @Override
+    public void setAppWidget(int appWidgetId, AppWidgetProviderInfo info) {
+        mDisableSetPadding = true;
+        super.setAppWidget(appWidgetId, info);
+        mDisableSetPadding = false;
+    }
+
+    @Override
+    public void setPadding(int left, int top, int right, int bottom) {
+        if (!mDisableSetPadding) {
+            super.setPadding(left, top, right, bottom);
+        }
+    }
+
+    @Override
     public void updateAppWidget(RemoteViews remoteViews) {
         if (remoteViews != null) {
             Context contextToUse = Token.createOemStyledContext(getRemoteContext());
             View view = remoteViews.apply(contextToUse, this);
 
-            // Force the view to match the layout params of the host view.
-            int viewWidth = Math.max(0, mWidth - 2 * mHorizontalMargin);
-            int viewHeight = Math.max(0, mHeight - 2 * mVerticalMargin);
-            LayoutParams lp = new LayoutParams(viewWidth, viewHeight);
-            lp.setMargins(mHorizontalMargin, mVerticalMargin, mHorizontalMargin,
-                    mVerticalMargin);
-            view.setLayoutParams(lp);
-
             removeAllViews();
             prepareView(view);
+
+            LayoutParams lp = (LayoutParams) getLayoutParams();
+            lp.width = mWidth;
+            lp.height = mHeight;
+            lp.gravity = Gravity.CENTER;
+            setLayoutParams(lp);
+
             addView(view);
         } else {
             super.updateAppWidget(remoteViews);
