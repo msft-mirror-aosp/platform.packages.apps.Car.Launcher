@@ -138,6 +138,7 @@
     <dimen name="date_widget_padding">16dp</dimen>
     <dimen name="date_widget_icon_margin_end">16dp</dimen>
     <dimen name="date_widget_icon_side">48dp</dimen>
-    <dimen name="widget_vertical_margin">@dimen/main_screen_widget_margin</dimen>
-    <dimen name="widget_horizontal_margin">@dimen/main_screen_widget_margin</dimen>
+    <dimen name="widget_divider_size">@dimen/main_screen_widget_margin</dimen>
+    <dimen name="widget_internal_vertical_margin">0dp</dimen>
+    <dimen name="widget_internal_horizontal_margin">@dimen/main_screen_widget_margin</dimen>
 </resources>
