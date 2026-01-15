@@ -30,4 +30,8 @@ limitations under the License.
 
     <!-- Fullscreen media card panel handlebar animation duration in ms -->
     <integer name="media_card_panel_handlebar_fade_duration">200</integer>
+
+    <!-- Control bar media card panel animation duration in ms -->
+    <integer name="control_bar_side_panel_animation_duration">500</integer>
+    <integer name="control_bar_media_card_overflow_animation_duration">200</integer>
 </resources>

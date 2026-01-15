@@ -87,7 +87,10 @@ public class ControlBarActivity extends FragmentActivity {
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
                     if (cardModule.getCardResId() == R.id.top_card) {
-                        findViewById(R.id.top_card).setVisibility(View.GONE);
+                        View topCard = findViewById(R.id.top_card);
+                        if (topCard != null) {
+                            topCard.setVisibility(View.GONE);
+                        }
                     }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);

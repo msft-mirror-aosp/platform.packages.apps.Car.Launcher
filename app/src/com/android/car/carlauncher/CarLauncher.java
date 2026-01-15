@@ -294,6 +294,8 @@ public class CarLauncher extends FragmentActivity {
     }
 
     private void initializeCards() {
+        boolean isTopCardInUse = false;
+        boolean isBottomCardInUse = false;
         if (mHomeCardModules == null) {
             mHomeCardModules = new ArraySet<>();
             for (String providerClassName : getResources().getStringArray(
@@ -302,10 +304,11 @@ public class CarLauncher extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
-                    if (Flags.mediaCardFullscreen()) {
-                        if (cardModule.getCardResId() == R.id.top_card) {
-                            findViewById(R.id.top_card).setVisibility(View.GONE);
-                        }
+                    if (cardModule.getCardResId() == R.id.top_card) {
+                        isTopCardInUse = true;
+                    }
+                    if (cardModule.getCardResId() == R.id.bottom_card) {
+                        isBottomCardInUse = true;
                     }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);
@@ -318,6 +321,18 @@ public class CarLauncher extends FragmentActivity {
                          | ClassNotFoundException e) {
                     Log.w(TAG, "Unable to create HomeCardProvider class " + providerClassName, e);
                 }
+            }
+        }
+        if (!isTopCardInUse) {
+            View topCard = findViewById(R.id.top_card);
+            if (topCard != null) {
+                topCard.setVisibility(View.GONE);
+            }
+        }
+        if (!isBottomCardInUse) {
+            View bottomCard = findViewById(R.id.bottom_card);
+            if (bottomCard != null) {
+                bottomCard.setVisibility(View.GONE);
             }
         }
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
