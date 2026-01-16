@@ -28,12 +28,12 @@
         <item name="android:clipToOutline">true</item>
         <item name="android:scaleType">centerCrop</item>
         <item name="android:adjustViewBounds">false</item>
+        <item name="strokeColor">@color/icon_static_stroke_color</item>
         <item name="shapeAppearanceOverlay">@style/AppIcon.RoundedBorder</item>
     </style>
 
     <style name="AppIcon.RoundedBorder">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">?oemShapeCornerLarge</item>
-        <item name="strokeColor">@color/icon_static_stroke_color</item>
     </style>
 </resources>

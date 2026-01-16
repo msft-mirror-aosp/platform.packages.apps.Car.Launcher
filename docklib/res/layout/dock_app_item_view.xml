@@ -17,8 +17,10 @@
     android:id="@+id/dock_item_container"
     style="@style/ItemContainer">
 
+    <!-- Set Chassis theme as workaround for requiring material attributes -->
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/dock_app_icon"
+        android:theme="@style/Theme.CarUi.NoToolbar"
         style="@style/AppIcon"
         android:contentDescription="@null" />
 </FrameLayout>
