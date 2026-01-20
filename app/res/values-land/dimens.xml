@@ -18,4 +18,11 @@
 
     <item name="contextual_screen_percentage" type="dimen" format="float">.3</item>
 
+    <!-- Widgets -->
+    <dimen name="widget_width">555dp</dimen>
+    <dimen name="widget_height">348dp</dimen>
+    <dimen name="widget_media_card_size">@dimen/widget_width</dimen>
+    <dimen name="widget_vertical_margin">@dimen/main_screen_widget_margin</dimen>
+    <dimen name="widget_horizontal_margin">0dp</dimen>
+
 </resources>
