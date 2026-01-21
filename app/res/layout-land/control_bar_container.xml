@@ -20,12 +20,11 @@
     android:gravity="top"
     android:id="@+id/control_bar_area"
     android:layout_gravity="bottom"
-    android:layout_height="@dimen/control_bar_height"
+    android:layout_height="match_parent"
     android:layout_width="match_parent"
-    android:orientation="vertical"
-    android:paddingTop="@dimen/car_panel_border_width">
+    android:orientation="vertical">
     <FrameLayout
         android:id="@+id/bottom_card"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_width="match_parent" />
 </LinearLayout>
