@@ -142,6 +142,7 @@
     <dimen name="widget_divider_size">@dimen/main_screen_widget_margin</dimen>
     <dimen name="widget_vertical_margin">0dp</dimen>
     <dimen name="widget_horizontal_margin">@dimen/main_screen_widget_margin</dimen>
+    <item name="widget_scale_factor" type="dimen" format="float">1.5</item>
 
     <!-- Control bar dimens -->
     <dimen name="control_bar_height">411dp</dimen>
