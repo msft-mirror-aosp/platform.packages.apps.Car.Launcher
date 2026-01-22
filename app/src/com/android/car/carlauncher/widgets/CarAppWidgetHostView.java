@@ -28,6 +28,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import com.android.car.carlauncher.R;
 import com.android.car.oem.tokens.Token;
 
 import java.util.List;
@@ -46,9 +47,13 @@ public class CarAppWidgetHostView extends BaseLauncherAppWidgetHostView {
     private boolean mDisableSetPadding = false;
     private int mWidth;
     private int mHeight;
+    private final float mScaleFactor;
 
     public CarAppWidgetHostView(Context context) {
         super(context);
+        mScaleFactor = getResources().getFloat(R.dimen.widget_scale_factor);
+        setScaleX(mScaleFactor);
+        setScaleY(mScaleFactor);
     }
 
     /**
@@ -61,8 +66,10 @@ public class CarAppWidgetHostView extends BaseLauncherAppWidgetHostView {
     public void bind(AppWidgetProviderInfo info, int width, int height) {
         mWidgetInfo = info;
 
-        mWidth = info.maxResizeWidth > 0 ? Math.min(width, info.maxResizeWidth) : width;
-        mHeight = info.maxResizeHeight > 0 ? Math.min(height, info.maxResizeHeight) : height;
+        mWidth = Math.round((info.maxResizeWidth > 0 ? Math.min(width, info.maxResizeWidth) : width)
+                / mScaleFactor);
+        mHeight = Math.round((info.maxResizeHeight > 0 ? Math.min(height, info.maxResizeHeight)
+                : height) / mScaleFactor);
 
         Bundle options = new Bundle();
         options.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, mWidth);
