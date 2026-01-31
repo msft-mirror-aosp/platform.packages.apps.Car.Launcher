@@ -267,7 +267,7 @@ public class InCallViewModel implements AudioModel {
      * Updates the model's content using the given phone number.
      */
     @VisibleForTesting
-    void updateModelWithPhoneNumber(String number, @Call.CallState int callState) {
+    void updateModelWithPhoneNumber(String number, /* @Call.CallState */ int callState) {
         String formattedNumber = TelecomUtils.getFormattedNumber(mContext, number);
         mCardContent = createPhoneCardContent(null, formattedNumber, callState);
         mOnModelUpdateListener.onModelUpdate(this);
@@ -280,7 +280,7 @@ public class InCallViewModel implements AudioModel {
      */
     @VisibleForTesting
     void updateModelWithContact(TelecomUtils.PhoneNumberInfo phoneNumberInfo,
-            @Call.CallState int callState) {
+            /* @Call.CallState */ int callState) {
         String contactName = null;
         String initials = null;
         // If current call details exist, use the caller display name or contact display name first.
@@ -323,7 +323,7 @@ public class InCallViewModel implements AudioModel {
     }
 
     protected void handleActiveCall(@NonNull Call call) {
-        @Call.CallState int callState = call.getDetails().getState();
+        /* @Call.CallState */ int callState = call.getDetails().getState();
         CallDetail callDetails = CallDetail.fromTelecomCallDetail(call.getDetails());
         if (callDetails.isSelfManaged()) {
             String packageName = callDetails.getCallingAppPackageName();
@@ -352,7 +352,7 @@ public class InCallViewModel implements AudioModel {
     }
 
     private CardContent createPhoneCardContent(CardContent.CardBackgroundImage image,
-            CharSequence title, @Call.CallState int callState) {
+            CharSequence title, /* @Call.CallState */ int callState) {
         switch (callState) {
             case Call.STATE_DIALING:
                 return new DescriptiveTextWithControlsView(image, title, mDialingCallSubtitle,
