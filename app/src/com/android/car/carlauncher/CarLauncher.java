@@ -46,8 +46,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.car.carlauncher.homescreen.HomeCardModule;
-import com.android.car.carlauncher.homescreen.audio.IntentHandler;
-import com.android.car.carlauncher.homescreen.audio.media.MediaIntentRouter;
+import com.android.car.carlauncher.homescreen.audio.MediaLaunchHandler;
+import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
 import com.android.car.carlauncher.taskstack.TaskStackChangeListeners;
 import com.android.car.internal.common.UserHelperLite;
 import com.android.wm.shell.taskview.TaskView;
@@ -110,14 +110,12 @@ public class CarLauncher extends FragmentActivity {
         }
     };
 
-    private final IntentHandler mMediaIntentHandler = new IntentHandler() {
-        @Override
-        public void handleIntent(Intent intent) {
-            if (intent != null) {
-                ActivityOptions options = ActivityOptions.makeBasic();
-                startActivity(intent, options.toBundle());
-            }
+    // Used instead of IntentHandler because media apps may provide a PendingIntent instead
+    private final MediaLaunchHandler mMediaMediaLaunchHandler = mediaSource -> {
+        if (DEBUG) {
+            Log.d(TAG, "Launching media source " + mediaSource);
         }
+        mediaSource.launchActivity(CarLauncher.this, ActivityOptions.makeBasic());
     };
 
     @Override
@@ -127,6 +125,12 @@ public class CarLauncher extends FragmentActivity {
         if (DEBUG) {
             Log.d(TAG, "onCreate(" + getUserId() + ") displayId=" + getDisplayId());
         }
+
+        if (isDewdActive()) {
+            setContentView(R.layout.home);
+            return;
+        }
+
         // Since MUMD/MUPAND is introduced, CarLauncher can be called in the main display of
         // visible background users.
         // For Passenger scenarios, replace the maps_card with AppGridActivity, as currently
@@ -173,7 +177,7 @@ public class CarLauncher extends FragmentActivity {
             }
         }
 
-        MediaIntentRouter.getInstance().registerMediaIntentHandler(mMediaIntentHandler);
+        MediaLaunchRouter.getInstance().registerMediaLaunchHandler(mMediaMediaLaunchHandler);
         initializeCards();
         setupContentObserversForTos();
     }
@@ -211,6 +215,12 @@ public class CarLauncher extends FragmentActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        if (isDewdActive()) {
+            // no-op
+            return;
+        }
+
         TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
         unregisterTosContentObserver();
         release();
@@ -248,6 +258,12 @@ public class CarLauncher extends FragmentActivity {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+
+        if (isDewdActive()) {
+            // no-op
+            return;
+        }
+
         initializeCards();
     }
 
@@ -361,5 +377,10 @@ public class CarLauncher extends FragmentActivity {
                 Settings.Secure.getUriFor(KEY_UNACCEPTED_TOS_DISABLED_APPS),
                 /* notifyForDescendants*/ false,
                 mTosContentObserver);
+    }
+
+    /** Returns {@code true} if the declarative launcher configuration is active. */
+    private boolean isDewdActive() {
+        return getResources().getBoolean(R.bool.config_useDewdLauncher);
     }
 }
