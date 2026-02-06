@@ -40,13 +40,13 @@
             android:id="@+id/day_of_week_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?oemTextAppearanceTitleLarge" />
+            android:textAppearance="?oemTextAppearanceTitleSmall" />
 
         <TextView
             android:id="@+id/date_textview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?oemTextAppearanceLabelLarge" />
+            android:textAppearance="?oemTextAppearanceLabelSmall" />
     </LinearLayout>
 
 </LinearLayout>
