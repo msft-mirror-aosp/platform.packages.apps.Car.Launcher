@@ -54,6 +54,7 @@ public class CarAppWidgetHostView extends BaseLauncherAppWidgetHostView {
         mScaleFactor = getResources().getFloat(R.dimen.widget_scale_factor);
         setScaleX(mScaleFactor);
         setScaleY(mScaleFactor);
+        setFocusable(true);
     }
 
     /**

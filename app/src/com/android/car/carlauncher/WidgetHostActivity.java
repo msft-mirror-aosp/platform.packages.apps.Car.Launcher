@@ -71,6 +71,7 @@ public class WidgetHostActivity extends AppCompatActivity {
     private final IntentHandler mIntentHandler = intent -> {
         if (intent != null) {
             ActivityOptions options = ActivityOptions.makeBasic();
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent, options.toBundle());
         }
     };
