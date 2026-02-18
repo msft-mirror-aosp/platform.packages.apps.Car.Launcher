@@ -19,11 +19,14 @@ package com.android.car.carlauncher;
 import static com.android.car.carlauncher.AppGridFragment.MODE_INTENT_EXTRA;
 
 import android.content.Intent;
+import android.graphics.Insets;
 import android.os.Bundle;
+import android.view.WindowInsets;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
 import androidx.fragment.app.Fragment;
 
 import com.android.car.carlauncher.AppGridFragment.Mode;
@@ -72,6 +75,20 @@ public class AppGridActivity extends AppCompatActivity {
                         .build()));
             }
         }
+
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        findViewById(R.id.fragmentContainer).setOnApplyWindowInsetsListener(
+                (v, insets) -> {
+                    Insets appliedInsets = insets.getInsets(WindowInsets.Type.systemBars());
+                    v.setPadding(
+                            appliedInsets.left,
+                            appliedInsets.top,
+                            appliedInsets.right,
+                            appliedInsets.bottom
+                    );
+                    return insets;
+                });
+
         getSupportFragmentManager().beginTransaction().replace(R.id.fragmentContainer,
                 AppGridFragment.newInstance(parseMode(getIntent()))).commit();
     }

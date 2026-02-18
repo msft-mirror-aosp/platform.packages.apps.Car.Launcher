@@ -112,12 +112,12 @@ public class PageMeasurementHelper {
 
             // Calculate the maximum number of columns that can fit in the grid,
             // ensuring each column has at least the minimum item width.
-            int numOfCols = gridWidth / mMinItemWidth;
+            int numOfCols = Math.max(1, gridWidth / mMinItemWidth);
             gridWidth = roundDownToModuloMultiple(gridWidth, numOfCols);
 
-            // Calculate the maximum number of columns that can fit in the grid,
-            // ensuring each column has at least the minimum item width.
-            int numOfRows = gridHeight / mMinItemHeight;
+            // Calculate the maximum number of rows that can fit in the grid,
+            // ensuring each row has at least the minimum item height.
+            int numOfRows = Math.max(1, gridHeight / mMinItemHeight);
             gridHeight = roundDownToModuloMultiple(gridHeight, numOfRows);
 
             int cellWidth = gridWidth / numOfCols;
