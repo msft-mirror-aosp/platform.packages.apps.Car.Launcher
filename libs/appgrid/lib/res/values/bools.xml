@@ -32,6 +32,6 @@
 
     <!-- Whether the app grid should use vertical pagination (up and down swipe) in app grid
     instead of horizontal pagination (left and right)-->
-    <bool name="use_vertical_app_grid">true</bool>
+    <bool name="use_vertical_app_grid">false</bool>
 </resources>
 
