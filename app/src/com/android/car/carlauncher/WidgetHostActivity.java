@@ -149,12 +149,7 @@ public class WidgetHostActivity extends AppCompatActivity {
                     @Override
                     public void onGlobalLayout() {
                         mCardContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                        if (Flags.appWidgetHost()) {
-                            loadAndDisplayWidgets();
-                        } else {
-                            adjustVisuals(/* widgetAdded= */ false);
-                        }
+                        loadAndDisplayWidgets();
                     }
                 });
     }
