@@ -32,11 +32,11 @@
         <item>com.android.car.stub.launcher</item>
         <item>android.car.usb.handler</item>
         <item>com.google.android.carassistant</item>
+        <item>com.google.android.apps.maps</item>
     </string-array>
 
     <!-- A list of components that are excluded from being shown on Dock -->
     <string-array name="config_componentsExcludedFromDock" translatable="false">
-        <item>com.google.android.apps.maps/com.google.android.apps.gmm.car.embedded.activity.LimitedMapsActivity</item>
         <item>com.android.car.media/com.android.car.media.MediaDispatcherActivity</item>
         <item>com.android.car.media/com.android.car.media.MediaBlockingActivity</item>
         <item>com.android.systemui/com.android.systemui.car.wm.activity.LaunchOnPrivateDisplayRouterActivity</item>
