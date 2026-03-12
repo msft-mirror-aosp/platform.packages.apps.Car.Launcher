@@ -184,6 +184,7 @@ public class CarLauncher extends FragmentActivity {
                     mMapsCard = findViewById(R.id.maps_card);
                     if (mMapsCard != null) {
                         setupRemoteCarTaskView(mMapsCard);
+                        setupContentObserversForTos();
                     }
                 }
             } else {
@@ -200,8 +201,6 @@ public class CarLauncher extends FragmentActivity {
         InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
 
         initializeCards();
-
-        setupContentObserversForTos();
     }
 
     private void setupRemoteCarTaskView(ViewGroup parent) {
