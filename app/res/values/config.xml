@@ -17,8 +17,13 @@
 
 <resources>
     <!-- A list of package names that provide the cards to display on the home screen -->
-    <string-array name="config_homeCardModuleClasses" translatable="false">
+    <string-array name="config_homeCardModuleClasses_vertical" translatable="false">
         <item>com.android.car.carlauncher.homescreen.audio.AudioCardModule</item>
+    </string-array>
+
+    <!-- A list of package names that provide the cards to display on the home screen -->
+    <string-array name="config_homeCardModuleClasses_horizontal" translatable="false">
+        <item>com.android.car.carlauncher.homescreen.controlbar.ControlBarModule</item>
     </string-array>
 
     <!-- A list of component names that provide the initial appwidgets to display in the WidgetHostActivity -->

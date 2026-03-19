@@ -298,7 +298,7 @@ public class CarLauncher extends FragmentActivity {
         if (mHomeCardModules == null) {
             mHomeCardModules = new ArraySet<>();
             for (String providerClassName : getResources().getStringArray(
-                    R.array.config_homeCardModuleClasses)) {
+                    R.array.config_homeCardModuleClasses_vertical)) {
                 try {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)

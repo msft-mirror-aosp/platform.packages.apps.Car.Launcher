@@ -226,10 +226,11 @@ public class WidgetHostActivity extends AppCompatActivity {
     private void initializeCards() {
         boolean isTopCardInUse = false;
         boolean isBottomCardInUse = false;
+        int homeCardRes = mIsLandscape ? R.array.config_homeCardModuleClasses_horizontal
+                : R.array.config_homeCardModuleClasses_vertical;
         if (mHomeCardModules == null) {
             mHomeCardModules = new ArraySet<>();
-            for (String providerClassName : getResources().getStringArray(
-                    R.array.config_homeCardModuleClasses)) {
+            for (String providerClassName : getResources().getStringArray(homeCardRes)) {
                 try {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule) Class.forName(
