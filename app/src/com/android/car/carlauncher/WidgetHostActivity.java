@@ -27,6 +27,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.UserManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -96,6 +97,50 @@ public class WidgetHostActivity extends AppCompatActivity {
     };
     private int mWidgetMediaCardSize;
     private AppWidgetManager mAppWidgetManager;
+    private UserManager mUserManager;
+    private boolean mUserUnlocked;
+    private boolean mIsLayoutComplete;
+    private boolean mWidgetsLoaded;
+
+    private final BroadcastReceiver mUserUnlockedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null || !Intent.ACTION_USER_UNLOCKED.equals(intent.getAction())) {
+                return;
+            }
+            if (DEBUG) {
+                Log.d(TAG, "User unlocked, attempting to load widgets");
+            }
+            mUserUnlocked = true;
+            tryLoadWidgets();
+            unregisterReceiver(mUserUnlockedReceiver);
+        }
+    };
+
+    private void tryLoadWidgets() {
+        if (!mUserUnlocked) {
+            if (DEBUG) {
+                Log.d(TAG, "tryLoadWidgets: user still locked");
+            }
+            return;
+        }
+        if (!mIsLayoutComplete) {
+            if (DEBUG) {
+                Log.d(TAG, "tryLoadWidgets: layout not complete");
+            }
+            return;
+        }
+        if (mWidgetsLoaded) {
+            return;
+        }
+
+        if (DEBUG) {
+            Log.d(TAG, "Conditions met, loading widgets");
+        }
+        mWidgetsLoaded = true;
+        loadAndDisplayWidgets();
+    }
+
     private CarAppWidgetHost mAppWidgetHost;
     private LinearLayout mWidgetContainer;
     private ViewGroup mCardContainer;
@@ -127,6 +172,15 @@ public class WidgetHostActivity extends AppCompatActivity {
         MediaLaunchRouter.getInstance().registerMediaLaunchHandler(mMediaMediaLaunchHandler);
         InCallIntentRouter.getInstance().registerInCallIntentHandler(mIntentHandler);
 
+        mUserManager = getSystemService(UserManager.class);
+        mUserUnlocked = mUserManager.isUserUnlocked();
+        if (!mUserUnlocked) {
+            if (DEBUG) {
+                Log.d(TAG, "User locked, waiting for unlock");
+            }
+            registerReceiver(mUserUnlockedReceiver, new IntentFilter(Intent.ACTION_USER_UNLOCKED));
+        }
+
         mAppWidgetManager = AppWidgetManager.getInstance(this);
         mAppWidgetHost = new CarAppWidgetHost(this,
                 getResources().getInteger(R.integer.config_appwidget_host_id));
@@ -149,7 +203,8 @@ public class WidgetHostActivity extends AppCompatActivity {
                     @Override
                     public void onGlobalLayout() {
                         mCardContainer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        loadAndDisplayWidgets();
+                        mIsLayoutComplete = true;
+                        tryLoadWidgets();
                     }
                 });
     }
@@ -172,6 +227,13 @@ public class WidgetHostActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (!mWidgetsLoaded && !mUserUnlocked) {
+            try {
+                unregisterReceiver(mUserUnlockedReceiver);
+            } catch (IllegalArgumentException e) {
+                // Receiver was already unregistered or not registered
+            }
+        }
         mAppWidgetInfoMap.forEach((id, info) -> mAppWidgetHost.deleteAppWidgetId(id));
         mAppWidgetInfoMap.clear();
     }
