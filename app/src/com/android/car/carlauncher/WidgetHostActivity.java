@@ -224,8 +224,6 @@ public class WidgetHostActivity extends AppCompatActivity {
     }
 
     private void initializeCards() {
-        boolean isTopCardInUse = false;
-        boolean isBottomCardInUse = false;
         int homeCardRes = mIsLandscape ? R.array.config_homeCardModuleClasses_horizontal
                 : R.array.config_homeCardModuleClasses_vertical;
         if (mHomeCardModules == null) {
@@ -235,12 +233,6 @@ public class WidgetHostActivity extends AppCompatActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule) Class.forName(
                             providerClassName).getDeclaredConstructor().newInstance();
-                    if (cardModule.getCardResId() == R.id.top_card) {
-                        isTopCardInUse = true;
-                    }
-                    if (cardModule.getCardResId() == R.id.bottom_card) {
-                        isBottomCardInUse = true;
-                    }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);
                     if (DEBUG) {
@@ -253,17 +245,17 @@ public class WidgetHostActivity extends AppCompatActivity {
                 }
             }
         }
-        if (!isTopCardInUse) {
-            Log.e(TAG, "Top card is not supported in widget host.");
-        }
-        if (!isBottomCardInUse) {
-            View bottomCard = findViewById(R.id.bottom_card);
-            if (bottomCard != null) {
-                bottomCard.setVisibility(View.GONE);
+        boolean hasBottomCard = mHomeCardModules.stream().peek(cardModule -> {
+            if (cardModule.getCardResId() == R.id.top_card) {
+                Log.e(TAG, "Top card is not supported in widget host.");
             }
+        }).anyMatch(cardModule -> cardModule.getCardResId() == R.id.bottom_card);
+        View bottomCard = findViewById(R.id.bottom_card);
+        if (bottomCard != null) {
+            bottomCard.setVisibility(hasBottomCard ? View.VISIBLE : View.GONE);
         }
-        if (!isBottomCardInUse && mCardContainer != null) {
-            mCardContainer.setVisibility(View.GONE);
+        if (mCardContainer != null) {
+            mCardContainer.setVisibility(hasBottomCard ? View.VISIBLE : View.GONE);
         }
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         for (HomeCardModule cardModule : mHomeCardModules) {

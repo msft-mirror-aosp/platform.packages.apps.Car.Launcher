@@ -58,6 +58,7 @@ import com.android.wm.shell.taskview.TaskView;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Basic Launcher for Android Automotive which demonstrates the use of {@link TaskView} to host
@@ -293,8 +294,6 @@ public class CarLauncher extends FragmentActivity {
     }
 
     private void initializeCards() {
-        boolean isTopCardInUse = false;
-        boolean isBottomCardInUse = false;
         if (mHomeCardModules == null) {
             mHomeCardModules = new ArraySet<>();
             for (String providerClassName : getResources().getStringArray(
@@ -303,12 +302,6 @@ public class CarLauncher extends FragmentActivity {
                     long reflectionStartTime = System.currentTimeMillis();
                     HomeCardModule cardModule = (HomeCardModule)
                             Class.forName(providerClassName).newInstance();
-                    if (cardModule.getCardResId() == R.id.top_card) {
-                        isTopCardInUse = true;
-                    }
-                    if (cardModule.getCardResId() == R.id.bottom_card) {
-                        isBottomCardInUse = true;
-                    }
                     cardModule.setViewModelProvider(new ViewModelProvider(/* owner= */this));
                     mHomeCardModules.add(cardModule);
                     if (DEBUG) {
@@ -322,18 +315,13 @@ public class CarLauncher extends FragmentActivity {
                 }
             }
         }
-        if (!isTopCardInUse) {
-            View topCard = findViewById(R.id.top_card);
-            if (topCard != null) {
-                topCard.setVisibility(View.GONE);
-            }
-        }
-        if (!isBottomCardInUse) {
-            View bottomCard = findViewById(R.id.bottom_card);
-            if (bottomCard != null) {
-                bottomCard.setVisibility(View.GONE);
-            }
-        }
+        Stream.of(R.id.top_card, R.id.bottom_card).forEach(resId -> {
+            View container = findViewById(resId);
+            if (container == null) return;
+            boolean isRequired = mHomeCardModules.stream()
+                    .anyMatch(m -> m.getCardResId() == resId);
+            container.setVisibility(isRequired ? View.VISIBLE : View.GONE);
+        });
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         for (HomeCardModule cardModule : mHomeCardModules) {
             transaction.replace(cardModule.getCardResId(), cardModule.getCardView().getFragment());
