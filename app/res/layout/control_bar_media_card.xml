@@ -267,7 +267,7 @@
             android:tint="@color/control_bar_media_card_panel_button_foreground"
             android:background="@drawable/media_card_button_background"
             android:backgroundTint="@color/control_bar_media_card_panel_button_background"
-            app:layout_constraintEnd_toEndOf="@id/album_art"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <SeekBar
