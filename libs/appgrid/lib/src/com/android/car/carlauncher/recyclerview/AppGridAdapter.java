@@ -101,6 +101,8 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             + "Please ensure the adapter is attached to AppGridRecyclerView only "
                             + "after the bounds are ready.");
         }
+        mGridOrderedLauncherItems.clear();
+        mGridOrderedLauncherItems.addAll(getGridOrderedLauncherItems());
     }
 
     /**
@@ -305,15 +307,7 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
      * the current adapter order when the method is called.
      */
     private void dispatchUpdates() {
-        List<LauncherItem> newAppsList = new ArrayList<>();
-        // we first need to pad the empty items on the last page
-        for (int i = 0; i < getItemCount(); i++) {
-            newAppsList.add(getEmptyLauncherItem());
-        }
-
-        for (int i = 0; i < mLauncherItems.size(); i++) {
-            newAppsList.set(mIndexingHelper.adaptorIndexToGridPosition(i), mLauncherItems.get(i));
-        }
+        List<LauncherItem> newAppsList = getGridOrderedLauncherItems();
         LauncherItemDiffCallback callback = new LauncherItemDiffCallback(
                 /* oldList */ mGridOrderedLauncherItems, /* newList */ newAppsList);
         DiffUtil.DiffResult result = DiffUtil.calculateDiff(callback);
@@ -321,6 +315,23 @@ public class AppGridAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mGridOrderedLauncherItems.clear();
         mGridOrderedLauncherItems.addAll(newAppsList);
         result.dispatchUpdatesTo(this);
+    }
+
+    private List<LauncherItem> getGridOrderedLauncherItems() {
+        List<LauncherItem> newAppsList = new ArrayList<>();
+        // we first need to pad the empty items on the last page
+        int itemCount = getItemCount();
+        for (int i = 0; i < itemCount; i++) {
+            newAppsList.add(getEmptyLauncherItem());
+        }
+
+        if (mLauncherItems != null && mIndexingHelper != null) {
+            for (int i = 0; i < mLauncherItems.size(); i++) {
+                newAppsList.set(mIndexingHelper.adaptorIndexToGridPosition(i),
+                        mLauncherItems.get(i));
+            }
+        }
+        return newAppsList;
     }
 
     private LauncherItem getEmptyLauncherItem() {
