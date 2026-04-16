@@ -34,7 +34,9 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 
 import androidx.constraintlayout.motion.widget.MotionLayout;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.car.apps.common.CarUiRecyclerViewNoScrollbar;
 import com.android.car.apps.common.util.ViewUtils;
 import com.android.car.carlauncher.R;
 import com.android.car.carlauncher.homescreen.audio.media.MediaLaunchRouter;
@@ -128,7 +130,28 @@ public class ControlBarMediaController extends PlaybackCardController {
         mQueueContainer = mView.findViewById(R.id.queue_list_container);
         mHistoryContainer = mView.findViewById(R.id.history_list_container);
 
-        mPlaybackQueueController = new PlaybackQueueController(mView.findViewById(R.id.queue_list),
+        CarUiRecyclerViewNoScrollbar queueList = mView.findViewById(R.id.queue_list);
+        CarUiRecyclerViewNoScrollbar historyList = mView.findViewById(R.id.history_list);
+
+        RecyclerView.SimpleOnItemTouchListener disallowInterceptListener =
+                new RecyclerView.SimpleOnItemTouchListener() {
+                    @Override
+                    public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+                        if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                            rv.getParent().requestDisallowInterceptTouchEvent(true);
+                        }
+                        return false;
+                    }
+                };
+
+        if (queueList != null) {
+            queueList.getRecyclerView().addOnItemTouchListener(disallowInterceptListener);
+        }
+        if (historyList != null) {
+            historyList.getRecyclerView().addOnItemTouchListener(disallowInterceptListener);
+        }
+
+        mPlaybackQueueController = new PlaybackQueueController(queueList,
                 Resources.ID_NULL, R.layout.control_bar_media_queue_item, Resources.ID_NULL,
                 getViewLifecycleOwner(), mDataModel, mViewModel.getMediaItemsRepository(),
                 /* LifeCycleObserverUxrContentLimiter */ null, /* uxrConfigurationId */ 0);
